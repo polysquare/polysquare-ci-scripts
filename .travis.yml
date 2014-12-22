@@ -1,0 +1,11 @@
+# Use haskell VM so that we have access to shellcheck
+language: c
+sudo: false
+cache:
+  directories:
+    - ~/.install
+before_install:
+ - source travis/setup-local-languages.sh ~/.install
+script:
+ - bash travis/shell-lint.sh -d .
+ - bash travis/project-lint.sh -d . -e ".sh"
