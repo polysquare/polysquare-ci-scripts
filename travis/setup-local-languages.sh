@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /setup-local-languages.sh
+# /travis/setup-local-languages.sh
 #
 # Travis CI script to set up self-contained versions of
 # scripting languages and their packaging systems. This
@@ -107,6 +107,13 @@ if [[ ! -f "${LANG_RT_PATH}/done-stamp" ]] ; then
     echo "done" >> "${LANG_RT_PATH}/done-stamp"
 
     popd > /dev/null
+
+else
+    echo "=> Restoring language runtimes from cache"
+
+    for local_dir in gem ghc cabal ; do
+        mv "${LANG_RT_PATH}/.${local_dir}" "${HOME}/.${local_dir}" 
+    done
 fi
 
 # Update package repositories (we should do this on every run)
@@ -119,11 +126,3 @@ source "${LANG_RT_PATH}/python/bin/activate"
 export PYTHON_SETUP_LOCALLY=1
 export PATH=${HOME}/.gem/ruby/1.8/bin/:${PATH}
 export PATH=${HOME}/.cabal/bin:${PATH}
-
-mkdir -p "${HOME}/.gem"
-mkdir -p "${HOME}/.cabal"
-mkdir -p "${HOME}/.ghc"
-
-ln -s "${LANG_RT_PATH}/gems" "${HOME}/.gem"
-ln -s "${LANG_RT_PATH}/cabal" "${HOME}/.cabal"
-ln -s "${LANG_RT_PATH}/ghc" "${HOME}/.ghc"

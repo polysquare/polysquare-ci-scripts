@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /python-lint.sh
+# /travis/python-lint.sh
 #
 # Travis CI Script to lint python files
 #

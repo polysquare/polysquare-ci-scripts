@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /project-lint.sh
+# /travis/project-lint.sh
 #
 # Travis CI Script to lint project files
 #
