@@ -56,6 +56,7 @@ function setup_haskell {
     echo "   ... Package paths adjusted"
 
     mkdir -p "${LANG_RT_PATH}/cabal"
+    mkdir -p "${LANG_RT_PATH}/ghc"
 
     ghc-pkg recache > /dev/null
     echo "   ... GHC package cache up to date"
@@ -120,3 +121,4 @@ export PATH=${HOME}/.gem/ruby/1.8/bin/:${PATH}
 export PATH=${HOME}/.cabal/bin:${PATH}
 ln -s "${LANG_RT_PATH}/gems" "${HOME}/.gem"
 ln -s "${LANG_RT_PATH}/cabal" "${HOME}/.cabal"
+ln -s "${LANG_RT_PATH}/ghc" "${HOME}/.ghc"
