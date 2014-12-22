@@ -1,4 +1,3 @@
-# Use haskell VM so that we have access to shellcheck
 language: c
 sudo: false
 cache:
@@ -8,4 +7,6 @@ before_install:
  - source travis/setup-local-languages.sh ~/.install
 script:
  - bash travis/shell-lint.sh -d .
- - bash travis/project-lint.sh -d . -e ".sh"
+ - bash travis/project-lint.sh -d . -e "sh"
+after_success:
+ - bash travis/prepare-local-language-caching.sh ~/.install

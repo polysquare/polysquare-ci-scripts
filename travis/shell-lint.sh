@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# /python-lint.sh
+# /travis/shell-lint.sh
 #
-# Travis CI Script to lint python files
+# Travis CI Script to lint bash files
 #
 # See LICENCE.md for Copyright information
 
 echo "=> Linting Shell Files"
 echo "   ... Installing requirements"
-cabal install shellcheck > /dev/null 2>&1
+cabal install shellcheck
 
 while getopts "d:x:" opt; do
     case "$opt" in
@@ -33,7 +33,7 @@ function print_exclusions {
 }
 
 for directory in ${directories} ; do
-    if [[ -z $exclusions ]] ; then
+    if [[ -z ${exclusions} ]] ; then
         print_exclusions | \
             xargs find "${directory}" -type f -name "*.sh" -print0 | \
                 xargs -0 -L 1 shellcheck
