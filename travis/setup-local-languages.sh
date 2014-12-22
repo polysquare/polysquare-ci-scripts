@@ -119,6 +119,11 @@ source "${LANG_RT_PATH}/python/bin/activate"
 export PYTHON_SETUP_LOCALLY=1
 export PATH=${HOME}/.gem/ruby/1.8/bin/:${PATH}
 export PATH=${HOME}/.cabal/bin:${PATH}
+
+mkdir -p "${HOME}/.gem"
+mkdir -p "${HOME}/.cabal"
+mkdir -p "${HOME}/.ghc"
+
 ln -s "${LANG_RT_PATH}/gems" "${HOME}/.gem"
 ln -s "${LANG_RT_PATH}/cabal" "${HOME}/.cabal"
 ln -s "${LANG_RT_PATH}/ghc" "${HOME}/.ghc"

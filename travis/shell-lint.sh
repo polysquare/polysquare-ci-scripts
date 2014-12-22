@@ -20,7 +20,7 @@ done
 
 echo "   ... Linting files"
 
-function print_exclusions() {
+function print_exclusions {
     for exclusion in ${exclusions} ; do
         if [ -d "${exclusion}" ] ; then
             echo "-not -path \"${exclusion}/*\""
