@@ -7,7 +7,11 @@
 
 echo "=> Linting Shell Files"
 echo "   ... Installing requirements"
-cabal install shellcheck
+cabal install shellcheck > /dev/null 2>&1
+pip install bashlint > /dev/null 2>&1
+
+# Always exclude .git
+exclusions="$(pwd)/.git"
 
 while getopts "d:x:" opt; do
     case "$opt" in
@@ -18,27 +22,33 @@ while getopts "d:x:" opt; do
     esac
 done
 
-echo "   ... Linting files"
+function get_exclusions_arguments() {
+    local result=$1
+    local cmd_append=""
 
-function print_exclusions {
     for exclusion in ${exclusions} ; do
         if [ -d "${exclusion}" ] ; then
-            echo "-not -path \"${exclusion}/*\""
+            cmd_append="${cmd_append} -not -path \"${exclusion}/*\""
         else
             if [ -f "${exclusion}" ] ; then
-                echo "-not -name \"*${exclusion}\""
+                cmd_append="${cmd_append} -not -name \"*${exclusion}\""
             fi
         fi
     done
+
+    eval "${result}"="'${cmd_append}'"
 }
 
+get_exclusions_arguments excl_args
+
+echo "   ... Linting files"
+
 for directory in ${directories} ; do
-    if [[ -z ${exclusions} ]] ; then
-        print_exclusions | \
-            xargs find "${directory}" -type f -name "*.sh" -print0 | \
-                xargs -0 -L 1 shellcheck
-    else
-        xargs find "${directory}" -type f -name "*.sh" -print0 | \
-            xargs -0 -L 1 shellcheck
-    fi
+    cmd="find ${directory} -type f -name \"*.sh\" ${excl_args}"
+    shell_files=$(eval "${cmd}")
+
+    for file in ${shell_files} ; do
+        shellcheck "${file}"
+        bashlint "${file}"
+    done
 done

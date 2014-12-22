@@ -10,6 +10,9 @@ echo "   ... Installing requirements"
 gem install mdl > /dev/null 2>&1
 pip install polysquare-generic-file-linter > /dev/null 2>&1
 
+# Always exclude .git
+exclusions="$(pwd)/.git"
+
 while getopts "d:e:x:" opt; do
     case "$opt" in
     d) directories+=$OPTARG
@@ -21,32 +24,48 @@ while getopts "d:e:x:" opt; do
     esac
 done
 
-function print_exclusions {
+function get_exclusions_arguments() {
+    local result=$1
+    local cmd_append=""
+
     for exclusion in ${exclusions} ; do
         if [ -d "${exclusion}" ] ; then
-            echo "-not -path \"${exclusion}/*\""
+            cmd_append="${cmd_append} -not -path \"${exclusion}/*\""
         else
             if [ -f "${exclusion}" ] ; then
-                echo "-not -name \"*${exclusion}\""
+                cmd_append="${cmd_append} -not -name \"*${exclusion}\""
             fi
         fi
     done
+
+    eval "${result}"="'${cmd_append}'"
 }
 
-echo "   ... Linting files"
+function get_extensions_arguments() {
+    local result=$1
+    local cmd_append=""
 
-for directory in ${directories} ; do
     for extension in ${extensions} ; do
-        if [[ -z ${exclusions} ]] ; then
-            print_exclusions | \
-                xargs find "${directory}" -type f \
-                    -name "*.${extension}" -print0 | \
-                        xargs -0 -L 1 polysquare-generic-file-linter
-        else
-            find "${directory}" -type f -name "*.${extension}" -print0 | \
-                xargs -0 -L 1 echo polysquare-generic-file-linter
-        fi
+        cmd_append="${cmd_append} -name \"*.${extension}\""
+    done
+
+    eval "${result}"="'${cmd_append}'"
+}
+
+get_exclusions_arguments excl_args
+get_extensions_arguments ext_args
+
+echo "   ... Linting files for Polysquare style guide"
+
+for dir in ${directories} ; do
+    cmd="find ${dir} -type f ${excl_args} ${ext_args}"
+    files=$(eval "${cmd}")
+
+    for file in ${files} ; do
+        polysquare-generic-file-linter "${file}"
     done
 done
+
+echo "   ... Linting Markdown documentation"
 
 mdl .
