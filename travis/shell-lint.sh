@@ -33,7 +33,6 @@ function print_exclusions() {
 }
 
 for directory in ${directories} ; do
-    echo "   ... Directory ${directory}"
     if [[ -z $exclusions ]] ; then
         print_exclusions | \
             xargs find "${directory}" -type f -name "*.sh" -print0 | \

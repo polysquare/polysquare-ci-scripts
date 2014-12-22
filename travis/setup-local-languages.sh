@@ -45,8 +45,6 @@ function setup_haskell {
         -name "*.conf" -type f -print0 | \
             xargs -L 1 -0 sed -i "s:/usr:${LANG_RT_PATH}/usr:"
 
-    export PATH=${HOME}/.cabal/bin:${PATH}
-
     ln -s /usr/lib/x86_64-linux-gnu/libgmp.so.10 \
         "${LANG_RT_PATH}/usr/lib/ghc/libgmp.so"
     ln -s /usr/lib/x86_64-linux-gnu/libgmp.so.10 \
@@ -56,6 +54,8 @@ function setup_haskell {
     ln -s /usr/lib/x86_64-linux-gnu/libffi.so.6 \
         "${LANG_RT_PATH}/usr/lib/libffi.so"
     echo "   ... Package paths adjusted"
+
+    mkdir -p "${LANG_RT_PATH}/cabal"
 
     ghc-pkg recache > /dev/null
     echo "   ... GHC package cache up to date"
@@ -117,4 +117,6 @@ echo "=> Activating languages"
 source "${LANG_RT_PATH}/python/bin/activate"
 export PYTHON_SETUP_LOCALLY=1
 export PATH=${HOME}/.gem/ruby/1.8/bin/:${PATH}
+export PATH=${HOME}/.cabal/bin:${PATH}
 ln -s "${LANG_RT_PATH}/gems" "${HOME}/.gem"
+ln -s "${LANG_RT_PATH}/cabal" "${HOME}/.cabal"
