@@ -5,21 +5,19 @@
 #
 # See LICENCE.md for Copyright information
 
-echo "=> Linting Files for Polysquare Style Guide"
+echo "=> Linting Project"
 echo "   ... Installing requirements"
 gem install mdl > /dev/null 2>&1
 pip install polysquare-generic-file-linter > /dev/null 2>&1
 
-# Always exclude .git
-exclusions="$(pwd)/.git"
 
 while getopts "d:e:x:" opt; do
     case "$opt" in
-    d) directories+=$OPTARG
+    d) directories+=" $OPTARG"
        ;;
-    e) extensions+=$OPTARG
+    e) extensions+=" $OPTARG"
        ;;
-    x) exclusions+=$OPTARG
+    x) exclusions+=" $OPTARG"
        ;;
     esac
 done
@@ -52,20 +50,31 @@ function get_extensions_arguments() {
     eval "${result}"="'${cmd_append}'"
 }
 
-get_exclusions_arguments excl_args
-get_extensions_arguments ext_args
+failures=0
+
+function check_status_of() {
+    output_file=$(mktemp)
+    eval "$@" > "${output_file}" 2>&1
+    if [[ $? != 0 ]] ; then
+        failures=$((failures + 1))
+        cat "${output_file}"
+    fi
+}
 
 echo "   ... Linting files for Polysquare style guide"
+get_exclusions_arguments excl_args
+get_extensions_arguments ext_args
 
 for dir in ${directories} ; do
     cmd="find ${dir} -type f ${excl_args} ${ext_args}"
     files=$(eval "${cmd}")
 
     for file in ${files} ; do
-        polysquare-generic-file-linter "${file}"
+        check_status_of polysquare-generic-file-linter "${file}"
     done
 done
 
 echo "   ... Linting Markdown documentation"
+check_status_of mdl .
 
-mdl .
+exit ${failures}
