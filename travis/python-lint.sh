@@ -14,8 +14,24 @@ while getopts "m:" opt; do
 done
 
 echo "   ... Installing linters"
-pip install pylint dodgy frosted mccabe pep257 pep8 pyflakes pyroma \
-    vulture prospector > /dev/null 2>&1
+pip install \
+    pylint \
+    pylint-common \
+    dodgy \
+    frosted \
+    mccabe \
+    pep257 \
+    pep8 \
+    pyflakes \
+    pyroma \
+    vulture \
+    prospector \
+    flake8 \
+    flake8-blind-except \
+    flake8-docstrings \
+    flake8-double-quotes \
+    flake8-import-order \
+    flake8-todo > /dev/null 2>&1
 
 if [[ $TRAVIS_PYTHON_VERSION == 2.7 || $PYTHON_SETUP_LOCALLY == 1 ]] ; then
     pip install http://sourceforge.net/projects/pychecker/files/pychecker/0.8.19/pychecker-0.8.19.tar.gz/download > /dev/null 2>&1
@@ -155,9 +171,11 @@ for path in setup.py "${module}" tests ; do
         prospector_cmd+="-w vulture"
     fi
 
-    # Prospector and pychecker print spurious newlines, even on quiet
-    # mode, so capture their output and only print it when they fail
+    flake_cmd="flake8 ${path}"
+
+    # flake8 and prospector check entire directories
     check_status_of "${prospector_cmd}"
+    check_status_of "${flake_cmd}"
  
     # Pychecker does not work on setup.py, so skip it
     if [[ "${path}" != "setup.py" ]] ; then
