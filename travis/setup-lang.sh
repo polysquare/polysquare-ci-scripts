@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /travis/setup-local-languages.sh
+# /travis/setup-lang.sh
 #
 # Travis CI script to set up self-contained versions of
 # scripting languages and their packaging systems. This
@@ -7,7 +7,16 @@
 #
 # See LICENCE.md for Copyright information
 
-LANG_RT_PATH=$1
+while getopts "p:l:" opt; do
+    case "$opt" in
+    p) path=$OPTARG
+       ;;
+    l) languages+=" $OPTARG"
+       ;;
+    esac
+done
+
+LANG_RT_PATH="${path}"
 
 function setup_haskell {
     echo "=> Setting up Haskell..."
@@ -100,9 +109,11 @@ if [[ ! -f "${LANG_RT_PATH}/done-stamp" ]] ; then
     mkdir -p "${LANG_RT_PATH}"
     pushd "${LANG_RT_PATH}" > /dev/null
 
-    setup_haskell
-    setup_python
-    setup_ruby
+    for language in ${languages} ; do
+
+        eval "setup_${language}"
+
+    done
 
     echo "done" >> "${LANG_RT_PATH}/done-stamp"
 
@@ -111,8 +122,15 @@ if [[ ! -f "${LANG_RT_PATH}/done-stamp" ]] ; then
 else
     echo "=> Restoring language runtimes from cache"
 
-    for local_dir in gem ghc cabal ; do
-        mv "${LANG_RT_PATH}/.${local_dir}" "${HOME}/.${local_dir}" 
+    python_dirs="" # shellcheck disable=SC2034
+    ruby_dirs="gem" # shellcheck disable=SC2034
+    haskell_dirs="ghc cabal" # shellcheck disable=SC2034
+
+    for lang in ${languages} ; do
+        dirs_variable="${lang}_dirs"
+        for dir in ${!dirs_variable} ; do
+            mv "${LANG_RT_PATH}/.${dir}" "${HOME}/.${dir}"
+        done
     done
 fi
 
