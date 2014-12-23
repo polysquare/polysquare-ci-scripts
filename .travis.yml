@@ -4,8 +4,8 @@ cache:
   directories:
     - ~/.install
 before_install:
- - source travis/setup-local-languages.sh ~/.install
+ - source travis/setup-lang.sh -p ~/.install -l haskell -l python -l ruby
 script:
  - bash travis/shell-lint.sh -d travis
  - bash travis/project-lint.sh -d travis -e sh
- - bash travis/prepare-local-language-caching.sh ~/.install
+ - bash travis/prepare-lang-cache.sh -p ~/.install -l haskell -l python -l ruby
