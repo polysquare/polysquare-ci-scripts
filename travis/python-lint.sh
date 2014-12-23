@@ -140,7 +140,7 @@ failures=0
 function check_status_of() {
     output_file=$(mktemp)
     concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}"
+    eval "${concat_cmd}" > "${output_file}" 2>&1
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
