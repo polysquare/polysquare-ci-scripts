@@ -25,7 +25,7 @@ pip install \
     pyflakes \
     pyroma \
     vulture \
-    prospector \
+    git+https://github.com/landscapeio/prospector.git@develop \
     flake8 \
     flake8-blind-except \
     flake8-docstrings \
