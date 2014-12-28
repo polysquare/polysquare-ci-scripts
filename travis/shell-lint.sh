@@ -58,3 +58,5 @@ for directory in ${directories} ; do
         check_status_of bashlint "${file}"
     done
 done
+
+exit ${failures}

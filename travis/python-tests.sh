@@ -32,7 +32,4 @@ function check_status_of() {
 
 check_status_of coverage run "--source=${module}" setup.py test
 
-echo "   ... Installing project"
-check_status_of python setup.py install
-
 exit ${failures}
