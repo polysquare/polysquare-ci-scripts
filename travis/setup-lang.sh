@@ -7,11 +7,16 @@
 #
 # See LICENCE.md for Copyright information
 
-while getopts "p:l:" opt; do
+# Default python is 2.7
+python_version=2.7
+
+while getopts "p:l:s:" opt; do
     case "$opt" in
     p) path=$OPTARG
        ;;
     l) languages+=" $OPTARG"
+       ;;
+    s) python_version=$OPTARG
        ;;
     esac
 done
@@ -75,7 +80,7 @@ function setup_haskell {
 function setup_python {
     echo "=> Setting up Python"
 
-    python_prefix="lib/python2.7/site-packages"
+    python_prefix="lib/python${python_version}/site-packages"
     next_pythonpath="${LANG_RT_PATH}/usr/${python_prefix}"
 
     mkdir -p "${next_pythonpath}"
@@ -86,7 +91,8 @@ function setup_python {
     easy_install --prefix "${LANG_RT_PATH}/usr/" virtualenv > /dev/null 2>&1
 
     echo "   ... Creating virtualenv"
-    virtualenv --python=/usr/bin/python "${LANG_RT_PATH}/python" > /dev/null 2>&1
+    virtualenv "--python=/usr/bin/python${python_version}" \
+        "${LANG_RT_PATH}/python" > /dev/null 2>&1
 }
 
 function setup_ruby {
