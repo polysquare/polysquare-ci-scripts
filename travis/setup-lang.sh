@@ -142,11 +142,15 @@ fi
 
 # Update package repositories (we should do this on every run)
 echo "=> Updating scripting language repositories"
-cabal update > /dev/null
+if which cabal ; then
+    cabal update > /dev/null
+fi
 
 # Activate languages
 echo "=> Activating languages"
-source "${LANG_RT_PATH}/python/bin/activate"
+if [ -e "${LANG_RT_PATH}/python/bin/activate" ] ; then
+    source "${LANG_RT_PATH}/python/bin/activate"
+fi
 export PYTHON_SETUP_LOCALLY=1
 export PATH=${HOME}/.gem/ruby/1.8/bin/:${PATH}
 export PATH=${HOME}/.cabal/bin:${PATH}
