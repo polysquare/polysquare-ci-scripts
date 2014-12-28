@@ -19,6 +19,9 @@ function check_status_of() {
 
 echo "   ... Installing project"
 check_status_of python setup.py install
+check_status_of python setup.py clean --all
+rm -rf build
+rm -rf dist
 
 echo "   ... Installing test dependencies"
 check_status_of pip install -e ".[test]"
