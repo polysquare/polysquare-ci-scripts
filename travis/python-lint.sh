@@ -33,7 +33,7 @@ pip install \
     flake8-import-order \
     flake8-todo > /dev/null 2>&1
 
-if [ "$TRAVIS_PYTHON_VERSION" == 2.7 -o "$PYTHON_SETUP_LOCALLY" == 1 ] ; then
+if [[ $TRAVIS_PYTHON_VERSION == 2.7 || $PYTHON_SETUP_LOCALLY == 1 ]] ; then
     pip install http://sourceforge.net/projects/pychecker/files/pychecker/0.8.19/pychecker-0.8.19.tar.gz/download > /dev/null 2>&1
 fi
 
@@ -172,8 +172,8 @@ for path in setup.py "${module}" tests ; do
 
     py_version="${TRAVIS_PYTHON_VERSION}"
 
-    if [ "$py_version" != "pypy" -a "$py_version" != "pypy3" ] ; then
-        prospector_cmd+=" -w frosted"
+    if [[ $py_version == "pypy" || $py_version == "pypy3" ]] ; then
+        prospector_cmd+=" -W frosted"
     fi
 
     flake_cmd="flake8 ${path}"
