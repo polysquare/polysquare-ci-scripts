@@ -153,7 +153,6 @@ for path in setup.py "${module}" tests ; do
     prospector_cmd="prospector ${path}
 --profile ${prospector_config_file}
 -w dodgy
--w frosted
 -w mccabe
 -w pep257
 -w pep8
@@ -168,7 +167,13 @@ for path in setup.py "${module}" tests ; do
 "
 
     if [[ "${path}" != "tests" ]] ; then
-        prospector_cmd+="-w vulture"
+        prospector_cmd+=" -w vulture"
+    fi
+
+    py_version="${TRAVIS_PYTHON_VERSION}"
+
+    if [[ $py_version != "pypy" && $py_version != "pypy3" ]] ; then
+        prospector_cmd+=" -w frosted"
     fi
 
     flake_cmd="flake8 ${path}"
