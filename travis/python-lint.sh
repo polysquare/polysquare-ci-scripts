@@ -40,7 +40,7 @@ fi
 echo "   ... Running linters"
 
 # Create prospector configuration file
-prospector_config_file="$(mktemp -d)/.prospector.yml"
+prospector_config_file="$(mktemp -d /tmp/dir.XXXXXXXX)/.prospector.yml"
 cat >"${prospector_config_file}" <<EOL
 ignore:
   - (^|/)\..+
@@ -138,7 +138,7 @@ EOL
 failures=0
 
 function check_status_of() {
-    output_file=$(mktemp)
+    output_file=$(mktemp /tmp/tmp.XXXXXXX)
     concat_cmd=$(echo "$@" | xargs echo)
     eval "${concat_cmd}" > "${output_file}" 2>&1
     if [[ $? != 0 ]] ; then
@@ -150,10 +150,13 @@ function check_status_of() {
 # Each linter can only be run on one directory, so run it per directory
 for path in setup.py "${module}" tests ; do
 
+    # mccabe is disabled in prospector, but enabled in
+    # flake8, as it can be selectively disabled per-function
+    # there.
     prospector_cmd="prospector ${path}
 --profile ${prospector_config_file}
 -w dodgy
--w mccabe
+-W mccabe
 -w pep257
 -w pep8
 -w pyflakes
@@ -176,7 +179,7 @@ for path in setup.py "${module}" tests ; do
         prospector_cmd+=" -W frosted"
     fi
 
-    flake_cmd="flake8 ${path}"
+    flake_cmd="flake8 ${path} --max-complexity 10"
 
     # flake8 and prospector check entire directories
     check_status_of "${prospector_cmd}"
