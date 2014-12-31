@@ -46,7 +46,7 @@ setup_pandoc
 echo "=> Installing python project and dependencies"
 
 echo "   ... Installing doc converters (pypandoc, setuptools-markdown)"
-pip install pandoc setuptools-markdown
+pip install setuptools-markdown
 
 echo "   ... Installing project"
 check_status_of python setup.py install
