@@ -19,13 +19,14 @@
 # - debian: http://ftp.debian.org
 # - launchpad: http://ppa.launchpad.com/ppa
 #
+# Python 3.3 must be set up and available in order to use this script. Consider
+# using the setup-lang.sh script in order to do that.
+#
 # See LICENCE.md for Copyright information
 
 while getopts "p:l:" opt; do
     case "$opt" in
     p) path=$OPTARG
-       ;;
-    l) other_languages+=" $OPTARG"
        ;;
     esac
 done
@@ -39,37 +40,6 @@ function check_status_of() {
     if [[ $result != 0 ]] ; then
         exit ${result}
     fi
-}
-
-function setup_python() {
-    path=$1
-    other_languages=$2
-    # Download setup-lang.sh into a temporary directory and set up
-    # all local languages, with python set at version 3.3
-    temporary_language_setup_directory=$(mktemp -d)
-    pushd "${temporary_language_setup_directory}" > /dev/null 2>&1
-    wget public-travis-scripts.polysquare.org/setup-lang.sh > /dev/null 2>&1
-    
-    # Not using check_status_of here since we need to pop the directory if
-    # we need to get out for wget failure
-    if [[ $? != 0 ]] ; then
-        echo "ERROR: Failed to download setup-lang.sh"
-        popd
-        exit 1
-    fi
-
-    setup_languages_script="source
-    setup-lang.sh
-    -p ${path}/languages_root
-    -l python
-    -s 3.3
-    "
-
-    for language in ${other_languages} ; do
-        setup_languages_script+=" -l ${language}"
-    done
-    check_status_of "${setup_languages_script}"
-    popd > /dev/null 2>&1
 }
 
 function setup_container() {
