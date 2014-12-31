@@ -40,17 +40,18 @@ fi
 echo "   ... Running linters"
 
 # Create prospector configuration file
+#
+# The reasons for disabling the following warnings are as follows:
+# - PYR06: The use of long_description is superceded by using
+#          long_description_markdown_filename from setuptools-markdown
 prospector_config_file="$(mktemp -d /tmp/dir.XXXXXXXX)/.prospector.yml"
 cat >"${prospector_config_file}" <<EOL
 ignore:
   - (^|/)\..+
 
 pylint:
-  disable:
-    - R0904
-    - R0903
-
   options:
+    min-public-methods: 2
     max-locals: 15
     max-returns: 6
     max-branches: 12
@@ -59,6 +60,10 @@ pylint:
     max-attributes: 7
     max-module-lines: 1000
     max-line-length: 79
+
+pyroma:
+  disable:
+    - PYR06
 
 mccabe:
   options:
