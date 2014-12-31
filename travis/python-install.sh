@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 # /travis/python-install.sh
 #
-# Travis CI Script to run install a python project and its dependencies
+# Travis CI Script to run install a python project and its dependencies. Pass
+# -p to use pandoc to convert the README file to the project's 
+# long_description.
 #
 # See LICENCE.md for Copyright information
 
 failures=0
+
+while getopts "p" opt; do
+    case "$opt" in
+    p) use_pandoc=1
+       ;;
+    esac
+done
 
 function check_status_of() {
     concat_cmd=$(echo "$@" | xargs echo)
@@ -16,37 +25,23 @@ function check_status_of() {
 }
 
 function setup_pandoc() {
-    temporary_language_setup_directory=$(mktemp -d)
-    pushd "${temporary_language_setup_directory}" > /dev/null 2>&1
-    wget public-travis-scripts.polysquare.org/setup-lang.sh > /dev/null 2>&1
-
-    # Not using check_status_of here since we need to pop the directory if
-    # we need to get out for wget failure
-    if [[ $? != 0 ]] ; then
-        echo "ERROR: Failed to download setup-lang.sh"
-        popd
-        exit 1
+    if [[ $use_pandoc == 1 ]] ; then
+        if which cabal ; then
+            echo "=> Installing pandoc"
+            cabal install pandoc
+            echo "   ... Installing doc converters (pypandoc, " \
+                "setuptools-markdown)"
+            pip install setuptools-markdown
+        else
+            echo "ERROR: haskell language must be activated. Consider using " \
+                     "setup-lang.sh -l haskell to activate it."
+        fi
     fi
-
-    setup_languages_script="source
-    setup-lang.sh
-    -p ~/virtualenv/haskell
-    -l haskell
-    "
-
-    check_status_of "${setup_languages_script}"
-    popd > /dev/null 2>&1
-
-    echo "=> Installing pandoc"
-    cabal install pandoc
 }
 
 setup_pandoc
 
 echo "=> Installing python project and dependencies"
-
-echo "   ... Installing doc converters (pypandoc, setuptools-markdown)"
-pip install http://github.com/smspillaz/setuptools-markdown/tarball/fix-2#egg=setuptools-markdown-0.1
 
 echo "   ... Installing project"
 check_status_of python setup.py install
