@@ -5,8 +5,6 @@
 #
 # See LICENCE.md for Copyright information
 
-echo "=> Installing python project and dependencies"
-
 failures=0
 
 function check_status_of() {
@@ -17,7 +15,37 @@ function check_status_of() {
     fi
 }
 
-echo "   ... Installing documentation converters (pandoc, setuptools-markdown)"
+function setup_pandoc() {
+    temporary_language_setup_directory=$(mktemp -d)
+    pushd "${temporary_language_setup_directory}" > /dev/null 2>&1
+    wget public-travis-scripts.polysquare.org/setup-lang.sh "$(pwd)" > /dev/null 2>&1
+
+    # Not using check_status_of here since we need to pop the directory if
+    # we need to get out for wget failure
+    if [[ $? != 0 ]] ; then
+        echo "ERROR: Failed to download setup-lang.sh"
+        popd
+        exit 1
+    fi
+
+    setup_languages_script="bash
+    setup-lang.sh
+    -p ~/virtualenv/haskell
+    -l haskell
+    "
+
+    check_status_of "${setup_languages_script}"
+    popd > /dev/null 2>&1
+
+    echo "=> Installing pandoc"
+    cabal install pandoc > /dev/null 2>&1
+}
+
+#setup_pandoc()
+
+echo "=> Installing python project and dependencies"
+
+echo "   ... Installing doc converters (pypandoc, setuptools-markdown)"
 pip install pandoc setuptools-markdown > /dev/null 2>&1
 
 echo "   ... Installing project"
