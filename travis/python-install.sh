@@ -38,7 +38,7 @@ function setup_pandoc() {
     popd > /dev/null 2>&1
 
     echo "=> Installing pandoc"
-    cabal install pandoc > /dev/null 2>&1
+    cabal install pandoc
 }
 
 setup_pandoc
@@ -46,7 +46,7 @@ setup_pandoc
 echo "=> Installing python project and dependencies"
 
 echo "   ... Installing doc converters (pypandoc, setuptools-markdown)"
-pip install pandoc setuptools-markdown > /dev/null 2>&1
+pip install pandoc setuptools-markdown
 
 echo "   ... Installing project"
 check_status_of python setup.py install
