@@ -46,7 +46,7 @@ setup_pandoc
 echo "=> Installing python project and dependencies"
 
 echo "   ... Installing doc converters (pypandoc, setuptools-markdown)"
-pip install setuptools-markdown
+pip install http://github.com/smspillaz/setuptools-markdown/tarball/fix-2#egg=setuptools-markdown-0.1
 
 echo "   ... Installing project"
 check_status_of python setup.py install
