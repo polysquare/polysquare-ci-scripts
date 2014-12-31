@@ -48,7 +48,7 @@ function setup_python() {
     # all local languages, with python set at version 3.3
     temporary_language_setup_directory=$(mktemp -d)
     pushd "${temporary_language_setup_directory}" > /dev/null 2>&1
-    wget public-travis-scripts.polysquare.org/setup-lang.sh "$(pwd)" > /dev/null 2>&1
+    wget public-travis-scripts.polysquare.org/setup-lang.sh > /dev/null 2>&1
     
     # Not using check_status_of here since we need to pop the directory if
     # we need to get out for wget failure
