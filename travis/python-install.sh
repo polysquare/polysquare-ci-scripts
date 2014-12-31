@@ -41,7 +41,7 @@ function setup_pandoc() {
     cabal install pandoc > /dev/null 2>&1
 }
 
-#setup_pandoc()
+setup_pandoc
 
 echo "=> Installing python project and dependencies"
 
