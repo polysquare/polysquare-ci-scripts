@@ -28,7 +28,7 @@ function setup_pandoc() {
         exit 1
     fi
 
-    setup_languages_script="bash
+    setup_languages_script="source
     setup-lang.sh
     -p ~/virtualenv/haskell
     -l haskell
