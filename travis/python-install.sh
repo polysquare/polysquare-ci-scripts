@@ -27,6 +27,6 @@ rm -rf build
 rm -rf dist
 
 echo "   ... Installing test dependencies"
-check_status_of pip install -e ".[test]" --follow-dependency-links
+check_status_of pip install -e ".[test]" --process-dependency-links
 
 exit ${failures}
