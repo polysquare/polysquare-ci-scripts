@@ -17,6 +17,9 @@ function check_status_of() {
     fi
 }
 
+echo "   ... Installing documentation converters (pandoc, setuptools-markdown)"
+pip install pandoc setuptools-markdown > /dev/null 2>&1
+
 echo "   ... Installing project"
 check_status_of python setup.py install
 check_status_of python setup.py clean --all
@@ -24,6 +27,6 @@ rm -rf build
 rm -rf dist
 
 echo "   ... Installing test dependencies"
-check_status_of pip install -e ".[test]"
+check_status_of pip install -e ".[test]" --follow-dependency-links
 
 exit ${failures}
