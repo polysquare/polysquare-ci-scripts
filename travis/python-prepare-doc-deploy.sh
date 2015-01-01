@@ -10,7 +10,8 @@
 
 echo "=> Preparing for deployment with Markdown documentation."
 
-for file in ${HOME}/.cabal/bin/* ; do
-    echo "   ... ${file} -> ${VIRTUAL_ENV}/bin/${file}"
-    ln -s "${HOME}/.cabal/bin/${file}" "${VIRTUAL_ENV}/bin/${file}"
+for path in ${HOME}/.cabal/bin/* ; do
+    file=$(basename "${path}")
+    echo "   ... ${path} -> ${VIRTUAL_ENV}/bin/${file}"
+    ln -s "${path}" "${VIRTUAL_ENV}/bin/${file}"
 done
