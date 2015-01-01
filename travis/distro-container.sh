@@ -68,7 +68,6 @@ function setup_container() {
     check_status_of "${create_cmd}"
 }
 
-setup_python "${path}" "${other_languages}"
 setup_container "${path}"
 
 exit ${failures}
