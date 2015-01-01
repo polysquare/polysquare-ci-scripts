@@ -16,4 +16,4 @@ wget public-travis-scripts.polysquare.org/project-lint.sh
 bash project-lint.sh -d . -e py
 bash python-lint.sh -m "${MODULE}"
 bash python-tests.sh -m "${MODULE}"
-bash prepare-lang-cache -l haskell -p ~/virtualenv
+bash prepare-lang-cache.sh -l haskell -p ~/virtualenv
