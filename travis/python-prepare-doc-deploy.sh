@@ -14,4 +14,4 @@ while IFS= read -r -d '' path ; do
     file=$(basename "${path}")
     echo "   ... ${path} -> ${VIRTUAL_ENV}/bin/${file}"
     ln -s "${path}" "${VIRTUAL_ENV}/bin/${file}"
-done < <(find "${HOME}/.cabal/bin" -type file -print0)
+done < <(find "${HOME}/.cabal/bin" -type f -print0)
