@@ -8,6 +8,9 @@
 #
 # See LICENCE.md for Copyright information
 
+echo "=> Preparing for deployment with Markdown documentation."
+
 for file in ${HOME}/.cabal/bin/* ; do
-    ln -s "${HOME}/.cabal/bin/${file}" "${VIRTUAL_ENV}/bin/"
+    echo "   ... ${file} -> ${VIRTUAL_ENV}/bin/${file}"
+    ln -s "${HOME}/.cabal/bin/${file}" "${VIRTUAL_ENV}/bin/${file}"
 done
