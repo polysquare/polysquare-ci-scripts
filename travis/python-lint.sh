@@ -5,39 +5,13 @@
 #
 # See LICENCE.md for Copyright information
 
-echo "=> Linting Python Files"
+printf "\n=> Linting Python Files"
 while getopts "m:" opt; do
     case "$opt" in
     m) module=$OPTARG
        ;;
     esac
 done
-
-echo "   ... Installing linters"
-pip install \
-    pylint \
-    pylint-common \
-    dodgy \
-    frosted \
-    mccabe \
-    pep257 \
-    pep8 \
-    pyflakes \
-    pyroma \
-    vulture \
-    git+https://github.com/landscapeio/prospector.git@develop \
-    flake8 \
-    flake8-blind-except \
-    flake8-docstrings \
-    flake8-double-quotes \
-    flake8-import-order \
-    flake8-todo > /dev/null 2>&1
-
-if [[ $TRAVIS_PYTHON_VERSION == 2.7 || $PYTHON_SETUP_LOCALLY == 1 ]] ; then
-    pip install http://sourceforge.net/projects/pychecker/files/pychecker/0.8.19/pychecker-0.8.19.tar.gz/download > /dev/null 2>&1
-fi
-
-echo "   ... Running linters"
 
 # Create prospector configuration file
 #
@@ -145,13 +119,53 @@ failures=0
 function check_status_of() {
     output_file=$(mktemp /tmp/tmp.XXXXXXX)
     concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}" > "${output_file}" 2>&1
-    if [[ $? != 0 ]] ; then
+    eval "${concat_cmd}" > "${output_file}" 2>&1  &
+    command_pid=$!
+    
+    # This is effectively a tool to feed the travis-ci script
+    # watchdog. Print a dot every sixty seconds.
+    echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null &
+    printer_pid=$!
+    
+    wait "${command_pid}"
+    command_result=$?
+    kill "${printer_pid}"
+    wait "${printer_pid}" 2> /dev/null
+    if [[ $command_result != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
-        echo "A subcommand failed. Consider deleting the travis build cache."
+        printf "\nA subcommand failed. "
+        printf "Consider deleting the travis build cache.\n"
     fi
 }
+
+printf "\n   ... Installing linters "
+install_linters_cmd="pip install
+pylint
+pylint-common
+dodgy
+frosted
+mccabe
+pep257
+pep8
+pyflakes
+pyroma
+vulture
+git+https://github.com/landscapeio/prospector.git@develop
+flake8
+flake8-blind-except
+flake8-docstrings
+flake8-double-quotes
+flake8-import-order
+flake8-todo"
+
+check_status_of "${install_linters_cmd}"
+
+if [[ $TRAVIS_PYTHON_VERSION == 2.7 || $PYTHON_SETUP_LOCALLY == 1 ]] ; then
+    check_status_of pip install http://sourceforge.net/projects/pychecker/files/pychecker/0.8.19/pychecker-0.8.19.tar.gz/download > /dev/null 2>&1
+fi
+
+printf "\n   ... Running linters "
 
 # Each linter can only be run on one directory, so run it per directory
 for path in setup.py "${module}" tests ; do
