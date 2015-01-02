@@ -43,7 +43,7 @@ function setup_pandoc() {
     if [[ $use_pandoc == 1 ]] ; then
         if which cabal ; then
             printf "\n=> Installing documentation tools"
-            printf "\    ... Installing pandoc "
+            printf "\n    ... Installing pandoc "
             check_status_of cabal install pandoc
             printf "\n   ... Installing doc converters (pypandoc, "
             printf "setuptools-markdown) "
