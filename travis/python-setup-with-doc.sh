@@ -8,6 +8,8 @@
 #
 # See LICENCE.md for Copyright information
 
+set -e
+
 # Having python bytecode around is a waste of space and just inflates
 # the build caches. Disable it.
 export PYTHONDONTWRITEBYTECODE=1
