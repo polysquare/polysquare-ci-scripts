@@ -19,40 +19,53 @@ done
 function check_status_of() {
     output_file=$(mktemp /tmp/tmp.XXXXXXX)
     concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}" > "${output_file}" 2>&1
-    if [[ $? != 0 ]] ; then
+    eval "${concat_cmd}" > "${output_file}" 2>&1  &
+    command_pid=$!
+    
+    # This is effectively a tool to feed the travis-ci script
+    # watchdog. Print a dot every sixty seconds.
+    echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null &
+    printer_pid=$!
+    
+    wait "${command_pid}"
+    command_result=$?
+    kill "${printer_pid}"
+    wait "${printer_pid}" 2> /dev/null
+    if [[ $command_result != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
-        echo "A subcommand failed. Consider deleting the travis build cache."
+        printf "\nA subcommand failed. "
+        printf "Consider deleting the travis build cache.\n"
     fi
 }
 
 function setup_pandoc() {
     if [[ $use_pandoc == 1 ]] ; then
         if which cabal ; then
-            echo "=> Installing pandoc"
+            printf "\n=> Installing documentation tools"
+            printf "\    ... Installing pandoc "
             check_status_of cabal install pandoc
-            echo "   ... Installing doc converters (pypandoc, " \
-                "setuptools-markdown)"
+            printf "\n   ... Installing doc converters (pypandoc, "
+            printf "setuptools-markdown) "
             check_status_of pip install setuptools-markdown
         else
-            echo "ERROR: haskell language must be activated. Consider using " \
-                     "setup-lang.sh -l haskell to activate it."
+            printf "\nERROR: haskell language must be activated. Consider "
+            printf "using setup-lang.sh -l haskell to activate it."
         fi
     fi
 }
 
 setup_pandoc
 
-echo "=> Installing python project and dependencies"
+printf "\n=> Installing python project and dependencies"
 
-echo "   ... Installing project"
+printf "\n   ... Installing project"
 check_status_of python setup.py install
 check_status_of python setup.py clean --all
 rm -rf build
 rm -rf dist
 
-echo "   ... Installing test dependencies"
+printf "\n   ... Installing test dependencies"
 check_status_of pip install -e ".[test]" --process-dependency-links
 
 exit ${failures}

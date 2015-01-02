@@ -5,7 +5,7 @@
 #
 # See LICENCE.md for Copyright information
 
-echo "=> Linting Shell Files"
+printf "\n=> Linting Shell Files"
 
 while getopts "d:x:" opt; do
     case "$opt" in
@@ -38,19 +38,31 @@ failures=0
 function check_status_of() {
     output_file=$(mktemp /tmp/tmp.XXXXXXX)
     concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}" > "${output_file}" 2>&1
-    if [[ $? != 0 ]] ; then
+    eval "${concat_cmd}" > "${output_file}" 2>&1  &
+    command_pid=$!
+    
+    # This is effectively a tool to feed the travis-ci script
+    # watchdog. Print a dot every sixty seconds.
+    echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null &
+    printer_pid=$!
+    
+    wait "${command_pid}"
+    command_result=$?
+    kill "${printer_pid}"
+    wait "${printer_pid}" 2> /dev/null
+    if [[ $command_result != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
-        echo "A subcommand failed. Consider deleting the travis build cache."
+        printf "\nA subcommand failed. "
+        printf "Consider deleting the travis build cache.\n"
     fi
 }
 
-echo "   ... Installing requirements"
+printf "\n   ... Installing requirements "
 check_status_of cabal install shellcheck
 check_status_of pip install bashlint
 
-echo "   ... Linting files"
+printf "\n   ... Linting files "
 get_exclusions_arguments excl_args
 for directory in ${directories} ; do
     cmd="find ${directory} -type f -name \"*.sh\" ${excl_args}"
