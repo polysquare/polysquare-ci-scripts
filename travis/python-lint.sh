@@ -149,6 +149,7 @@ function check_status_of() {
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
+        echo "A subcommand failed. Consider deleting the travis build cache."
     fi
 }
 

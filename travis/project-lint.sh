@@ -6,9 +6,6 @@
 # See LICENCE.md for Copyright information
 
 echo "=> Linting Project"
-echo "   ... Installing requirements"
-gem install mdl > /dev/null 2>&1
-pip install polysquare-generic-file-linter > /dev/null 2>&1
 
 
 while getopts "d:e:x:" opt; do
@@ -53,13 +50,19 @@ function get_extensions_arguments() {
 failures=0
 
 function check_status_of() {
-    output_file=$(mktemp)
-    eval "$@" > "${output_file}" 2>&1
+    output_file=$(mktemp /tmp/tmp.XXXXXXX)
+    concat_cmd=$(echo "$@" | xargs echo)
+    eval "${concat_cmd}" > "${output_file}" 2>&1
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
+        echo "A subcommand failed. Consider deleting the travis build cache."
     fi
 }
+
+echo "   ... Installing requirements"
+check_status_of gem install mdl
+check_status_of pip install polysquare-generic-file-linter
 
 echo "   ... Linting files for Polysquare style guide"
 get_exclusions_arguments excl_args

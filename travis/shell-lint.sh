@@ -6,9 +6,6 @@
 # See LICENCE.md for Copyright information
 
 echo "=> Linting Shell Files"
-echo "   ... Installing requirements"
-cabal install shellcheck > /dev/null 2>&1
-pip install bashlint > /dev/null 2>&1
 
 while getopts "d:x:" opt; do
     case "$opt" in
@@ -39,13 +36,19 @@ function get_exclusions_arguments() {
 failures=0
 
 function check_status_of() {
-    output_file=$(mktemp)
-    eval "$@" > "${output_file}" 2>&1
+    output_file=$(mktemp /tmp/tmp.XXXXXXX)
+    concat_cmd=$(echo "$@" | xargs echo)
+    eval "${concat_cmd}" > "${output_file}" 2>&1
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
         cat "${output_file}"
+        echo "A subcommand failed. Consider deleting the travis build cache."
     fi
 }
+
+echo "   ... Installing requirements"
+check_status_of cabal install shellcheck
+check_status_of pip install bashlint
 
 echo "   ... Linting files"
 get_exclusions_arguments excl_args

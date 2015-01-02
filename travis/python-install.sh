@@ -17,10 +17,13 @@ while getopts "p" opt; do
 done
 
 function check_status_of() {
+    output_file=$(mktemp /tmp/tmp.XXXXXXX)
     concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}"
+    eval "${concat_cmd}" > "${output_file}" 2>&1
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
+        cat "${output_file}"
+        echo "A subcommand failed. Consider deleting the travis build cache."
     fi
 }
 
@@ -28,10 +31,10 @@ function setup_pandoc() {
     if [[ $use_pandoc == 1 ]] ; then
         if which cabal ; then
             echo "=> Installing pandoc"
-            cabal install pandoc
+            check_status_of cabal install pandoc
             echo "   ... Installing doc converters (pypandoc, " \
                 "setuptools-markdown)"
-            pip install setuptools-markdown
+            check_status_of pip install setuptools-markdown
         else
             echo "ERROR: haskell language must be activated. Consider using " \
                      "setup-lang.sh -l haskell to activate it."
