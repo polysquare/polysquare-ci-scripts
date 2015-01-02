@@ -98,4 +98,6 @@ done
 printf "\n   ... Linting Markdown documentation "
 check_status_of mdl .
 
+printf "\n"
+
 exit ${failures}
