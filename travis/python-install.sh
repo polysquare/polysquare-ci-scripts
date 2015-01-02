@@ -68,4 +68,6 @@ rm -rf dist
 printf "\n   ... Installing test dependencies"
 check_status_of pip install -e ".[test]" --process-dependency-links
 
+printf "\n"
+
 exit ${failures}

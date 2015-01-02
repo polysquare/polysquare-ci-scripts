@@ -74,4 +74,6 @@ for directory in ${directories} ; do
     done
 done
 
+printf "\n"
+
 exit ${failures}

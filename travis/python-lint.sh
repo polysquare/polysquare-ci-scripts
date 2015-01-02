@@ -233,4 +233,6 @@ ${file}
     fi
 done
 
+printf "\n"
+
 exit ${failures}
