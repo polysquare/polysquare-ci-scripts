@@ -39,12 +39,10 @@ done
 echo "   ... Cleaning up haskell artefacts"
 
 if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
-    find "${LANG_RT_PATH}/.cabal/lib" -type f -name "*.a" -print0 |\
-        xargs -0 -L1 rm
-    find "${LANG_RT_PATH}/.cabal/lib" -type f -name "*.o" -print0 |\
-        xargs -0 -L1 rm
-    find "${LANG_RT_PATH}/.cabal/packages" -type f -name "*.tar.gz" -print0 |\
-        xargs -0 -L1 rm
+    find "${LANG_RT_PATH}/.cabal/lib" -type f -name "*.a" -exec rm -f {} +
+    find "${LANG_RT_PATH}/.cabal/lib" -type f -name "*.o" -exec rm -f {} +
+    find "${LANG_RT_PATH}/.cabal/packages" -type f \
+        -name "*.tar.gz" -exec rm -f {} +
 fi
 
 echo "   ... To install other packages in this container, delete the"\
