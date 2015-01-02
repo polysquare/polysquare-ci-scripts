@@ -72,6 +72,12 @@ function check_status_of() {
     fi
 }
 
+# Put .cabal/bin in PATH so that pandoc is available when
+# installing polysquare-generic-file-linter. If pypandoc
+# is installed but pandoc isn't available, then the installer
+# will error out.
+export PATH=${HOME}/.cabal/bin:${PATH}
+
 printf "\n   ... Installing requirements "
 check_status_of gem install mdl
 check_status_of pip install polysquare-generic-file-linter

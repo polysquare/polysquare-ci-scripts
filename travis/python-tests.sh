@@ -30,7 +30,7 @@ function check_status_of() {
     fi
 }
 
-# Put .cabal/bin in PATH so that pandoc is availalbe when
+# Put .cabal/bin in PATH so that pandoc is available when
 # running test through setup.py
 export PATH=${HOME}/.cabal/bin:${PATH}
 check_status_of coverage run "--source=${module}" setup.py test
