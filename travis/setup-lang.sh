@@ -74,6 +74,8 @@ function setup_haskell {
 
     ghc-pkg recache > /dev/null
     echo "   ... GHC package cache up to date"
+    echo "   ... Updating cabal repositories"
+    cabal update > /dev/null
     echo "   ... done!"
 }
 
@@ -138,12 +140,6 @@ else
             mv "${LANG_RT_PATH}/.${dir}" "${HOME}/.${dir}"
         done
     done
-fi
-
-# Update package repositories (we should do this on every run)
-echo "=> Updating scripting language repositories"
-if which cabal ; then
-    cabal update > /dev/null
 fi
 
 # Activate languages
