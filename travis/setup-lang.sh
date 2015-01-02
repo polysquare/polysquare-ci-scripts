@@ -89,6 +89,10 @@ function setup_python {
 
     export PYTHONPATH="${next_pythonpath}":${PYTHONPATH}
 
+    # Having bytecode around is a waste of space and inflates the
+    # build cache, so just disable it.
+    export PYTHONDONTWRITEBYTECODE=1
+
     echo "   ... Installing virtualenv"
     easy_install --prefix "${LANG_RT_PATH}/usr/" virtualenv > /dev/null 2>&1
 

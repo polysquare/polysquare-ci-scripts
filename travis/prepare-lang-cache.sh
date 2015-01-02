@@ -36,7 +36,7 @@ for lang in ${languages} ; do
     done
 done
 
-echo "    ... Cleaning up haskell artefacts"
+echo "   ... Cleaning up haskell artefacts"
 
 if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
     find "${LANG_RT_PATH}/.cabal/lib" -type f -name "*.a" -print0 |\
@@ -47,6 +47,6 @@ if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
         xargs -0 -L1 rm
 fi
 
-echo "    ... To install other packages in this container, delete the"\
-    " build cache first."
+echo "   ... To install other packages in this container, delete the"\
+    "build cache first."
 
