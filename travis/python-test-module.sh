@@ -8,6 +8,10 @@
 
 set -e
 
+# Having python bytecode around is a waste of space and just inflates
+# the build caches. Disable it.
+export PYTHONDONTWRITEBYTECODE=1
+
 wget public-travis-scripts.polysquare.org/prepare-lang-cache.sh > /dev/null 2>&1
 wget public-travis-scripts.polysquare.org/python-lint.sh > /dev/null 2>&1
 wget public-travis-scripts.polysquare.org/python-tests.sh > /dev/null 2>&1
