@@ -5,7 +5,7 @@
 #
 # See LICENCE.md for Copyright information
 
-printf "\n=> Linting Python Files"
+echo "=> Linting Python Files"
 while getopts "m:" opt; do
     case "$opt" in
     m) module=$OPTARG
@@ -139,7 +139,7 @@ function check_status_of() {
     fi
 }
 
-printf "\n   ... Installing linters "
+printf "   ... Installing linters "
 install_linters_cmd="pip install
 pylint
 pylint-common
