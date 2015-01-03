@@ -175,13 +175,12 @@ for path in setup.py "${module}" tests ; do
     # there.
     prospector_cmd="prospector ${path}
 --profile ${prospector_config_file}
--w dodgy
--W mccabe
--w pep257
--w pep8
--w pyflakes
--w pylint
--w pyroma
+-t dodgy
+-t pep257
+-t pep8
+-t pyflakes
+-t pylint
+-t pyroma
 -F
 -D
 -M
@@ -190,13 +189,13 @@ for path in setup.py "${module}" tests ; do
 "
 
     if [ "${path}" != "tests" ] ; then
-        prospector_cmd+=" -w vulture"
+        prospector_cmd+=" -t vulture"
     fi
 
     py_version="${TRAVIS_PYTHON_VERSION}"
 
-    if [[ $py_version == "pypy" || $py_version == "pypy3" ]] ; then
-        prospector_cmd+=" -W frosted"
+    if [[ $py_version != "pypy" && $py_version != "pypy3" ]] ; then
+        prospector_cmd+=" -t frosted"
     fi
 
     flake_cmd="flake8 ${path} --max-complexity 10"
