@@ -151,7 +151,7 @@ pep8
 pyflakes
 pyroma
 vulture
-git+https://github.com/landscapeio/prospector.git@master
+http://github.com/landscapeio/prospector/archive/56ce6fadb22b8a5ac9b17ff19d21c45d269694db.tar.gz
 flake8
 flake8-blind-except
 flake8-docstrings
