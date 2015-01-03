@@ -22,10 +22,21 @@
 # See LICENCE.md for Copyright information
 
 function check_status_of() {
-    concat_cmd=$(echo "$@" | xargs echo)
+    local concat_cmd=$(echo "$@" | xargs echo)
     eval "${concat_cmd}"
-    result=$?
+    local result=$?
     if [[ $result != 0 ]] ; then
+        exit ${result}
+    fi
+}
+
+function output_on_failure() {
+    local output_file=$(mktemp /tmp/tmp.XXXXXXX)
+    local concat_cmd=$(echo "$@" | xargs echo)
+    eval "${concat_cmd}" > "${output_file}" 2>&1
+    local result=$?
+    if [[ $result != 0 ]] ; then
+        cat "${output_file}"
         exit ${result}
     fi
 }
@@ -36,7 +47,7 @@ function setup_container() {
 
     local path=$1
     echo "   ... Installing polysquare-travis-container"
-    check_status_of pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.1
+    output_on_failure pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.1 --process-dependency-links
     echo "   ... Creating container"
     echo ""
 
