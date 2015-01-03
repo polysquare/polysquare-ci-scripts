@@ -19,19 +19,7 @@
 # - debian: http://ftp.debian.org
 # - launchpad: http://ppa.launchpad.com/ppa
 #
-# Python 3.3 must be set up and available in order to use this script. Consider
-# using the setup-lang.sh script in order to do that.
-#
 # See LICENCE.md for Copyright information
-
-while getopts "p:l:" opt; do
-    case "$opt" in
-    p) path=$OPTARG
-       ;;
-    esac
-done
-
-failures=0
 
 function check_status_of() {
     concat_cmd=$(echo "$@" | xargs echo)
@@ -46,17 +34,16 @@ function setup_container() {
     echo "=> Setting up container ${CONTAINER_DISTRO} ${CONTAINER_RELEASE}"\
         "${CONTAINER_ARCH}"
 
-    path=$1
+    local path=$1
     echo "   ... Installing polysquare-travis-container"
-    pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.1 > /dev/null 2>&1
-
+    check_status_of pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.1
     echo "   ... Creating container"
     echo ""
 
     create_cmd="
-    psq-travis-container-create
-    ${path}
-    "
+psq-travis-container-create
+${path}
+"
 
     if [ -e "$(pwd)/DEPENDENCIES.${CONTAINER_DISTRO}" ] ; then
         create_cmd+=" --packages $(pwd)/DEPENDENCIES.${CONTAINER_DISTRO}"
@@ -68,6 +55,4 @@ function setup_container() {
     check_status_of "${create_cmd}"
 }
 
-setup_container "${path}"
-
-exit ${failures}
+setup_container ~/contianer
