@@ -34,4 +34,4 @@ get_exclusions_arguments lint_exclusions
 bash cmake-install.sh -v "${CMAKE_VERSION}"
 eval "bash cmake-lint.sh -n ${NAMESPACE} ${lint_exclusions}"
 eval "bash project-lint.sh -d . -e cmake -e txt ${lint_exclusions}"
-psq-travis-container-exec bash cmake-tests.sh
+psq-travis-container-exec bash cmake-tests.sh -g "${CMAKE_GENERATOR}"

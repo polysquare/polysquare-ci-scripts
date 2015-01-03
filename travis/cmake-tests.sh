@@ -5,6 +5,13 @@
 #
 # See LICENCE.md for Copyright information
 
+while getopts "g:" opt; do
+    case "$opt" in
+    v) generator="$OPTARG"
+       ;;
+    esac
+done
+
 failures=0
 
 function check_status_of() {
