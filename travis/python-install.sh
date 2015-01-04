@@ -60,6 +60,7 @@ setup_pandoc
 printf "\n=> Installing python project and dependencies"
 
 printf "\n   ... Installing project"
+check_status_of pip install setuptools
 check_status_of python setup.py install
 check_status_of python setup.py clean --all
 rm -rf build
