@@ -66,4 +66,4 @@ ${path}
     check_status_of "${create_cmd}"
 }
 
-setup_container ~/contianer
+setup_container ~/container
