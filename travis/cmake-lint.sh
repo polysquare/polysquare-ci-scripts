@@ -91,7 +91,7 @@ for lint_file in ${lint_cmake_modules} ${lint_cmake_lists} ; do
     output=$(eval "${cmd}" 2>/dev/null)
     if ! [[ -z "${output}" ]] ; then
         failures=$((failures + 1))
-        printf "${output}\n"
+        echo "${output}"
     fi
 
     check_status_of "${polysquare_cmake_linter_cmd} ${lint_file}"
