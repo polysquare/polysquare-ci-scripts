@@ -47,7 +47,7 @@ function setup_container() {
 
     local path=$1
     echo "   ... Installing polysquare-travis-container"
-    output_on_failure pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.1 --process-dependency-links
+    output_on_failure pip install https://github.com/polysquare/polysquare-travis-container/tarball/master#egg=polysquare-travis-container-0.0.2 --process-dependency-links --upgrade
     echo "   ... Creating container"
     echo ""
 
