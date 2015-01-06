@@ -12,8 +12,8 @@ function check_status_of() {
     eval "${concat_cmd}"
     if [[ $? != 0 ]] ; then
         failures=$((failures + 1))
-        printf "\nA subcommand failed. "
-        printf "Consider deleting the travis build cache.\n"
+        echo "A subcommand failed. "\
+            "Consider deleting the travis build cache."
     fi
 }
 
@@ -35,13 +35,13 @@ ${src_directory}
 build_cmd="cmake --build ${build_directory}"
 ctest_cmd="ctest --output-on-failure"
 
-printf "\n=> Testing CMake project"
+echo "=> Testing CMake project"
 
-printf "\n... Configuring project"
+echo "... Configuring project"
 check_status_of "${cmake_cmd}"
-printf "\n... Building project"
+echo "... Building project"
 check_status_of "${build_cmd}"
-printf "\n... Testing project"
+echo "... Testing project"
 check_status_of "${ctest_cmd}"
 popd > /dev/null 2>&1
 
