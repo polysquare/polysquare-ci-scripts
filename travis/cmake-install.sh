@@ -53,7 +53,7 @@ if [[ $? != 0 ]] ; then
     exit 1
 fi
 
-cmake_repositories_contents="deb http://ppa.launchpad.net/smspillaz/cmake-${version} ${CONTAINER_RELEASE}/ubuntu main"
+cmake_repositories_contents="deb http://ppa.launchpad.net/smspillaz/cmake-${version}/ubuntu ${CONTAINER_RELEASE} main"
 
 # Installation script, which we'll have the container execute for us.
 script_file_contents="#!/bin/bash
