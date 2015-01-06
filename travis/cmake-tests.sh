@@ -5,13 +5,6 @@
 #
 # See LICENCE.md for Copyright information
 
-while getopts "g:" opt; do
-    case "$opt" in
-    v) generator="$OPTARG"
-       ;;
-    esac
-done
-
 failures=0
 
 function check_status_of() {
@@ -24,17 +17,17 @@ function check_status_of() {
     fi
 }
 
-build_directory="${PWD}/tests/build"
+src_directory="${PWD}/tests"
+build_directory="${src_directory}/build"
 
 mkdir -p "${build_directory}" > /dev/null 2>&1
 pushd "${build_directory}" > /dev/null 2>&1
 
 cmake_cmd="cmake
-${build_directory}
+${src_directory}
 -Wdev
 --warn-uninitialized
--G
-\"${generator}\"
+\\\"-G${CMAKE_GENERATOR}\\\"
 -DCMAKE_UNIT_LOG_COVERAGE=1
 -DCMAKE_UNIT_COVERAGE_FILE=\"${PWD}/tests/build/coverage.trace\"
 "
