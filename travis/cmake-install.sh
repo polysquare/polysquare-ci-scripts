@@ -5,14 +5,14 @@
 #
 # See LICENCE.md for Copyright information
 
-echo "=> Installing CMake inside container " \
-    "${CONTAINER_DISTRO} ${CONTAINER_RELEASE}"
 while getopts "v:" opt; do
     case "$opt" in
-    v) version+=" $OPTARG"
+    v) version+="$OPTARG"
        ;;
     esac
 done
+
+failures=0
 
 function check_status_of() {
     output_file=$(mktemp /tmp/tmp.XXXXXXX)
@@ -37,13 +37,38 @@ function check_status_of() {
     fi
 }
 
-repositories_contents="{launchpad}/smspillaz/cmake-${version} main"
-packages_contents="ninja-build cmake lcov"
+# Create the distro container. The following are packages and
+# repositories we want in every container, no matter what CMake version
+# we are looking for. This gets us access to ninja and lcov.
+build_deps_repositories="{launchpad}/saiarcot895/chromium-dev/ubuntu {release} main
+{ubuntu} {release} universe"
 
-echo "${repositories_contents}" > "REPOSITORIES.${CONTAINER_DISTRO}"
-echo "${packages_contents}" > "DEPENDENCIES.${CONTAINER_DISTRO}"
+echo "${build_deps_repositories}" > REPOSITORIES.Ubuntu
+echo "ninja-build build-essential lcov" > DEPENDENCIES.Ubuntu
+wget public-travis-scripts.polysquare.org/distro-container.sh > /dev/null 2>&1
 
-wget public-travis-scripts.polysquare.org/distro-container.sh
-check_status_of bash distro-container.sh
+# Don't suppress output - we'll just check the exit status manually
+bash distro-container.sh -p ~/container
+if [[ $? != 0 ]] ; then
+    exit 1
+fi
+
+cmake_repositories_contents="deb http://ppa.launchpad.net/smspillaz/cmake-${version} ${CONTAINER_RELEASE}/ubuntu main"
+
+# Installation script, which we'll have the container execute for us.
+script_file_contents="#!/bin/bash
+set -e
+echo \"${cmake_repositories_contents}\" >> /etc/apt/sources.list.d/cmake.list
+apt-get update -y --force-yes
+apt-get remove cmake -y --force-yes
+apt-get install cmake  -y --force-yes
+"
+
+script_file=$(mktemp /tmp/tmp.XXXXXXX)
+echo "${script_file_contents}" >> "${script_file}"
+
+printf "\n=> Installing cmake (%s) into container" "${version}"
+check_status_of psq-travis-container-exec ~/container --cmd bash "${script_file}"
+printf "\n"
 
 exit "${failures}"
