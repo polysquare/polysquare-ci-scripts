@@ -84,16 +84,18 @@ access/other_private
 "
 
 for lint_file in ${lint_cmake_modules} ${lint_cmake_lists} ; do
-    # CMakeLint does not return an exit code, so redirect its output
-    # to a file and check to see if it is empty.
-    tempfile=$(mktemp /tmp/XXXXXXX.tmp)
-    eval "${cmakelint_cmd} ${lint_file}" > "${tempfile}"
-    if ! [ -s "${tempfile}" ] ; then
+    # CMakeLint does not return an exit code, so capture its output
+    # and check if it is more than just whitespace. It always puts some
+    # whitespace in the output upon passing.
+    cmd=$(echo "${cmakelint_cmd} ${lint_file}" | xargs echo)
+    output=$(eval "${cmd}" 2>/dev/null)
+    if ! [[ -z "${output}" ]] ; then
         failures=$((failures + 1))
-        cat "${tempfile}"
+        printf "${output}\n"
     fi
 
     check_status_of "${polysquare_cmake_linter_cmd} ${lint_file}"
 done
 
+printf "\n"
 exit "${failures}"
