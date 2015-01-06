@@ -29,7 +29,7 @@ ${src_directory}
 --warn-uninitialized
 \\\"-G${CMAKE_GENERATOR}\\\"
 -DCMAKE_UNIT_LOG_COVERAGE=1
--DCMAKE_UNIT_COVERAGE_FILE=\"${PWD}/tests/build/coverage.trace\"
+-DCMAKE_UNIT_COVERAGE_FILE=\"${build_directory}/coverage.trace\"
 "
 
 build_cmd="cmake --build ${build_directory}"
