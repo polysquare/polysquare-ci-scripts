@@ -34,6 +34,7 @@ function check_status_of() {
     wait "${printer_pid}" 2> /dev/null
     if [[ $command_result != 0 ]] ; then
         failures=$((failures + 1))
+        printf "\n"
         cat "${output_file}"
         printf "\nA subcommand failed. "
         printf "Consider deleting the travis build cache.\n"
@@ -49,7 +50,8 @@ function get_exclusions_arguments() {
             cmd_append="${cmd_append} -not -path \"${exclusion}/*\""
         else
             if [ -f "${exclusion}" ] ; then
-                cmd_append="${cmd_append} -not -name \"*${exclusion}\""
+                exclude_name=$(basename "${exclusion}")
+                cmd_append="${cmd_append} -not -name \"*${exclude_name}\""
             fi
         fi
     done
@@ -62,8 +64,8 @@ check_status_of pip install cmakelint polysquare-cmake-linter
 
 printf "\n   ... Running linters"
 get_exclusions_arguments excl
-lint_cmake_modules_cmd="find . -type -f -name \"*.cmake\" ${excl} -print0 | xargs -L1 -0 echo"
-lint_cmake_lists_cmd="find . -type -f -name \"CMakeLists.txt\" ${excl} -print0 | xargs -L1 -0 echo"
+lint_cmake_modules_cmd="find . -type f -name \"*.cmake\" ${excl} -print0 | xargs -L1 -0 echo"
+lint_cmake_lists_cmd="find . -type f -name \"CMakeLists.txt\" ${excl} -print0 | xargs -L1 -0 echo"
 lint_cmake_modules=$(eval "${lint_cmake_modules_cmd}")
 lint_cmake_lists=$(eval "${lint_cmake_lists_cmd}")
 
