@@ -33,14 +33,20 @@ function check_status_of() {
     fi
 }
 
+tracefile="${PWD}/tests/build/coverage.trace"
+
 cmake_trace_to_lcov_cmd="
 cmake
--DTRACEFILE=${PWD}/tests/build/coverage.trace
+-DTRACEFILE=${tracefile}
 -DLCOV_OUTPUT=${PWD}/tests/build/coverage.info
 -P CMakeTraceToLCov.cmake"
 
-check_status_of gem install coveralls-lcov
-check_status_of "${cmake_trace_to_lcov_cmd}"
-coveralls-lcov "tests/build/coverage.info"
+if [ -f "${tracefile}" ] ; then
+    check_status_of gem install coveralls-lcov
+    check_status_of "${cmake_trace_to_lcov_cmd}"
+    coveralls-lcov "tests/build/coverage.info"
+else
+    printf "\n... Tracefile does not exist, not running coverage step"
+fi
 
 exit "${failures}"

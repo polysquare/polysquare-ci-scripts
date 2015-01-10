@@ -28,9 +28,13 @@ ${src_directory}
 -Wdev
 --warn-uninitialized
 \\\"-G${CMAKE_GENERATOR}\\\"
--DCMAKE_UNIT_LOG_COVERAGE=1
--DCMAKE_UNIT_COVERAGE_FILE=\"${build_directory}/coverage.trace\"
 "
+
+tracefile="\"${PWD}/tests/build/coverage.trace\""
+
+if [ -z "${COVERAGE+x}" ] ; then
+    cmake_cmd+=" -DCMAKE_UNIT_COVERAGE_FILE=${tracefile}"
+fi
 
 build_cmd="cmake --build ${build_directory}"
 ctest_cmd="ctest --output-on-failure"
