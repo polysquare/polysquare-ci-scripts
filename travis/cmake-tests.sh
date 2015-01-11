@@ -30,7 +30,7 @@ ${src_directory}
 \\\"-G${CMAKE_GENERATOR}\\\"
 "
 
-tracefile="\"${PWD}/tests/build/coverage.trace\""
+tracefile="\"coverage.trace\""
 [ ! -z "${COVERAGE}" ] && cmake_cmd+=" -DCMAKE_UNIT_COVERAGE_FILE=${tracefile}"
 
 build_cmd="cmake --build ${build_directory}"
