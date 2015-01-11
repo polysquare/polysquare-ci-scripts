@@ -31,7 +31,7 @@ ${src_directory}
 "
 
 tracefile="\"${PWD}/tests/build/coverage.trace\""
-[ ! -z "${COVERAGE}" ] || cmake_cmd+=" -DCMAKE_UNIT_COVERAGE_FILE=${tracefile}"
+[ ! -z "${COVERAGE}" ] && cmake_cmd+=" -DCMAKE_UNIT_COVERAGE_FILE=${tracefile}"
 
 build_cmd="cmake --build ${build_directory}"
 ctest_cmd="ctest --output-on-failure"
