@@ -46,6 +46,13 @@ if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
         -name "*.tar.gz" -execdir rm -f ";" 2>/dev/null
 fi
 
+# Clean out compiled python files, wherever they are within LANG_RT_PATH
+if [ -d "${LANG_RT_PATH}" ] ; then
+    find "${LANG_RT_PATH}" -type f -name "*.pyc" -execdir rm -f ";" 2>/dev/null
+    find "${LANG_RT_PATH}" -type d -name "__pycache__" -execdir \
+        rm -rf ";" 2>/dev/null
+fi
+
 echo "   ... To install other packages in this container, delete the"\
     "build cache first."
 
