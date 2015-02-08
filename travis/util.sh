@@ -22,6 +22,10 @@ function polysquare_print_error {
     >&2 printf "\n   !!! %s" "$*"
 }
 
+function polysquare_task_completed {
+    >&2 printf "\n"
+}
+
 __polysquare_script_failures=0;
 __polysquare_last_command_exit_status=0;
 function polysquare_report_failures_and_continue {
