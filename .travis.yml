@@ -4,7 +4,6 @@ cache:
   directories:
     - ~/container
 before_install:
- - find ~/container -type f -print
  - eval $(bash travis/setup-lang.sh -d ~/container -l haskell -l python -l ruby)
 script:
  - bash travis/shell-lint.sh -d travis
