@@ -2,10 +2,11 @@ language: c
 sudo: false
 cache:
   directories:
-    - ~/.install
+    - ~/container
 before_install:
- - source travis/setup-lang.sh -p ~/.install -l haskell -l python -l ruby
+ - find ~/container -type f -print
+ - eval $(bash travis/setup-lang.sh -d ~/container -l haskell -l python -l ruby)
 script:
  - bash travis/shell-lint.sh -d travis
  - bash travis/project-lint.sh -d travis -e sh
- - bash travis/prepare-lang-cache.sh -p ~/.install -l haskell -l python -l ruby
+ - bash travis/prepare-lang-cache.sh -d ~/container -l haskell -l python -l ruby

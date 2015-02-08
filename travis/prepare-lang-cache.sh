@@ -1,7 +1,7 @@
 #!/bin/bash
 # /travis/prepare-lang-cache.sh
 #
-# Copies locally installed packages into cache path, where they will be
+# Copies locally installed packages into cache container, where they will be
 # restored from later. Also deletes useless build artefacts which only
 # take up space.
 #
@@ -10,9 +10,9 @@
 #
 # See LICENCE.md for Copyright information
 
-while getopts "p:l:" opt; do
+while getopts "d:l:" opt; do
     case "$opt" in
-    p) path=$OPTARG
+    d) container_dir=$OPTARG
        ;;
     l) languages+=" $OPTARG"
        ;;
@@ -21,13 +21,13 @@ done
 
 echo "=> Preparing for language caching."
 
-LANG_RT_PATH="${path}"
+LANG_RT_PATH="${container_dir}/_languages"
 
 python_dirs="" # shellcheck disable=SC2034
 ruby_dirs="gem" # shellcheck disable=SC2034
 haskell_dirs="ghc cabal" # shellcheck disable=SC2034
 
-echo "   ... Moving local installation directories to cache path."
+echo "   ... Moving local installation directories to cache container."
 
 for lang in ${languages} ; do
     dirs_variable="${lang}_dirs"
