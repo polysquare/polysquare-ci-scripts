@@ -15,6 +15,7 @@ wget public-travis-scripts.polysquare.org/cmake-install.sh > /dev/null 2>&1
 wget public-travis-scripts.polysquare.org/cmake-lint.sh > /dev/null 2>&1
 wget public-travis-scripts.polysquare.org/project-lint.sh > /dev/null 2>&1
 wget public-travis-scripts.polysquare.org/cmake-tests.sh > /dev/null 2>&1
+wget public-travis-scripts.polysquare.org/prepare-lang-cache.sh > /dev/null 2>&1
 
 function get_exclusions_arguments() {
     local result=$1
@@ -43,4 +44,5 @@ set -e
 bash cmake-tests.sh
 EOL
 
-psq-travis-container-exec ~/container --cmd bash "${tests_wrapper}"
+psq-travis-container-exec "${CONTAINER_DIR}" --cmd bash "${tests_wrapper}"
+eval "bash prepare-lang-cache.sh -p ${CONTAINER_DIR} -l python"
