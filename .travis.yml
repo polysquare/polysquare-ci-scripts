@@ -4,8 +4,14 @@ cache:
   directories:
     - ~/container
 before_install:
- - eval $(bash travis/setup-lang.sh -d ~/container -l haskell -l python -l ruby)
+ - export CONTAINER_DIR="${HOME}/container"
+ # As a special case for this project, copy all the shell scripts into
+ # the container directory, so that we can use them directly.
+ - mkdir -p ~/container
+ - mkdir -p ~/container/_scripts
+ - cp -ru travis/* ~/container/_scripts/
+ - export __POLYSQUARE_CI_SCRIPTS_BOOTSTRAP="${CONTAINER_DIR}/_scripts/bootstrap.sh"
+ - eval "$(bash ~/container/_scripts/setup/shell/setup.sh)"
 script:
- - bash travis/shell-lint.sh -d travis
- - bash travis/project-lint.sh -d travis -e sh
- - bash travis/prepare-lang-cache.sh -d ~/container -l haskell -l python -l ruby
+ - polysquare_fetch_and_exec check/shell/check.sh -d travis
+ - bash travis/prepare-lang-cache.sh -d ~/container -l haskell -l python -l ruby -l node
