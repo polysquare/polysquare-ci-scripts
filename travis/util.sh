@@ -94,7 +94,10 @@ function polysquare_fetch {
     result=$1
     local url=$1
     local output_file="${CONTAINER_DIR}/_scripts/$(echo "${url}" | cut -d/ -f2)"
-    curl "${url}" --create-dirs -O "${output_file}"
+
+    if ! [ -f "${output_file}" ] ; then
+        curl "${url}" --create-dirs -O "${output_file}"
+    fi
 
     eval "${result}"="'${output_file}'"
 }
