@@ -10,12 +10,15 @@
 #
 # See LICENCE.md for Copyright information
 
+export POLYSQUARE_SETUP_SCRIPTS="public-travis-scripts.polysquare.org/setup";
+export POLYSQUARE_CHECK_SCRIPTS="public-travis-scripts.polysquare.org/check";
+
 function polysquare_print_task {
     >&2 printf "\n=> %s" "$*"
 }
 
 function polysquare_print_status {
-    >&2 printf "\n    ... %s" "$*"
+    >&2 printf "\n   ... %s" "$*"
 }
 
 function polysquare_print_error {
@@ -26,52 +29,111 @@ function polysquare_task_completed {
     >&2 printf "\n"
 }
 
-__polysquare_script_failures=0;
-__polysquare_last_command_exit_status=0;
-function polysquare_report_failures_and_continue {
-    local output_file=$(mktemp /tmp/tmp.XXXXXXX)
-    local concat_cmd=$(echo "$@" | xargs echo)
-    eval "${concat_cmd}" > "${output_file}" 2>&1  &
-    local command_pid=$!
-    
+__polysquare_script_output_files=()
+function __polysquare_delete_script_outputs {
+    for output_file in "${__polysquare_script_output_files[@]}" ; do
+        rm -rf "${output_file}"
+    done
+}
+
+function _polysquare_monitor_command_internal_prologue {
+    local printer_pid_return="$1"
+
     # This is effectively a tool to feed the travis-ci script
     # watchdog. Print a dot every sixty seconds.
     echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null 1>&2 &
     local printer_pid=$!
-    
-    wait "${command_pid}"
+
+    eval "${printer_pid_return}='${printer_pid}'"
+}
+
+function _polysquare_monitor_command_internal_epilogue {
+    local printer_pid="$1"
+    kill "${printer_pid}" > /dev/null 2>&1
+    wait "${printer_pid}" > /dev/null 2>&1
+}
+
+function polysquare_monitor_command_status {
+    local script_status_return="$1"
+    local concat_cmd=$(echo "${*:2}" | xargs echo)
+
+    _polysquare_monitor_command_internal_prologue printer_pid
+    eval "${concat_cmd} 2>&1"
+
     local result=$?
-    kill "${printer_pid}"
-    wait "${printer_pid}" 2> /dev/null
-    if [[ $command_result != 0 ]] ; then
-        printf "\n"
-        >&2 cat "${output_file}"
-        polysquare_print_error "Subcommand ${concat_cmd} failed with ${result}"
-        polysquare_print_error "Consider deleting the travis build cache"
+
+    _polysquare_monitor_command_internal_epilogue "${printer_pid}"
+
+    eval "${script_status_return}='${result}'"
+}
+
+function polysquare_monitor_command_output {
+    local script_status_return="$1"
+    local script_output_return="$2"
+    local concat_cmd=$(echo "${*:3}" | xargs echo)
+    local output_file="$(mktemp -t psq-util-sh.XXXXXX)"
+    __polysquare_script_output_files+=("${output}")
+
+    _polysquare_monitor_command_internal_prologue printer_pid concat_cmd
+    eval "${concat_cmd} > ${output_file} 2>&1"
+
+    local result=$?
+
+    _polysquare_monitor_command_internal_epilogue "${printer_pid}"
+
+    eval "${script_status_return}='${result}'"
+    eval "${script_output_return}='${output_file}'"
+}
+
+__polysquare_script_failures=0;
+function polysquare_note_failure_and_continue {
+    local status_return="$1"
+    local concat_cmd=$(echo "${*:2}" | xargs echo)
+    polysquare_monitor_command_status status "${concat_cmd}"
+    if [[ $status != 0 ]] ; then
         __polysquare_script_failures=$((__polysquare_script_failures + 1))
-        __polysquare_last_command_exit_status="${result}"
     fi
+
+    eval "${status_return}='${status}'"
+}
+
+function polysquare_report_failures_and_continue {
+    local status_return="$1"
+    local concat_cmd=$(echo "${*:2}" | xargs echo)
+    polysquare_monitor_command_output status output "${concat_cmd}"
+    if [[ $status != 0 ]] ; then
+        printf "\n"
+        >&2 cat "${output}"
+        __polysquare_script_failures=$((__polysquare_script_failures + 1))
+        polysquare_print_error "Subcommand ${concat_cmd} failed with ${status}"
+        polysquare_print_error "Consider deleting the travis build cache"
+    fi
+
+    eval "${status_return}='${status}'"
 }
 
 function polysquare_fatal_error_on_failure {
     # First call polysquare_report_failures_and_continue then
-    # check if __polysquare_script_failures is greater than
-    # 0. If it is, that means this script, or a series of subscripts,
-    # have failed.
-    polysquare_report_failures_and_continue "$@"
+    # check if exit_status is greater than 0. If it is, that means this script
+    # or a series of subscripts, have failed.
+    polysquare_report_failures_and_continue exit_status "$@"
 
-    if [ "${failures}" != 0 ] ; then
-        exit "${__polysquare_last_command_exit_status}"
+    if [[ $exit_status != 0 ]] ; then
+        exit "${exit_status}"
     fi
+}
+
+function polysquare_exit_with_failure_on_script_failures {
+    exit "${__polysquare_script_failures}"
 }
 
 function polysquare_get_find_exclusions_arguments {
     local result=$1
     local cmd_append=""
 
-    for exclusion in ${exclusions} ; do
+    for exclusion in ${*:2} ; do
         if [ -d "${exclusion}" ] ; then
-            cmd_append="${cmd_append} -not -path \"${exclusion}/*\""
+            cmd_append="${cmd_append} -not -path \"${exclusion}\"/*"
         else
             if [ -f "${exclusion}" ] ; then
                 exclude_name=$(basename "${exclusion}")
@@ -85,37 +147,76 @@ function polysquare_get_find_exclusions_arguments {
 
 function polysquare_get_find_extensions_arguments {
     local result=$1
+    local extensions_to_search=(${*:2})
+    local last_element_index=$((${#extensions_to_search[@]} - 1))
     local cmd_append=""
 
-    for extension in ${extensions} ; do
-        cmd_append="${cmd_append} -name \"*.${extension}\""
+    for index in "${!extensions_to_search[@]}" ; do
+        cmd_append="${cmd_append} -name \"*.${extensions_to_search[$index]}\""
+        if [ "$last_element_index" -gt "$index" ] ; then
+            cmd_append="${cmd_append} -o"
+        fi 
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
+}
+
+function polysquare_repeat_switch_for_list {
+    local result=$1
+    local switch=$2
+    local list_with_repeated_switch=""
+
+    for item in ${*:3} ; do
+        list_with_repeated_switch+="${switch} ${item} "
+    done
+
+    eval "${result}='${list_with_repeated_switch}'"
+}
+
+function polysquare_fetch_and_get_local_file {
+    result=$1
+    local url="public-travis-scripts.polysquare.org/$2"
+    local domain="$(echo "${url}" | cut -d/ -f1)"
+    local path="${url#$domain}"
+    local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path}"
+
+    # Only download if we don't have the script already. This means
+    # that if a project wants a newer script, it has to clear its caches.
+    if ! [ -f "${output_file}" ] ; then
+        curl -LSs "${url}" --create-dirs -O "${output_file}"
+    fi
+
+    eval "${result}='${output_file}'"
 }
 
 function polysquare_fetch {
-    result=$1
-    local url=$1
-    local output_file="${CONTAINER_DIR}/_scripts/$(echo "${url}" | cut -d/ -f2)"
-
-    if ! [ -f "${output_file}" ] ; then
-        curl "${url}" --create-dirs -O "${output_file}"
-    fi
-
-    eval "${result}"="'${output_file}'"
+    polysquare_fetch_and_get_local_file output_file "$@"
 }
 
 function polysquare_fetch_and_source {
-    local output_file=""
-    polysquare_fetch output_file "$1"
-    shift
-    source "${output_file}" "$@"
+    local fetched_file=""
+    polysquare_fetch_and_get_local_file fetched_file "$1"
+    source "${fetched_file}" "${@:2}"
 }
 
-function polysquare_fetch_and_run {
-    local output_file=""
-    polysquare_fetch output_file "$1"
-    shift
-    bash "${output_file}" "$@"
+function polysquare_fetch_and_eval {
+    local fetched_file=""
+    polysquare_fetch_and_get_local_file fetched_file "$1"
+    eval "$(source ${fetched_file} "${@:2}")"
 }
+
+function polysquare_fetch_and_fwd {
+    local fetched_file=""
+    polysquare_fetch_and_get_local_file fetched_file "$1"
+    fetched_file_output="$(bash ${fetched_file} "${@:2}")"
+    echo "${fetched_file_output}"
+    eval "${fetched_file_output}"
+}
+
+function polysquare_fetch_and_exec {
+    local fetched_file=""
+    polysquare_fetch_and_get_local_file fetched_file "$1"
+    bash "${fetched_file}" "${@:2}"
+}
+
+trap __polysquare_delete_script_outputs EXIT

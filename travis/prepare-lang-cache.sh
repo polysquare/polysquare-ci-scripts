@@ -26,6 +26,7 @@ LANG_RT_PATH="${container_dir}/_languages"
 python_dirs="" # shellcheck disable=SC2034
 ruby_dirs="gem" # shellcheck disable=SC2034
 haskell_dirs="ghc cabal" # shellcheck disable=SC2034
+node_dirs="" # shellcheck disable=SC2034
 
 echo "   ... Moving local installation directories to cache container."
 
