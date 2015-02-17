@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# /tests/polysquare_ci_scripts_helper.bash
+#
+# Loader script for bats which sets the POLYSQUARE_TRAVIS_SCRIPTS
+# environment variable for use with tests.
+#
+# See LICENCE.md for Copyright information
+
+export POLYSQUARE_TRAVIS_SCRIPTS="${BATS_TEST_DIRNAME}/../travis/"
+export _POLYSQUARE_DONT_PRINT_DOTS=1
+export POLYSQUARE_HOST="127.0.0.1:8080"
+
+function print_returned_args_on_newlines {
+    local function_name="$1"
+    local n_args="$2"
+
+    local arguments_to_pass=${*:3}
+    local arguments_to_check=(${*:3:$n_args})
+
+    eval "${function_name} ${arguments_to_pass}"
+
+    for index in "${!arguments_to_check[@]}" ; do
+        local argument_name="${arguments_to_check[$index]}"
+        eval "local argument_value=\$$argument_name"
+        echo "${argument_value}"
+    done
+}
