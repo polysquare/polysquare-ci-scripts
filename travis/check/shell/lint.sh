@@ -11,7 +11,6 @@ source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 function polysquare_check_files_with {
     polysquare_print_status "Linting files with $1"
     for file in ${*:2} ; do
-        polysquare_print_status "Linting ${file}"
         polysquare_report_failures_and_continue exit_status "$1" "${file}"
     done
 }
@@ -33,7 +32,7 @@ for directory in ${directories} ; do
     shell_files+=$(eval "${cmd}")
 done
 
-polysquare_print_task "Linting bash files ${shell_files}"
+polysquare_print_task "Linting bash files"
 
 polysquare_check_files_with shellcheck "${shell_files}"
 polysquare_check_files_with bashlint "${shell_files}"

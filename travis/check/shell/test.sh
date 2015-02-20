@@ -8,16 +8,9 @@
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
-polysquare_print_task "Testing bash files"
+polysquare_print_task "Testing bash files $(pwd)"
 
-cmd="find tests -type f -name \"*.bats\""
-tests=$(eval "${cmd}")
+tests=$(find tests -type f -name \".bats\")
 for test in ${tests} ; do
     polysquare_print_status "Running tests in ${test}"
-    printf "\n"
-    polysquare_note_failure_and_continue status bats "${test}"
 done
-
-polysquare_task_completed
-
-polysquare_exit_with_failure_on_script_failures
