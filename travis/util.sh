@@ -10,8 +10,9 @@
 #
 # See LICENCE.md for Copyright information
 
-export POLYSQUARE_SETUP_SCRIPTS="public-travis-scripts.polysquare.org/setup";
-export POLYSQUARE_CHECK_SCRIPTS="public-travis-scripts.polysquare.org/check";
+export POLYSQUARE_HOST="${POLYSQUARE_HOST-public-travis-scripts.polysquare.org}"
+export POLYSQUARE_SETUP_SCRIPTS="${POLYSQUARE_HOST}/setup";
+export POLYSQUARE_CHECK_SCRIPTS="${POLYSQUARE_HOST}/check";
 
 function polysquare_print_task {
     >&2 printf "\n=> %s" "$*"
@@ -41,16 +42,22 @@ function _polysquare_monitor_command_internal_prologue {
 
     # This is effectively a tool to feed the travis-ci script
     # watchdog. Print a dot every sixty seconds.
-    echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null 1>&2 &
-    local printer_pid=$!
+    if [ -z "${_POLYSQUARE_DONT_PRINT_DOTS}" ] ; then
+        echo "while :; sleep 60; do printf '.'; done" | bash 2> /dev/null 1>&2 &
+        local printer_pid=$!
+    else
+        local printer_pid=0
+    fi
 
     eval "${printer_pid_return}='${printer_pid}'"
 }
 
 function _polysquare_monitor_command_internal_epilogue {
     local printer_pid="$1"
-    kill "${printer_pid}" > /dev/null 2>&1
-    wait "${printer_pid}" > /dev/null 2>&1
+
+    if [ -z "${_POLYSQUARE_DONT_PRINT_DOTS}" ] ; then
+        kill -9 "${printer_pid}" > /dev/null 2>&1
+    fi
 }
 
 function polysquare_monitor_command_status {
@@ -155,7 +162,7 @@ function polysquare_get_find_extensions_arguments {
         cmd_append="${cmd_append} -name \"*.${extensions_to_search[$index]}\""
         if [ "$last_element_index" -gt "$index" ] ; then
             cmd_append="${cmd_append} -o"
-        fi 
+        fi
     done
 
     eval "${result}='${cmd_append}'"
@@ -164,10 +171,16 @@ function polysquare_get_find_extensions_arguments {
 function polysquare_repeat_switch_for_list {
     local result=$1
     local switch=$2
+    local list_items_to_repeat_switch_for=${*:3}
+    local last_element_index=$((${#list_items_to_repeat_switch_for[@]} - 1))
     local list_with_repeated_switch=""
 
-    for item in ${*:3} ; do
-        list_with_repeated_switch+="${switch} ${item} "
+    for index in "${!list_items_to_repeat_switch_for[@]}" ; do
+        local item="${list_items_to_repeat_switch_for[$index]}"
+        list_with_repeated_switch+="${switch} ${item}"
+        if [ "$last_element_index" -gt "$index" ] ; then
+            list_with_repeated_switch="${list_with_repeated_switch} "
+        fi
     done
 
     eval "${result}='${list_with_repeated_switch}'"
@@ -175,15 +188,15 @@ function polysquare_repeat_switch_for_list {
 
 function polysquare_fetch_and_get_local_file {
     result=$1
-    local url="public-travis-scripts.polysquare.org/$2"
+    local url="${POLYSQUARE_HOST}/$2"
     local domain="$(echo "${url}" | cut -d/ -f1)"
     local path="${url#$domain}"
-    local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path}"
+    local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path:1}"
 
     # Only download if we don't have the script already. This means
     # that if a project wants a newer script, it has to clear its caches.
     if ! [ -f "${output_file}" ] ; then
-        curl -LSs "${url}" --create-dirs -O "${output_file}"
+        curl -LSs "${url}" --create-dirs -o "${output_file}"
     fi
 
     eval "${result}='${output_file}'"
@@ -202,7 +215,7 @@ function polysquare_fetch_and_source {
 function polysquare_fetch_and_eval {
     local fetched_file=""
     polysquare_fetch_and_get_local_file fetched_file "$1"
-    eval "$(source ${fetched_file} "${@:2}")"
+    eval "$(bash ${fetched_file} "${@:2}")"
 }
 
 function polysquare_fetch_and_fwd {
