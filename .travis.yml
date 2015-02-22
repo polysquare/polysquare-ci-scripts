@@ -7,9 +7,8 @@ before_install:
  - export CONTAINER_DIR="${HOME}/container"
  # As a special case for this project, copy all the shell scripts into
  # the container directory, so that we can use them directly.
- - mkdir -p ~/container
  - mkdir -p ~/container/_scripts
- - cp -ru travis/* ~/container/_scripts/
+ - rsync -r -u travis/* ~/container/_scripts/
  - export __POLYSQUARE_CI_SCRIPTS_BOOTSTRAP="${CONTAINER_DIR}/_scripts/bootstrap.sh"
  - eval "$(bash ~/container/_scripts/setup/shell/setup.sh)"
 script:

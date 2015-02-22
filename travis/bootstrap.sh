@@ -19,8 +19,28 @@ if [ -z "${CONTAINER_DIR+x}" ] ; then
     exit 1
 fi
 
-# If this variable is specified, then there's no need to redownload util.sh,
-# so don't redownload it.
+# Download and install bash 4.3
+if ! [ -f "${CONTAINER_DIR}/shell/bin/bash" ] ; then
+    bash_pool="http://security.ubuntu.com/ubuntu/pool/universe/b/bash/"
+    bash_43_url="${bash_pool}/bash-static_4.3-7ubuntu1.5_amd64.deb"
+    shell_dirs=("${CONTAINER_DIR}/shell" \
+                "${CONTAINER_DIR}/shell/bin" \
+                "${CONTAINER_DIR}/shell/tmp")
+
+    for directory in "${shell_dirs[@]}" ; do
+        mkdir -p "${directory}"
+    done
+
+    >&2 curl -LSs "${bash_43_url}" -o "${CONTAINER_DIR}/shell/tmp/bash.deb"
+    >&2 dpkg-deb --extract "${CONTAINER_DIR}/shell/tmp/bash.deb" \
+        "${CONTAINER_DIR}/shell/tmp/"
+    >&2 cp "${CONTAINER_DIR}/shell/tmp/bin/bash-static" \
+        "${CONTAINER_DIR}/shell/bin/bash"
+    >&2 rm -rf "${CONTAINER_DIR}/shell/tmp"
+fi
+
+# If this variable is specified, then there's no need to redownload util.sh
+# so don't download it
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
 
     >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
@@ -35,5 +55,6 @@ else
 
 fi
 
+echo "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH}"
 echo "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR}"
 echo "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
