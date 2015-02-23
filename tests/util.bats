@@ -8,24 +8,9 @@
 load polysquare_ci_scripts_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
-@test "Calling print task expands arguments" {
-    run polysquare_print_task arg1 arg2 arg3
-    [ "${lines[0]}" = "=> arg1 arg2 arg3" ]
-}
-
-@test "Calling print task uses single string" {
-    run polysquare_print_task "arg1 arg2 arg3"
-    [ "${lines[0]}" = "=> arg1 arg2 arg3" ]
-}
-
-@test "Calling print status prints dots then args" {
-    run polysquare_print_status "arg1 arg2 arg3"
-    [ "${lines[0]}" = "   ... arg1 arg2 arg3" ]
-}
-
 @test "Calling print error prints bangs then args" {
     run polysquare_print_error "arg1 arg2 arg3"
-    [ "${lines[0]}" = "   !!! arg1 arg2 arg3" ]
+    [ "${lines[0]}" = "!!! arg1 arg2 arg3" ]
 }
 
 @test "Print description after fat arrow on first task level" {
@@ -146,7 +131,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         command_status \
         false
 
-    [ "${lines[0]}" = "   !!! Subcommand false failed with 1" ]
+    [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
 }
 
 @test "Successful status returned when reporting failures and continuing" {
@@ -213,5 +198,5 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run polysquare_fatal_error_on_failure \
         false
 
-    [ "${lines[0]}" = "   !!! Subcommand false failed with 1" ]
+    [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
 }

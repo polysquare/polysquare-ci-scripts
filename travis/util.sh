@@ -15,16 +15,8 @@ export POLYSQUARE_DOT_SLEEP="${POLYSQUARE_DOT_SLEEP-15}"
 export POLYSQUARE_SETUP_SCRIPTS="${POLYSQUARE_HOST}/setup";
 export POLYSQUARE_CHECK_SCRIPTS="${POLYSQUARE_HOST}/check";
 
-function polysquare_print_task {
-    >&2 printf "\n=> %s" "$*"
-}
-
-function polysquare_print_status {
-    >&2 printf "\n   ... %s" "$*"
-}
-
 function polysquare_print_error {
-    >&2 printf "\n   !!! %s" "$*"
+    >&2 printf "\n!!! %s" "$*"
 }
 
 function polysquare_task_completed {
@@ -32,28 +24,18 @@ function polysquare_task_completed {
 }
 
 __polysquare_indent_level="${polysquare_indent_level-0}"
-__polysquare_next_indent=0
 function polysquare_apply_indent {
     # This function is designed to be piped to. It will read lines from the
     # standard input and indent them as appropriate (each indent is
     # four spaces, in line with task symbols)
-    local whitespace=$(eval "printf \"%0.s \" {1..4}")
-    while IFS='' read -n1 chr ; do
-        # Special case, if this is the first character to be printed
-        # then print the four spaces before it, so long as it isn't \n
-        if [[ "${__polysquare_next_indent}" == "1" ]] && \
-           [[ "${chr}" != "" ]] ; then
-           >&2 printf "${whitespace}"
-        fi
-
-        >&2 printf "${chr}"
-
-        if [[ "${chr}" == "" ]] ; then
-            >&2 printf "\n${whitespace}"
-        fi
-
-        __polysquare_next_indent=0
-    done
+    #
+    # Note that we actually call out to another program to perform
+    # this task, this is to work around bugs in certain versions of
+    # bash which do not detect \n properly
+    #
+    # The program is generally installed in the container by the
+    # bootstrap.sh script
+    polysquare_indent
 }
 
 # This variable is used by polysquare_monitor_command_* in order to print
@@ -65,7 +47,6 @@ function polysquare_task {
 
     local last_indent_level="${__polysquare_indent_level}"
     (( __polysquare_indent_level++ ))
-    __polysquare_next_indent=1
     __polysquare_initial_carriage_return=1
     # If the indent level is zero, use =>, otherwise use
     # [whitespace for (indent level * 3)]...
@@ -76,7 +57,7 @@ function polysquare_task {
     fi
 
     # Use command substituion to only filter stderr
-    eval "${function_name}" 2> >(polysquare_apply_indent)
+    eval "${function_name} ${*:3}" 2> >(polysquare_apply_indent)
     (( __polysquare_indent_level-- ))
 }
 
@@ -85,30 +66,6 @@ function __polysquare_delete_script_outputs {
     for output_file in "${__polysquare_script_output_files[@]}" ; do
         rm -rf "${output_file}"
     done
-}
-
-function _polysquare_monitor_command_internal_prologue {
-    local printer_pid_return="$1"
-
-
-    if [ -z "${_POLYSQUARE_DONT_PRINT_DOTS}" ] ; then
-        echo "printing dots ${POLYSQUARE_DOT_SLEEP}"
-        echo "while :; sleep ${POLYSQUARE_DOT_SLEEP}; do printf '.'; done" \
-            | bash 2> /dev/null 1>&2 &
-        local printer_pid=$!
-    else
-        local printer_pid=0
-    fi
-
-    eval "${printer_pid_return}='${printer_pid}'"
-}
-
-function _polysquare_monitor_command_internal_epilogue {
-    local printer_pid="$1"
-
-    if [ -z "${_POLYSQUARE_DONT_PRINT_DOTS}" ] ; then
-        kill -9 "${printer_pid}" > /dev/null 2>&1
-    fi
 }
 
 function polysquare_monitor_command_status {
@@ -223,7 +180,7 @@ function polysquare_report_failures_and_continue {
 
     if [[ "${status}" != "0" ]] ; then
         __polysquare_initial_carriage_return=0
-        printf "\n"
+        >&2 printf "\n"
         >&2 cat "${output_file}"
         (( __polysquare_script_failures++ ))
         polysquare_print_error "Subcommand ${concat_cmd} failed with ${status}"

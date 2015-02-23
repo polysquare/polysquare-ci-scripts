@@ -10,7 +10,6 @@
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
 function polysquare_check_files_with {
-    polysquare_print_status "Linting files with $1"
     for file in ${*:2} ; do
         polysquare_report_failures_and_continue exit_status "$1" "${file}"
     done
@@ -27,22 +26,27 @@ while getopts "x:e:d:" opt; do
     esac
 done
 
-polysquare_get_find_exclusions_arguments excl "${exclusions}"
-polysquare_get_find_extensions_arguments ext "${extensions}"
+function polysquare_check_files_for_style_guide {
+    local excl
+    local ext
+    local cmd
+    local lint_files
 
-for directory in ${directories} ; do
-    cmd="find ${directory} -type f ${ext} ${excl}"
-    lint_files+=$(eval "${cmd}")
-done
+    polysquare_get_find_exclusions_arguments excl "${exclusions}"
+    polysquare_get_find_extensions_arguments ext "${extensions}"
 
-polysquare_print_task \
-    "Checking for compliance with polysquare project style guide"
+    for directory in ${directories} ; do
+        cmd="find ${directory} -type f ${ext} ${excl}"
+        lint_files+=$(eval "${cmd}")
+    done
 
-polysquare_check_files_with polysquare-generic-file-linter "${lint_files}"
+    polysquare_task "Linting files with polysquare style guide linter" \
+        polysquare_check_files_with polysquare-generic-file-linter \
+            "${lint_files}"
+    polysquare_task "Linting markdown documentation" \
+        polysquare_report_failures_and_continue exit_status mdl .
+}
 
-polysquare_print_status "Linting markdown documentation"
-polysquare_report_failures_and_continue exit_status mdl .
-
-polysquare_task_completed
-
+polysquare_task "Checking compliance with polysquare style guide" \
+    polysquare_check_files_for_style_guide
 polysquare_exit_with_failure_on_script_failures
