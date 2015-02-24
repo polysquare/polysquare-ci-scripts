@@ -201,10 +201,14 @@ function polysquare_install_language_runtimes {
 function polysquare_restore_language_runtimes_from_cache {
     # These variables are not really unused - they're used, but only by
     # a compound statement, so shellcheck won't detect that.
-    local python_dirs="" # shellcheck disable=SC2034
-    local ruby_dirs="gem" # shellcheck disable=SC2034
-    local haskell_dirs="ghc cabal" # shellcheck disable=SC2034
-    local node_dirs="" # shellcheck disable=SC2034
+    # shellcheck disable=SC2034
+    local python_dirs=""
+    # shellcheck disable=SC2034
+    local ruby_dirs="gem"
+    # shellcheck disable=SC2034
+    local haskell_dirs="ghc cabal"
+    # shellcheck disable=SC2034
+    local node_dirs=""
 
     for lang in ${languages} ; do
         dirs_variable="${lang}_dirs"

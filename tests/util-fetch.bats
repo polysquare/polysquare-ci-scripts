@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# /tests/util.bats
+# /tests/util-fetch.bats
 #
 # Tests for the utility functions to fetch shell scripts in travis/
 #
@@ -81,4 +81,3 @@ teardown() {
 
     [ "${server_side_file_variable}" != "1" ]
 }
-

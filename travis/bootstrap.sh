@@ -21,8 +21,8 @@ while getopts "d:s:" opt "$@"; do
     esac
 done
 
-: ${container_dir?"Must pass a path to a container with -d"}
-: ${setup_script?"Must pass the path to a setup script with -s"}
+: "${container_dir?'Must pass a path to a container with -d'}"
+: "${setup_script?'Must pass the path to a setup script with -s'}"
 
 >&2 mkdir -p "${container_dir}"
 
@@ -64,5 +64,5 @@ eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
     curl -LSs "public-travis-scripts.polysquare.org/${setup_script}" | bash
 else
-    cat "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}" | bash
+    bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi
