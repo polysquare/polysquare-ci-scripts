@@ -2,59 +2,67 @@
 # /travis/bootstrap.sh
 #
 # Travis CI Script which downloads util.sh and sets up the script tree in
-# CONTAINER_DIR. CONTAINER_DIR must be set in order to use this script. This
-# script should be called directly from a project's "setup" script, whose
-# output is evaluated later.
+# the directory specified by -d. This script should be called with both -d and
+# -s, -s being a relative path from public-travis-scripts.polysquare.org to
+# a setup script which will set everything up once this command has finished
+# running.
 #
 # This script will set the following environment variables:
 # - POLYSQUARE_CI_SCRIPTS_DIR
 #
 # See LICENCE.md for Copyright information
 
-# This environment variable must be set. If it is not set, then error out
-# immediately.
-if [ -z "${CONTAINER_DIR+x}" ] ; then
-    >&2 echo "CONTAINER_DIR must be set before these scripts can be used."
-    >&2 echo "Call export CONTAINER_DIR=... or specify it in the environment."
-    exit 1
-fi
+while getopts "d:s:" opt "$@"; do
+    case "$opt" in
+    d) container_dir="$OPTARG"
+       ;;
+    s) setup_script="$OPTARG"
+       ;;
+    esac
+done
 
-# Download and install bash 4.3
-if ! [ -f "${CONTAINER_DIR}/shell/bin/bash" ] ; then
-    bash_pool="http://security.ubuntu.com/ubuntu/pool/universe/b/bash/"
-    bash_43_url="${bash_pool}/bash-static_4.3-7ubuntu1.5_amd64.deb"
-    shell_dirs=("${CONTAINER_DIR}/shell" \
-                "${CONTAINER_DIR}/shell/bin" \
-                "${CONTAINER_DIR}/shell/tmp")
+: ${container_dir?"Must pass a path to a container with -d"}
+: ${setup_script?"Must pass the path to a setup script with -s"}
 
-    for directory in "${shell_dirs[@]}" ; do
-        mkdir -p "${directory}"
-    done
+>&2 mkdir -p "${container_dir}"
 
-    >&2 curl -LSs "${bash_43_url}" -o "${CONTAINER_DIR}/shell/tmp/bash.deb"
-    >&2 dpkg-deb --extract "${CONTAINER_DIR}/shell/tmp/bash.deb" \
-        "${CONTAINER_DIR}/shell/tmp/"
-    >&2 cp "${CONTAINER_DIR}/shell/tmp/bin/bash-static" \
-        "${CONTAINER_DIR}/shell/bin/bash"
-    >&2 rm -rf "${CONTAINER_DIR}/shell/tmp"
+# Download and install polysquare_indent
+if ! [ -f "${container_dir}/shell/bin/polysquare_indent" ] ; then
+    progs_base="http://public-travis-programs.polysquare.org"
+
+    >&2 mkdir -p "${container_dir}/shell"
+    >&2 mkdir -p "${container_dir}/shell/bin"
+
+    >&2 curl -LSs "${progs_base}/polysquare_indent" -o \
+        "${container_dir}/shell/bin/polysquare_indent"
+    >&2 chmod +x "${container_dir}/shell/bin/polysquare_indent"
 fi
 
 # If this variable is specified, then there's no need to redownload util.sh
 # so don't download it
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
-
     >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
     >&2 curl -LSs "public-travis-scripts.polysquare.org/travis/util.sh" \
         -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
     
-    POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
-
+    POLYSQUARE_CI_SCRIPTS_DIR="${container_dir}/_scripts"
 else
-
     POLYSQUARE_CI_SCRIPTS_DIR=$(dirname "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP}")
-
 fi
 
-echo "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH}"
-echo "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR}"
-echo "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+function eval_and_fwd {
+    eval "$1" && echo "$1"
+}
+
+eval_and_fwd "export CONTAINER_DIR=${container_dir}"
+eval_and_fwd "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH}"
+eval_and_fwd "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR}"
+eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+
+# Now that we've set everything up, pass control to our setup script (remember
+# that bash 4.3 is now in our PATH).
+if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
+    curl -LSs "public-travis-scripts.polysquare.org/${setup_script}" | bash
+else
+    cat "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}" | bash
+fi

@@ -9,9 +9,7 @@
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
 function polysquare_check_files_with {
-    polysquare_print_status "Linting files with $1"
     for file in ${*:2} ; do
-        polysquare_print_status "Linting ${file}"
         polysquare_report_failures_and_continue exit_status "$1" "${file}"
     done
 }
@@ -25,20 +23,19 @@ while getopts "x:d:" opt; do
     esac
 done
 
-polysquare_get_find_exclusions_arguments excl "${exclusions}"
-polysquare_get_find_extensions_arguments ext "sh bats"
+function polysquare_check_shell_files {
+    polysquare_get_find_exclusions_arguments excl "${exclusions}"
+    polysquare_get_find_extensions_arguments ext "sh bats"
 
-for directory in ${directories} ; do
-    cmd="find ${directory} -type f ${ext} ${excl}"
-    shell_files+=$(eval "${cmd}")
-done
+    for directory in ${directories} ; do
+        cmd="find ${directory} -type f ${ext} ${excl}"
+        shell_files+=$(eval "${cmd}")
+    done
 
-polysquare_print_task "Linting bash files ${shell_files}"
-
-polysquare_check_files_with shellcheck "${shell_files}"
-polysquare_check_files_with bashlint "${shell_files}"
-
-polysquare_task_completed
+    polysquare_task "Linting shell files with shellcheck" \
+        polysquare_check_files_with shellcheck "${shell_files}"
+    polysquare_task "Linting shell files with bashlint" \
+        polysquare_check_files_with bashlint "${shell_files}"
+}
 
 polysquare_exit_with_failure_on_script_failures
-

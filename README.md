@@ -52,6 +52,7 @@ Use `-p` to specify where the local installation prefix should be. This
 directory should be cached.
 
 Use `-l` for each language that you need to set up. Valid languages are:
+
 * `python`
 * `haskell`
 * `ruby`
@@ -87,6 +88,7 @@ specified under `extra_requires` for `test` in `setup.py`
 
 Lints the python module specified by `-m` as well as a directory called
 `tests` and `setup.py` comprehensively, using the following linters:
+
 * `prospector`
 * `pylint`
 * `dodgy`
