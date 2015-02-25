@@ -38,6 +38,7 @@ function polysquare_check_files_for_style_guide {
     for directory in ${directories} ; do
         cmd="find ${directory} -type f ${ext} ${excl}"
         lint_files+=$(eval "${cmd}")
+        lint_files+=" "
     done
 
     polysquare_task "Linting files with polysquare style guide linter" \

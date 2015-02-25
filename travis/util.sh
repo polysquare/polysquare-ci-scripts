@@ -51,13 +51,14 @@ function polysquare_task {
     # If the indent level is zero, use =>, otherwise use
     # [whitespace for (indent level * 3)]...
     if [ "${last_indent_level}" -eq "0" ] ; then
-        >&2 printf "\n=> ${description}"
+        >&2 printf "\n=> %s" "${description}"
     else
-        >&2 printf "\n... ${description}"
+        >&2 printf "\n... %s" "${description}"
     fi
 
     # Use command substituion to only filter stderr
-    eval "${function_name} ${*:3}" 2> >(polysquare_apply_indent)
+    local arguments=$(echo "${*:3}" | xargs echo)
+    eval "${function_name} ${arguments}" 2> >(polysquare_apply_indent)
     (( __polysquare_indent_level-- ))
 }
 
@@ -87,8 +88,8 @@ function __polysquare_convert_message_to_status {
     local status_return=$1
     local message=$2
 
-    local messages=("Done", \
-                    "Hung up", \
+    local messages=("Done" \
+                    "Hung up" \
                     "Illegal Instruction" \
                     "Aborted" \
                     "Killed" \
@@ -242,15 +243,18 @@ function polysquare_get_find_extensions_arguments {
 function polysquare_repeat_switch_for_list {
     local result=$1
     local switch=$2
-    local list_items_to_repeat_switch_for=${*:3}
+    local list_items_to_repeat_switch_for=(${*:3})
     local last_element_index=$((${#list_items_to_repeat_switch_for[@]} - 1))
     local list_with_repeated_switch=""
 
     for index in "${!list_items_to_repeat_switch_for[@]}" ; do
         local item="${list_items_to_repeat_switch_for[$index]}"
-        list_with_repeated_switch+="${switch} ${item}"
-        if [ "$last_element_index" -gt "$index" ] ; then
-            list_with_repeated_switch="${list_with_repeated_switch} "
+
+        if ! [ -z "${item}" ] ; then
+            list_with_repeated_switch+="${switch} ${item}"
+            if [ "$last_element_index" -gt "$index" ] ; then
+                list_with_repeated_switch+=" "
+            fi
         fi
     done
 

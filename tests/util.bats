@@ -71,7 +71,15 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 @test "Repeat switch for list" {
     polysquare_repeat_switch_for_list rval "-x" one two three
-    [ "${rval}" = "-x one two three" ]
+
+    echo "${rval}"
+
+    [ "${rval}" = "-x one -x two -x three" ]
+}
+
+@test "Repeat switch for list does not produce switch with no value" {
+    polysquare_repeat_switch_for_list rval "-x" ""
+    [ "${rval}" = "" ]
 }
 
 @test "Single find extension argument" {
