@@ -57,7 +57,10 @@ function eval_and_fwd {
 eval_and_fwd "export CONTAINER_DIR=${container_dir}"
 eval_and_fwd "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH}"
 eval_and_fwd "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR}"
-eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+
+if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then
+    eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+fi
 
 # Now that we've set everything up, pass control to our setup script (remember
 # that bash 4.3 is now in our PATH).

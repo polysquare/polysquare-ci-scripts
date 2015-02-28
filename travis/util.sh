@@ -307,4 +307,6 @@ function polysquare_fetch_and_exec {
     bash "${fetched_file}" "${@:2}"
 }
 
-trap __polysquare_delete_script_outputs EXIT
+if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then
+    trap __polysquare_delete_script_outputs EXIT
+fi
