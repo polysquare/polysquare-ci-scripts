@@ -28,16 +28,16 @@ ruby_dirs="gem" # shellcheck disable=SC2034
 haskell_dirs="ghc cabal" # shellcheck disable=SC2034
 node_dirs="" # shellcheck disable=SC2034
 
-echo "   ... Moving local installation directories to cache container."
+echo "   ... Copying local installation directories to cache container."
 
 for lang in ${languages} ; do
     dirs_variable="${lang}_dirs"
     for dir in ${!dirs_variable} ; do
-        mv "${HOME}/.${dir}" "${LANG_RT_PATH}/.${dir}"
+        cp -TRf "${HOME}/.${dir}" "${LANG_RT_PATH}/.${dir}"
     done
 done
 
-echo "   ... Cleaning up haskell artefacts"
+echo "   ... Cleaning up artefacts"
 
 if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
     cabal_lib="${LANG_RT_PATH}/.cabal/lib"
