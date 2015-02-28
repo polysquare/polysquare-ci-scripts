@@ -14,6 +14,7 @@ setup() {
     pushd "${server_dir}" > /dev/null 2>&1
     touch "fetch-local-test.sh"
     python -m "SimpleHTTPServer" 8080 > /dev/null 2>&1 &
+    sleep 1 # Allow SimpleHTTPServer to start up
     export __polysquare_fake_host_pid=$!
     popd > /dev/null 2>&1
 
