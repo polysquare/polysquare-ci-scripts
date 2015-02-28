@@ -279,5 +279,3 @@ fi
 
 # Activate languages
 polysquare_task "Activating languages" polysquare_activate_languages
-
-
