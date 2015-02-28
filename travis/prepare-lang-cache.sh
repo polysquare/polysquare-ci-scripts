@@ -54,6 +54,16 @@ if [ -d "${LANG_RT_PATH}" ] ; then
         rm -rf ";" 2>/dev/null
 fi
 
+# Reset timestamp on all package.json files, whose timestamps are always updated
+# on each run on npm install
+if [ -d "${LANG_RT_PATH}/node" ] ; then
+    cmd="find ${LANG_RT_PATH}/node -type f -name \"package.json\""
+    package_json_files=$(eval "${cmd}")
+    for file in ${package_json_files} ; do
+        touch -mt 0001010000 "${file}"
+    done
+fi
+
 echo "   ... To install other packages in this container, delete the"\
     "build cache first."
 

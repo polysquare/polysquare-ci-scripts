@@ -155,6 +155,10 @@ function polysquare_setup_node {
     function polysquare_create_nodeenv {
         polysquare_fatal_error_on_failure "${LANG_RT_PATH}/usr/bin/nodeenv" \
             --prebuilt "${LANG_RT_PATH}/node"
+        rm -rf "${LANG_RT_PATH}/node/src/"
+        rm -rf "${LANG_RT_PATH}/node/lib/node_modules/npm/doc/"
+        rm -rf "${LANG_RT_PATH}/node/lib/node_modules/npm/man/"
+        rm -rf "${LANG_RT_PATH}/node/lib/node_modules/npm/html/"
     }
 
     polysquare_task "Installing nodeenv" polysquare_install_nodeenv
