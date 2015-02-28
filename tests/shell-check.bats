@@ -6,7 +6,6 @@
 # See LICENCE.md for Copyright information
 
 load polysquare_ci_scripts_helper
-load polysquare_container_copy_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 function lint_setup {
