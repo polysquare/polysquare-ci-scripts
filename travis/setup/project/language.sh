@@ -219,7 +219,7 @@ function polysquare_install_language_runtimes {
         eval "polysquare_task \"Setting up ${l}\" polysquare_setup_${l}"
     done
 
-    echo "done" >> "${LANG_RT_PATH}/done-stamp"
+    touch "${LANG_RT_PATH}/done-stamp"
 
     popd > /dev/null 2>&1
 }
