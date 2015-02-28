@@ -166,23 +166,45 @@ function polysquare_setup_node {
 }
 
 function polysquare_setup_ruby {
+    # Install rvm
+    function polysquare_install_rvm {
+        local rvm_script=$(mktemp /tmp/psq-rvm-install.XXXXXX)
+        curl -LSs https://get.rvm.io > "${rvm_script}"
+
+        polysquare_fatal_error_on_failure \
+            bash "${rvm_script}" --ignore-dotfiles
+
+        source "${HOME}/.rvm/scripts/rvm"
+        rvm autolibs read-only
+    }
+
+    # Set PATH to have ruby as the first entry to supprss a warning
+    export PATH=${HOME}/.rvm/gems/${ruby_version}/bin:${PATH}
+
+    polysquare_task "Installing rvm" polysquare_install_rvm
+
+    # Use rvm to install ruby 1.9.3-p551
+    polysquare_task "Installing ruby 1.9.3 using rvm" \
+        polysquare_fatal_error_on_failure rvm install 1.9.3-p551
+
     # Just make the 'gems' directory, so that we can copy them later.
     polysquare_fatal_error_on_failure mkdir -p "${LANG_RT_PATH}/gems"
     polysquare_fatal_error_on_failure mkdir -p "${HOME}/.gem"
-
-    polysquare_task_completed
 }
 
 # Parse options and then call the setup functions for each script
 python_version=2.7
+ruby_version=ruby-1.9.3-p551
 
-while getopts "d:l:s:" opt "$@"; do
+while getopts "d:l:s:r:" opt "$@"; do
     case "$opt" in
     d) container_dir="$OPTARG"
        ;;
     l) languages+=" $OPTARG"
        ;;
     s) python_version="$OPTARG"
+       ;;
+    r) ruby_version="$OPTARG"
        ;;
     esac
 done
@@ -217,21 +239,32 @@ function polysquare_restore_language_runtimes_from_cache {
     for lang in ${languages} ; do
         dirs_variable="${lang}_dirs"
         for dir in ${!dirs_variable} ; do
-            polysquare_fatal_error_on_failure mv "${LANG_RT_PATH}/.${dir}" \
-                "${HOME}/.${dir}"
+            # Only do the move if these directories do not exist on the host
+            if ! [ -d "${HOME}/.${dir}" ]  ; then
+                polysquare_fatal_error_on_failure cp -TRf \
+                    "${LANG_RT_PATH}/.${dir}" "${HOME}/.${dir}"
+            fi
         done
     done
 }
 
 function polysquare_activate_languages {
+    local rvm_rubies_path="${HOME}/.rvm/rubies"
+    local rvm_rubies_lib="${rvm_rubies_path}/${ruby_version}/lib"
+    local gem_user_dir=$(ruby -rubygems -e 'puts Gem.user_dir')
+
     echo "export PATH=${LANG_RT_PATH}/usr/bin:\${PATH};"
-    echo "export PATH=${HOME}/.gem/ruby/1.8/bin/:\${PATH};"
     echo "export PATH=${HOME}/.cabal/bin:\${PATH};"
+    echo "export PATH=${gem_user_dir}/bin:$PATH:\${PATH};"
     echo "export PATH=${LANG_RT_PATH}/python/bin:\${PATH};"
     echo "export PATH=${LANG_RT_PATH}/node/bin:\${PATH};"
+    echo "export PATH=${rvm_rubies_path}/${ruby_version}/bin:\${PATH}"
+    echo "export LD_LIBRARY_PATH=${rvm_rubies_lib}:\${LD_LIBRARY_PATH}"
     echo "export LD_LIBRARY_PATH=${LANG_RT_PATH}/usr/lib:\${LD_LIBRARY_PATH};"
     echo "export VIRTUAL_ENV=${LANG_RT_PATH}/python;"
     echo "export PYTHON_SETUP_LOCALLY=1;"
+    echo "export GEM_PATH=${HOME}/.rvm/gems/${ruby_version}@global:${GEM_PATH}"
+    echo "export GEM_PATH=${gem_user_dir}:${GEM_PATH}"
 }
 
 # If we don't have a distribution of common scripting
