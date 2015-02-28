@@ -6,8 +6,9 @@
 #
 # See LICENCE.md for Copyright information
 
-export POLYSQUARE_TRAVIS_SCRIPTS="${BATS_TEST_DIRNAME}/../travis/"
+export POLYSQUARE_TRAVIS_SCRIPTS=$(cd "${BATS_TEST_DIRNAME}/../travis"; pwd)
 export _POLYSQUARE_DONT_PRINT_DOTS=1
+export _POLYSQUARE_TESTING_WITH_BATS=1
 export POLYSQUARE_HOST="127.0.0.1:8080"
 
 function print_returned_args_on_newlines {

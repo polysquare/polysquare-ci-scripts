@@ -28,16 +28,16 @@ ruby_dirs="gem" # shellcheck disable=SC2034
 haskell_dirs="ghc cabal" # shellcheck disable=SC2034
 node_dirs="" # shellcheck disable=SC2034
 
-echo "   ... Moving local installation directories to cache container."
+echo "   ... Copying local installation directories to cache container."
 
 for lang in ${languages} ; do
     dirs_variable="${lang}_dirs"
     for dir in ${!dirs_variable} ; do
-        mv "${HOME}/.${dir}" "${LANG_RT_PATH}/.${dir}"
+        cp -TRf "${HOME}/.${dir}" "${LANG_RT_PATH}/.${dir}"
     done
 done
 
-echo "   ... Cleaning up haskell artefacts"
+echo "   ... Cleaning up artefacts"
 
 if [ -d "${LANG_RT_PATH}/.cabal" ] ; then
     cabal_lib="${LANG_RT_PATH}/.cabal/lib"
@@ -52,6 +52,16 @@ if [ -d "${LANG_RT_PATH}" ] ; then
     find "${LANG_RT_PATH}" -type f -name "*.pyc" -execdir rm -f ";" 2>/dev/null
     find "${LANG_RT_PATH}" -type d -name "__pycache__" -execdir \
         rm -rf ";" 2>/dev/null
+fi
+
+# Reset timestamp on all package.json files, whose timestamps are always updated
+# on each run on npm install
+if [ -d "${LANG_RT_PATH}/node" ] ; then
+    cmd="find ${LANG_RT_PATH}/node -type f -name \"package.json\""
+    package_json_files=$(eval "${cmd}")
+    for file in ${package_json_files} ; do
+        touch -mt 0001010000 "${file}"
+    done
 fi
 
 echo "   ... To install other packages in this container, delete the"\

@@ -12,7 +12,8 @@ source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
 function polysquare_set_up_project_linters {
     polysquare_task "Installing markdownlint" 
-        polysquare_fatal_error_on_failure gem install mdl
+        polysquare_fatal_error_on_failure gem install \
+            --user-install --conservative --no-ri --no-rdoc mdl
     polysquare_task "Installing polysquare style guide linter" \
         polysquare_fatal_error_on_failure pip install \
             polysquare-generic-file-linter

@@ -27,6 +27,7 @@ polysquare_note_failure_and_continue status bash \
     "$excl_switches" \
     "$dir_switches" \
     -e sh \
+    -e bash \
     -e bats
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/shell/lint.sh" \
