@@ -261,6 +261,12 @@ function polysquare_repeat_switch_for_list {
     eval "${result}='${list_with_repeated_switch}'"
 }
 
+function polysquare_sorted_find {
+    eval "find $*" | while read f ; do
+        printf '%s;%s;%s;\n' "${f%/*}" "$(grep -c "/" <<< "$f")" "${f}"
+    done | sort -t ';' | awk -F ';' '{print $3}'
+}
+
 function polysquare_fetch_and_get_local_file {
     result=$1
     local url="${POLYSQUARE_HOST}/$2"

@@ -9,7 +9,7 @@
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
 function polysquare_test_bash_files {
-    cmd="find tests -type f -name \"*.bats\""
+    cmd="polysquare_sorted_find tests -type f -name \"*.bats\""
     tests=$(eval "${cmd}")
     for test in ${tests} ; do
         polysquare_task "Running tests in ${test}" \

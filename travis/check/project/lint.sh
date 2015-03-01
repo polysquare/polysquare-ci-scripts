@@ -36,7 +36,7 @@ function polysquare_check_files_for_style_guide {
     polysquare_get_find_extensions_arguments ext "${extensions}"
 
     for directory in ${directories} ; do
-        cmd="find ${directory} -type f ${ext} ${excl}"
+        cmd="polysquare_sorted_find ${directory} -type f ${ext} ${excl}"
         lint_files+=$(eval "${cmd}")
         lint_files+=" "
     done
