@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # /tests/shell-check.bats
 #
-# Tests for the utility functions in travis/
+# Tests for the checking functions in shell/check/lint.sh
 #
 # See LICENCE.md for Copyright information
 
