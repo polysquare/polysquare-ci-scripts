@@ -24,6 +24,7 @@ setup() {
 }
 
 teardown() {
+    __polysquare_delete_script_outputs
     rm -rf "${CONTAINER_DIR}"
     mv "${MOVED_CONTAINER_DIR}" "${ORIGINAL_CONTAINER_DIR}"
     export CONTAINER_DIR="${ORIGINAL_CONTAINER_DIR}"
