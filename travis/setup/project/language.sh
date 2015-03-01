@@ -176,6 +176,10 @@ function polysquare_setup_ruby {
 
         source "${HOME}/.rvm/scripts/rvm"
         rvm autolibs read-only
+
+        # It seems like this is required for when we enter a new shell
+        # during the cache upload phase.
+        echo rvm_auto_reload_flag=1 >> ~/.rvmrc
     }
 
     # Set PATH to have ruby as the first entry to supprss a warning
