@@ -85,6 +85,25 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     [ "${rval}" = " -name \"*.sh\"" ]
 }
 
+@test "Output of find command can be sorted" {
+    local tempdir=$(mktemp -d "/tmp/psq-find-output.XXXXXX")
+    mkdir -p "${tempdir}/a"
+    mkdir -p "${tempdir}/b"
+    touch "${tempdir}/a/1"
+    touch "${tempdir}/a/2"
+    touch "${tempdir}/b/1"
+    touch "${tempdir}/b/2"
+    touch "${tempdir}/c"
+
+    run polysquare_sorted_find "${tempdir}" -type f
+
+    [ "${lines[0]}" == "${tempdir}/c" ]
+    [ "${lines[1]}" == "${tempdir}/a/1" ]
+    [ "${lines[2]}" == "${tempdir}/a/2" ]
+    [ "${lines[3]}" == "${tempdir}/b/1" ]
+    [ "${lines[4]}" == "${tempdir}/b/2" ]
+}
+
 @test "Monitoring command status with true return value" {
     run print_returned_args_on_newlines \
         polysquare_monitor_command_status \

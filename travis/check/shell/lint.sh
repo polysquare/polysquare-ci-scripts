@@ -57,7 +57,7 @@ function polysquare_check_shell_files {
     polysquare_get_find_extensions_arguments ext "sh bash"
 
     for directory in ${directories} ; do
-        cmd="find ${directory} -type f ${ext} ${excl}"
+        cmd="polysquare_sorted_find ${directory} -type f ${ext} ${excl}"
         shell_files+=$(eval "${cmd}")
         shell_files+=" "
     done
@@ -67,8 +67,8 @@ function polysquare_check_shell_files {
     # executable. Use that on all found bats files and pre-process
     # them into temporary files with a similar FS structure. Add
     # those to the files to lint.
-    for directory in ${directories} ; do
-        cmd="find ${directory} -type f -name \"*.bats\" ${excl}"
+    for dir in ${directories} ; do
+        cmd="polysquare_sorted_find ${dir} -type f -name \"*.bats\" ${excl}"
         bats_files+=$(eval "${cmd}")
         bats_files+=" "
     done
