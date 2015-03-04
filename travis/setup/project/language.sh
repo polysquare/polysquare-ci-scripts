@@ -32,13 +32,17 @@ function polysquare_setup_haskell {
     #    usr/lib/ghc
 
     function polysquare_download_haskell_packages {
+        mkdir -p "${HOME}/.polysquare-haskell-download-cache" > /dev/null 2>&1
+        pushd "${HOME}/.polysquare-haskell-download-cache" > /dev/null 2>&1
         polysquare_fatal_error_on_failure apt-get download ghc cabal-install
+        popd > /dev/null 2>&1
     }
 
     function polysquare_extract_haskell_packages {
-        find . -maxdepth 1 -type f -name "*.deb" -print0 | \
-            xargs -L 1 -0 -I {} dpkg-deb --extract {} "${LANG_RT_PATH}" 2>&1
-        polysquare_fatal_error_on_failure rm ./*.deb
+        find "${HOME}/.polysquare-haskell-download-cache" -maxdepth 1 \
+            -type f -name "*.deb" -print0 | \
+                xargs -L 1 -0 -I {} dpkg-deb --extract {} \
+                    "${LANG_RT_PATH}" 2>&1
     }
 
     function polysquare_adjust_haskell_package_paths {
@@ -83,7 +87,11 @@ function polysquare_setup_haskell {
     }
 
     function polysquare_update_cabal_repositories {
-        polysquare_fatal_error_on_failure cabal update
+        if ! [ -f "${HOME}/.polysquare-cabal-updated" ] ; then
+            polysquare_fatal_error_on_failure cabal update
+        fi
+
+        touch "${HOME}/.polysquare-cabal-updated" > /dev/null 2>&1
     }
 
     function polysquare_create_haskell_home_dirs {
@@ -125,12 +133,6 @@ function polysquare_setup_python {
     next_pythonpath="${LANG_RT_PATH}/usr/${python_prefix}"
 
     polysquare_fatal_error_on_failure mkdir -p "${next_pythonpath}"
-
-    echo "export PYTHONPATH=${next_pythonpath}:${PYTHONPATH};"
-
-    # Having bytecode around is a waste of space and inflates the
-    # build cache, so just disable it.
-    echo "export PYTHONDONTWRITEBYTECODE=1;"
 
     # We need to export PYTHONPATH for the purposes of this script
     # too, so that easy_install and virtualenv do not fail
@@ -262,13 +264,15 @@ function polysquare_activate_languages {
     echo "export PATH=${gem_user_dir}/bin:$PATH:\${PATH};"
     echo "export PATH=${LANG_RT_PATH}/python/bin:\${PATH};"
     echo "export PATH=${LANG_RT_PATH}/node/bin:\${PATH};"
-    echo "export PATH=${rvm_rubies_path}/${ruby_version}/bin:\${PATH}"
-    echo "export LD_LIBRARY_PATH=${rvm_rubies_lib}:\${LD_LIBRARY_PATH}"
+    echo "export PATH=${rvm_rubies_path}/${ruby_version}/bin:\${PATH};"
+    echo "export PYTHONPATH=${next_pythonpath}:${PYTHONPATH};"
+    echo "export PYTHONDONTWRITEBYTECODE=1;"
+    echo "export LD_LIBRARY_PATH=${rvm_rubies_lib}:\${LD_LIBRARY_PATH};"
     echo "export LD_LIBRARY_PATH=${LANG_RT_PATH}/usr/lib:\${LD_LIBRARY_PATH};"
     echo "export VIRTUAL_ENV=${LANG_RT_PATH}/python;"
     echo "export PYTHON_SETUP_LOCALLY=1;"
-    echo "export GEM_PATH=${HOME}/.rvm/gems/${ruby_version}@global:${GEM_PATH}"
-    echo "export GEM_PATH=${gem_user_dir}:${GEM_PATH}"
+    echo "export GEM_PATH=${HOME}/.rvm/gems/${ruby_version}@global:${GEM_PATH};"
+    echo "export GEM_PATH=${gem_user_dir}:${GEM_PATH};"
 }
 
 # If we don't have a distribution of common scripting

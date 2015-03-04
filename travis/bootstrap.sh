@@ -60,8 +60,9 @@ _polysquare_install_program init_newline/polysquare-init-newline.cpp \
 # so don't download it
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
     >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
-    >&2 curl -LSs "public-travis-scripts.polysquare.org/travis/util.sh" \
-        -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+    >&2 eval "${curl_command}" \
+        "public-travis-scripts.polysquare.org/travis/util.sh" \
+            -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
     
     POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
 else
@@ -79,7 +80,8 @@ fi
 # Now that we've set everything up, pass control to our setup script (remember
 # that bash 4.3 is now in our PATH).
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
-    curl -LSs "public-travis-scripts.polysquare.org/${setup_script}" | bash
+    eval "${curl_command}" \
+        "public-travis-scripts.polysquare.org/${setup_script}" | bash
 else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi

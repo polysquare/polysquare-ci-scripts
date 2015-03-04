@@ -266,9 +266,21 @@ function polysquare_repeat_switch_for_list {
 }
 
 function polysquare_sorted_find {
+    # Disable globbing first
+    set -f
     eval "find $*" | while read f ; do
         printf '%s;%s;%s;\n' "${f%/*}" "$(grep -c "/" <<< "$f")" "${f}"
     done | sort -t ';' | awk -F ';' '{print $3}'
+    set +f
+}
+
+function polysquare_numeric_version {
+    echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'
+}
+
+function polysquare_extract_numeric_version {
+    read string_version
+    polysquare_numeric_version "${string_version}"
 }
 
 function polysquare_run_if_unavailable {
@@ -288,7 +300,8 @@ function polysquare_fetch_and_get_local_file {
     # Only download if we don't have the script already. This means
     # that if a project wants a newer script, it has to clear its caches.
     if ! [ -f "${output_file}" ] ; then
-        curl -LSs "${url}" --create-dirs -o "${output_file}"
+        curl -LSs "${url}" --create-dirs -o "${output_file}" \
+            --retry 999 --retry-max-time 0 -C -
     fi
 
     eval "${result}='${output_file}'"

@@ -104,6 +104,26 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     [ "${lines[4]}" == "${tempdir}/b/2" ]
 }
 
+@test "Compare string versions less" {
+    [ "$(polysquare_numeric_version 3.1.2)" -lt \
+      "$(polysquare_numeric_version 4.1.3)" ]
+}
+
+@test "Compare string versions greater" {
+    [ "$(polysquare_numeric_version 4.1.2)" -gt \
+      "$(polysquare_numeric_version 2.1.3)" ]
+}
+
+@test "Compare string versions equal" {
+    [ "$(polysquare_numeric_version 3.1.2)" -eq \
+      "$(polysquare_numeric_version 3.1.2)" ]
+}
+
+@test "Compare extracted version less" {
+    [ "$(echo 3.1.2 | polysquare_extract_numeric_version)" -lt \
+      "$(echo 4.1.3 | polysquare_extract_numeric_version)" ]
+}
+
 @test "Monitoring command status with true return value" {
     run print_returned_args_on_newlines \
         polysquare_monitor_command_status \
