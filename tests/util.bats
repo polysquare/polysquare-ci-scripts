@@ -240,3 +240,19 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
 }
+
+@test "Run subsequent command if another is unavailable" {
+    run polysquare_run_if_unavailable __definitely_unavailable \
+        echo "true"
+
+    echo "${output}"
+
+    [ "${lines[0]}" = "true" ]
+}
+
+@test "Dont run subsequent command if another is available" {
+    run polysquare_run_if_unavailable bash \
+        echo "true"
+
+    [ "${output}" = "" ]
+}

@@ -271,6 +271,13 @@ function polysquare_sorted_find {
     done | sort -t ';' | awk -F ';' '{print $3}'
 }
 
+function polysquare_run_if_unavailable {
+    which "$1" > /dev/null 2>&1
+    if [ "$?" -eq "1" ] ; then
+        eval "${*:2}"
+    fi
+}
+
 function polysquare_fetch_and_get_local_file {
     result=$1
     local url="${POLYSQUARE_HOST}/$2"
