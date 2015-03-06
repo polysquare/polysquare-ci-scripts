@@ -124,6 +124,21 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     [ "${lines[0]}" = "1" ]
 }
 
+@test "Monitoring command status prints initial newline on output" {
+    run polysquare_task "Task" \
+        polysquare_monitor_command_status status echo "output"
+
+    [ "${lines[1]}" = "    output" ]
+}
+
+@test "Monitoring command status no newline on no output" {
+    run polysquare_task "Task" \
+        polysquare_monitor_command_status status \
+            polysquare_task "Secondary" true
+
+    [ "${lines[1]}" = "    ... Secondary" ]
+}
+
 @test "Monitoring command output prints dots whilst command executing" {
     export POLYSQUARE_DOT_SLEEP=1
     unset _POLYSQUARE_DONT_PRINT_DOTS

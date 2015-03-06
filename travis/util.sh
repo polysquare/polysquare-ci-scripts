@@ -56,7 +56,7 @@ function polysquare_task {
         >&2 printf "\n... %s" "${description}"
     fi
 
-    # Use command substituion to only filter stderr
+    # Use command substitution to only filter stderr
     local arguments=$(echo "${*:3}" | xargs echo)
     eval "${function_name} ${arguments}" 2> >(polysquare_apply_indent)
     (( __polysquare_indent_level-- ))
@@ -69,16 +69,20 @@ function __polysquare_delete_script_outputs {
     done
 }
 
+# Ensures that we get a single initial newline if there's any
+# output piped in to this function
+function __polysquare_output_with_initial_newline {
+    local allow_newline="${__polysquare_initial_carriage_return}"
+    __polysquare_initial_carriage_return=0
+
+    polysquare_init_newline "${allow_newline}"
+}
+
 function polysquare_monitor_command_status {
     local script_status_return="$1"
     local concat_cmd=$(echo "${*:2}" | xargs echo)
 
-    if [[ "${__polysquare_initial_carriage_return}" == "1" ]] ; then
-        >&2 printf "\n"
-        __polysquare_initial_carriage_return=0
-    fi
-
-    >&2 eval "${concat_cmd}"
+    eval "${concat_cmd}" > >(__polysquare_output_with_initial_newline)
     local result=$?
 
     eval "${script_status_return}='${result}'"
