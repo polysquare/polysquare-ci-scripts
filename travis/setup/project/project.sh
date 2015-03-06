@@ -9,6 +9,7 @@
 # See LICENCE.md for Copyright information
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+source "${POLYSQUARE_CI_SCRIPTS_DIR}/python-util.sh"
 
 function polysquare_set_up_project_linters {
     polysquare_task "Installing markdownlint" 

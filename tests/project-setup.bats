@@ -8,27 +8,26 @@
 
 load polysquare_ci_scripts_helper
 load polysquare_container_copy_helper
+load polysquare_project_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
-bootstrap="${POLYSQUARE_TRAVIS_SCRIPTS}/bootstrap.sh"
+setup() {
+    polysquare_container_copy_setup
+    polysquare_project_setup
+}
 
-function project_setup {
-    local cont="${CONTAINER_DIR}"
-    local boot=$(bash "${bootstrap}" -d "${cont}" -s setup/project/setup.sh)
-    eval "${boot}"
+teardown() {
+    polysquare_project_teardown
+    polysquare_container_copy_teardown
 }
 
 @test "Polysquare style guide linter is available after running setup script" {
-    project_setup
-
     run which polysquare-generic-file-linter
 
     [ "${status}" == "0" ]
 }
 
 @test "Markdownlint is available after running setup script" {
-    project_setup
-
     run which mdl
 
     [ "${status}" == "0" ]

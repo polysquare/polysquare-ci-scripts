@@ -6,7 +6,7 @@
 #
 # See LICENCE.md for Copyright information
 
-setup() {
+function polysquare_container_copy_setup {
     # Create a new CONTAINER_DIR as a copy of the current one and move
     # the old one out of the way. This ensures taht when scripts
     # invoke bootstrap.sh, they will only use executables in the
@@ -28,7 +28,7 @@ setup() {
     cp -rf "${temporary_container_directory}" "${CONTAINER_DIR}"
 }
 
-teardown() {
+function polysquare_container_copy_teardown {
     __polysquare_delete_script_outputs
     rm -rf "${CONTAINER_DIR}"
     mv "${ORIGINAL_CONTAINER_DIR}" "${CONTAINER_DIR}"

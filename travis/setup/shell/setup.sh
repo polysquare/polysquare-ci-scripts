@@ -11,7 +11,7 @@
 # See LICENCE.md for Copyright information
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
-source "${POLSYQUARE_CI_SCRIPTS_DIR}/util-python.sh"
+source "${POLYSQUARE_CI_SCRIPTS_DIR}/python-util.sh"
 
 polysquare_fetch_and_fwd "setup/project/language.sh" \
     -l haskell \
