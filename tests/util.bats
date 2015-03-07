@@ -104,6 +104,26 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     [ "${lines[4]}" == "${tempdir}/b/2" ]
 }
 
+@test "Compare string versions less" {
+    [ "$(polysquare_numeric_version 3.1.2)" -lt \
+      "$(polysquare_numeric_version 4.1.3)" ]
+}
+
+@test "Compare string versions greater" {
+    [ "$(polysquare_numeric_version 4.1.2)" -gt \
+      "$(polysquare_numeric_version 2.1.3)" ]
+}
+
+@test "Compare string versions equal" {
+    [ "$(polysquare_numeric_version 3.1.2)" -eq \
+      "$(polysquare_numeric_version 3.1.2)" ]
+}
+
+@test "Compare extracted version less" {
+    [ "$(echo 3.1.2 | polysquare_extract_numeric_version)" -lt \
+      "$(echo 4.1.3 | polysquare_extract_numeric_version)" ]
+}
+
 @test "Monitoring command status with true return value" {
     run print_returned_args_on_newlines \
         polysquare_monitor_command_status \
@@ -122,6 +142,21 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         false
 
     [ "${lines[0]}" = "1" ]
+}
+
+@test "Monitoring command status prints initial newline on output" {
+    run polysquare_task "Task" \
+        polysquare_monitor_command_status status echo "output"
+
+    [ "${lines[1]}" = "    output" ]
+}
+
+@test "Monitoring command status no newline on no output" {
+    run polysquare_task "Task" \
+        polysquare_monitor_command_status status \
+            polysquare_task "Secondary" true
+
+    [ "${lines[1]}" = "    ... Secondary" ]
 }
 
 @test "Monitoring command output prints dots whilst command executing" {
@@ -224,4 +259,20 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         false
 
     [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
+}
+
+@test "Run subsequent command if another is unavailable" {
+    run polysquare_run_if_unavailable __definitely_unavailable \
+        echo "true"
+
+    echo "${output}"
+
+    [ "${lines[0]}" = "true" ]
+}
+
+@test "Dont run subsequent command if another is available" {
+    run polysquare_run_if_unavailable bash \
+        echo "true"
+
+    [ "${output}" = "" ]
 }

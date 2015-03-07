@@ -8,9 +8,18 @@
 
 load polysquare_ci_scripts_helper
 load polysquare_container_copy_helper
+load polysquare_shell_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
-bootstrap="${POLYSQUARE_TRAVIS_SCRIPTS}/bootstrap.sh"
+setup() {
+    polysquare_container_copy_setup
+    polysquare_shell_setup
+}
+
+teardown() {
+    polysquare_shell_teardown
+    polysquare_container_copy_teardown
+}
 
 @test "Copied container dir has done-stamp already in-place" {
     [ -e "${CONTAINER_DIR}/_languages/done-stamp" ]
@@ -23,8 +32,6 @@ function shell_setup {
 }
 
 @test "Shellcheck is available after running bash setup script" {
-    shell_setup
-
     run which shellcheck
 
     [ "${status}" == "0" ]

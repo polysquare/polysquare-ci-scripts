@@ -26,36 +26,52 @@ done
 
 >&2 mkdir -p "${container_dir}"
 
-# Download and install polysquare_indent
-if ! [ -f "${container_dir}/shell/bin/polysquare_indent" ] ; then
-    progs_base="public-travis-programs.polysquare.org"
-    indent_src="${progs_base}/indent/polysquare-indent.cpp"
-    indent_prog="${container_dir}/shell/bin/polysquare_indent"
+curl_command="curl -LSs --create-dirs --retry 999 --retry-max-time 0 -C -"
 
-    >&2 mkdir -p "${container_dir}/shell/bin"
-    curl -LSs "${indent_src}" | c++ -xc++ -o "${indent_prog}" -
-    >&2 chmod +x "${container_dir}/shell/bin/polysquare_indent"
-fi
+function _polysquare_install_program {
+    local relative_src="$1"
+    local prog_name="$2"
 
-# If this variable is specified, then there's no need to redownload util.sh
-# so don't download it
-if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
-    >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
-    >&2 curl -LSs "public-travis-scripts.polysquare.org/travis/util.sh" \
-        -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
-    
-    POLYSQUARE_CI_SCRIPTS_DIR="${container_dir}/_scripts"
-else
-    POLYSQUARE_CI_SCRIPTS_DIR=$(dirname "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP}")
-fi
+    which "${prog_name}" > /dev/null
+
+    if [[ "$?" == "1" ]] ; then
+        progs_base="public-travis-programs.polysquare.org"
+        indent_src="${progs_base}/${relative_src}"
+        indent_prog="${CONTAINER_DIR}/shell/bin/${prog_name}"
+
+        >&2 mkdir -p "${CONTAINER_DIR}/shell/bin"
+        eval "${curl_command}" "${indent_src}" | c++ -xc++ -o "${indent_prog}" -
+        >&2 chmod +x "${indent_prog}"
+    fi
+}
 
 function eval_and_fwd {
     eval "$1" && echo "$1"
 }
 
-eval_and_fwd "export CONTAINER_DIR=${container_dir}"
-eval_and_fwd "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH}"
-eval_and_fwd "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR}"
+eval_and_fwd "export CONTAINER_DIR=${container_dir};"
+eval_and_fwd "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH};"
+
+_polysquare_install_program indent/polysquare-indent.cpp polysquare_indent
+_polysquare_install_program init_newline/polysquare-init-newline.cpp \
+    polysquare_init_newline
+
+# If this variable is specified, then there's no need to redownload util.sh
+# so don't download it
+if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
+    >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
+    >&2 eval "${curl_command}" \
+        "public-travis-scripts.polysquare.org/travis/util.sh" \
+            -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+    
+    POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
+else
+    POLYSQUARE_CI_SCRIPTS_DIR=$(dirname "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP}")
+fi
+
+# Export POLYSQUARE_CI_SCRIPTS_DIR now that we've determined where our scripts
+# are on the filesystem.
+eval_and_fwd "export POLYSQUARE_CI_SCRIPTS_DIR=${POLYSQUARE_CI_SCRIPTS_DIR};"
 
 if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then
     eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
@@ -64,7 +80,8 @@ fi
 # Now that we've set everything up, pass control to our setup script (remember
 # that bash 4.3 is now in our PATH).
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
-    curl -LSs "public-travis-scripts.polysquare.org/${setup_script}" | bash
+    eval "${curl_command}" \
+        "public-travis-scripts.polysquare.org/${setup_script}" | bash
 else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi

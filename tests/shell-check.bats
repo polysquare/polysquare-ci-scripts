@@ -6,41 +6,45 @@
 # See LICENCE.md for Copyright information
 
 load polysquare_ci_scripts_helper
+load polysquare_container_copy_helper
+load polysquare_shell_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
-function lint_setup {
-    local directory_var="$1"
-    local shell_file_to_lint_var="$2"
+setup() {
+    polysquare_container_copy_setup
+    polysquare_shell_setup
 
-    local _directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
-    local _shell_file_to_lint=$(mktemp "${_directory}/test-XXXXXX.sh")
-
-    eval "${directory_var}='${_directory}'"
-    eval "${shell_file_to_lint_var}='${_shell_file_to_lint}'"
+    export _SHELL_FILE_TO_LINT="${_POLYSQUARE_TEST_PROJECT}/example.sh"
+    printf "#!/bin/bash\necho hello\n" > "${_SHELL_FILE_TO_LINT}"
 }
 
-function lint_teardown {
-    local directory="$1"
-
-    rm -rf "${directory}"
+teardown() {
+    polysquare_shell_teardown
+    polysquare_container_copy_teardown
 }
 
 @test "Lint shell files with success" {
-    lint_setup directory shell_file_to_lint
-
     # Valid shell script
-    printf "#!/bin/bash\necho hello\n" > "${shell_file_to_lint}"
+    printf "#!/bin/bash\necho hello\n" > "${_SHELL_FILE_TO_LINT}"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
-        -d "${directory}"
-
-    lint_teardown "${directory}"
+        -d "${_POLYSQUARE_TEST_PROJECT}"
 
     [ "${status}" == "0" ]
 }
 
+@test "Lint shell files with failure" {
+    # Valid shell script
+    printf "echo hello\n" > "${_SHELL_FILE_TO_LINT}"
+
+    run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
+        -d "${_POLYSQUARE_TEST_PROJECT}"
+
+    [ "${status}" == "1" ]
+}
+
 @test "Lint bash files with failure" {
-    local directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory="${_POLYSQUARE_TEST_PROJECT}"
     local shell_file_to_lint=$(mktemp "${directory}/test-XXXXXX.bash")
 
     # Invalid shell script
@@ -49,13 +53,11 @@ function lint_teardown {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
         -d "${directory}"
 
-    lint_teardown "${directory}"
-
     [ "${status}" == "1" ]
 }
 
 @test "Lint bats files with failure" {
-    local directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory="${_POLYSQUARE_TEST_PROJECT}"
     local shell_file_to_lint=$(mktemp "${directory}/test-XXXXXX.bats")
 
     # Invalid shell script
@@ -64,13 +66,11 @@ function lint_teardown {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
         -d "${directory}"
 
-    lint_teardown "${directory}"
-
     [ "${status}" == "1" ]
 }
 
 @test "Lint bats files with success, even with bats-like syntax" {
-    local directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory="${_POLYSQUARE_TEST_PROJECT}"
     local shell_file_to_lint=$(mktemp "${directory}/test-XXXXXX.bats")
 
     # BATS script. This should be pre-processed and converted into something
@@ -80,16 +80,14 @@ function lint_teardown {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
         -d "${directory}"
 
-    lint_teardown "${directory}"
-
     [ "${status}" == "0" ]
 }
 
 @test "Lint files in multiple directories" {
-    local directory_one=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
     local shell_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
 
-    local directory_two=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
     local shell_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
 
     # Script in first directory valid, script in second invalid. Make sure
@@ -101,21 +99,15 @@ function lint_teardown {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
         -d "${directory_one}" -d "${directory_two}"
 
-    lint_teardown "${directory}"
-
     [ "${status}" == "1" ]
 }
 
 @test "Lint shell files with failure" {
-    lint_setup directory shell_file_to_lint
-
     # No shebang - fail
-    printf "echo hello\n" > "${shell_file_to_lint}"
+    printf "echo hello\n" > "${_SHELL_FILE_TO_LINT}"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/shell/lint.sh" \
-        -d "${directory}"
-
-    lint_teardown "${directory}"
+        -d "${_POLYSQUARE_TEST_PROJECT}"
 
     [ "${status}" == "1" ]
 }

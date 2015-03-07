@@ -56,7 +56,7 @@ function polysquare_task {
         >&2 printf "\n... %s" "${description}"
     fi
 
-    # Use command substituion to only filter stderr
+    # Use command substitution to only filter stderr
     local arguments=$(echo "${*:3}" | xargs echo)
     eval "${function_name} ${arguments}" 2> >(polysquare_apply_indent)
     (( __polysquare_indent_level-- ))
@@ -69,16 +69,20 @@ function __polysquare_delete_script_outputs {
     done
 }
 
+# Ensures that we get a single initial newline if there's any
+# output piped in to this function
+function __polysquare_output_with_initial_newline {
+    local allow_newline="${__polysquare_initial_carriage_return}"
+    __polysquare_initial_carriage_return=0
+
+    polysquare_init_newline "${allow_newline}"
+}
+
 function polysquare_monitor_command_status {
     local script_status_return="$1"
     local concat_cmd=$(echo "${*:2}" | xargs echo)
 
-    if [[ "${__polysquare_initial_carriage_return}" == "1" ]] ; then
-        >&2 printf "\n"
-        __polysquare_initial_carriage_return=0
-    fi
-
-    >&2 eval "${concat_cmd}"
+    eval "${concat_cmd}" > >(__polysquare_output_with_initial_newline)
     local result=$?
 
     eval "${script_status_return}='${result}'"
@@ -262,9 +266,28 @@ function polysquare_repeat_switch_for_list {
 }
 
 function polysquare_sorted_find {
+    # Disable globbing first
+    set -f
     eval "find $*" | while read f ; do
         printf '%s;%s;%s;\n' "${f%/*}" "$(grep -c "/" <<< "$f")" "${f}"
     done | sort -t ';' | awk -F ';' '{print $3}'
+    set +f
+}
+
+function polysquare_numeric_version {
+    echo "$@" | awk -F. '{ printf("%03d%03d%03d\n", $1,$2,$3); }'
+}
+
+function polysquare_extract_numeric_version {
+    read string_version
+    polysquare_numeric_version "${string_version}"
+}
+
+function polysquare_run_if_unavailable {
+    which "$1" > /dev/null 2>&1
+    if [ "$?" -eq "1" ] ; then
+        eval "${*:2}"
+    fi
 }
 
 function polysquare_fetch_and_get_local_file {
@@ -277,7 +300,8 @@ function polysquare_fetch_and_get_local_file {
     # Only download if we don't have the script already. This means
     # that if a project wants a newer script, it has to clear its caches.
     if ! [ -f "${output_file}" ] ; then
-        curl -LSs "${url}" --create-dirs -o "${output_file}"
+        curl -LSs "${url}" --create-dirs -o "${output_file}" \
+            --retry 999 --retry-max-time 0 -C -
     fi
 
     eval "${result}='${output_file}'"

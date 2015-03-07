@@ -6,27 +6,24 @@
 # See LICENCE.md for Copyright information
 
 load polysquare_ci_scripts_helper
+load polysquare_container_copy_helper
+load polysquare_project_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
-function lint_setup {
-    local directory_var="$1"
-    local project_file_to_lint_var="$2"
+setup() {
+    polysquare_container_copy_setup
+    polysquare_project_setup
 
-    local _directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
-    local _project_file_to_lint=$(mktemp "${_directory}/test-XXXXXX.sh")
+    local directory="${_POLYSQUARE_TEST_PROJECT}"
 
-    pushd "${_directory}" > /dev/null 2>&1
-
-    eval "${directory_var}='${_directory}'"
-    eval "${project_file_to_lint_var}='${_project_file_to_lint}'"
+    export _PROJECT_FILE_TO_LINT=$(mktemp "${directory}/test-XXXXXX.sh")
 }
 
-function lint_teardown {
-    popd > /dev/null 2>&1
+teardown() {
+    unset _PROJECT_FILE_TO_LINT
 
-    for directory in "$@" ; do
-        rm -rf "${directory}"
-    done
+    polysquare_project_teardown
+    polysquare_container_copy_teardown
 }
 
 licence="See LICENCE.md for Copyright information"
@@ -50,43 +47,36 @@ function write_invalid_header_to {
 }
 
 @test "Lint files with success using style-guide-linter" {
-    lint_setup directory project_file_to_lint
-
     # Valid header
-    write_valid_header_to "${project_file_to_lint}"
+    write_valid_header_to "${_PROJECT_FILE_TO_LINT}"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
-        -d "${directory}" -e sh
+        -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
     [ "${status}" == "0" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Lint files with failure using style-guide-linter" {
-    lint_setup directory project_file_to_lint
-
     # Invalid header
-    write_invalid_header_to "${project_file_to_lint}"
+    write_invalid_header_to "${_PROJECT_FILE_TO_LINT}"
     
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
-        -d "${directory}" -e sh
+        -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
     [ "${status}" == "1" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Lint files in multiple directories" {
-    local directory_one=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
     local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
 
-    local directory_two=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
     local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
 
-    # Enter the "/tmp" directory, since we're linting two different subdirs
-    # from there
-    pushd "/tmp"
+    # Enter the test project directory, since we're linting two different
+    # subdirs from there
+    pushd "${_POLYSQUARE_TEST_PROJECT}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Script in first directory valid, script in second invalid. Make sure
     # we get the invalid script.
@@ -98,19 +88,19 @@ function write_invalid_header_to {
         -d "${directory_one}" -d "${directory_two}" -e sh
 
     [ "${status}" == "1" ]
-
-    lint_teardown "${directory_one}" "${directory_two}"
 }
 
 @test "Lint files with multiple extensions" {
-    local directory=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory="${_POLYSQUARE_TEST_PROJECT}"
     local project_file_to_lint_one=$(mktemp "${directory}/test-XXXXXX.sh")
     local project_file_to_lint_two=$(mktemp "${directory}/test-XXXXXX.bash")
 
     pushd "${directory}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Script in first directory valid, script in second invalid. Make sure
     # we get the invalid script.
+
     write_valid_header_to "${project_file_to_lint_one}"
     write_invalid_header_to "${project_file_to_lint_two}"
 
@@ -119,18 +109,19 @@ function write_invalid_header_to {
         -d "${directory}" -e sh -e bash
 
     [ "${status}" == "1" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Exclude one file from linting" {
-    local directory_one=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
     local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
 
-    local directory_two=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
     local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
 
-    pushd "/tmp"
+    # Enter the test project directory, since we're linting two different
+    # subdirs from there
+    pushd "${_POLYSQUARE_TEST_PROJECT}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Script in first directory valid, script in second invalid. Make sure
     # we get the invalid script.
@@ -143,21 +134,21 @@ function write_invalid_header_to {
         -d "${directory_one}" -d "${directory_two}" -e sh \
             -x "${project_file_to_lint_two}"
 
-
     [ "${status}" == "0" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Exclude many files from linting" {
-    local directory_one=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
     local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
 
-    local directory_two=$(mktemp -d /tmp/psq-lint-shell-test.XXXXXX)
+    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
     local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
     local project_file_to_lint_three=$(mktemp "${directory_two}/test-XXXXXX.sh")
 
-    pushd "/tmp"
+    # Enter the test project directory, since we're linting two different
+    # subdirs from there
+    pushd "${_POLYSQUARE_TEST_PROJECT}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Script in first directory valid, script in second invalid. Make sure
     # we get the invalid script.
@@ -173,38 +164,30 @@ function write_invalid_header_to {
             -x "${project_file_to_lint_three}"
 
     [ "${status}" == "0" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Lint markdown documentation with success using mdl" {
-    lint_setup directory project_file_to_lint
-    rm -rf "${project_file_to_lint}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Valid markdown documentation
-    markdown_doc=$(mktemp "${directory}/Documentation.XXXXXX.md")
+    markdown_doc=$(mktemp "${_POLYSQUARE_TEST_PROJECT}/Documentation.XXXXXX.md")
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
-        -d "${directory}" -e sh
+        -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
     [ "${status}" == "0" ]
-
-    lint_teardown "${directory}"
 }
 
 @test "Lint markdown documentation with failure using mdl" {
-    lint_setup directory project_file_to_lint
-    rm -rf "${project_file_to_lint}"
+    rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Invalid markdown documentation
-    markdown_doc=$(mktemp "${directory}/Documentation.XXXXXX.md")
+    markdown_doc=$(mktemp "${_POLYSQUARE_TEST_PROJECT}/Documentation.XXXXXX.md")
     printf "H1\n==\n## H2 ##\n" > "${markdown_doc}"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
-        -d "${directory}" -e sh
+        -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
     [ "${status}" == "1" ]
-
-    lint_teardown "${directory}"
 }
 
