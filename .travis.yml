@@ -13,5 +13,5 @@ before_install:
  # For now
  - polysquare_task "Installing pandoc" polysquare_fatal_error_on_failure cabal install pandoc
 script:
- - polysquare_fetch_and_exec check/shell/check.sh -d travis -d tests
+ - polysquare_run_check_script check/shell/check.sh -d travis -d tests
  - bash travis/prepare-lang-cache.sh -d ~/container -l haskell -l python -l ruby -l node

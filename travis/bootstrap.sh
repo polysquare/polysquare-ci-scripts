@@ -85,3 +85,7 @@ if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
 else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi
+
+# Print a final \n
+
+>&2 printf "\n"
