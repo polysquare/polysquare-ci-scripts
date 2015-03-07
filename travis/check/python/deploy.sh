@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /travis/deploy/python/deploy.sh
+# /travis/check/python/deploy.sh
 #
 # Travis CI Script which runs python and project specific tasks to prepare
 # for deployment. It runs during the "script" phase whilst we still have
@@ -30,6 +30,6 @@ polysquare_task "Preparing documentation converters for deploy step" \
     polysquare_make_python_doc_converters_available_at_deploy
 
 polysquare_note_failure_and_continue status \
-    polysquare_fetch_and_exec deploy/project/deploy.sh \
+    polysquare_fetch_and_exec prepare-lang-cache.sh \
         -d "${container_dir}" -l "haskell" -l "ruby"
 polysquare_exit_with_failure_on_script_failures
