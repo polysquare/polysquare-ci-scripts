@@ -342,6 +342,11 @@ function polysquare_run_check_script {
     >&2 printf "\n"
 }
 
+function polysquare_run_deploy_script {
+    polysquare_fetch_and_exec "$@"
+    >&2 printf "\n"
+}
+
 if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then
     trap __polysquare_delete_script_outputs EXIT
 fi
