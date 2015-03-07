@@ -265,7 +265,11 @@ function polysquare_activate_languages {
     echo "export PATH=${LANG_RT_PATH}/python/bin:\${PATH};"
     echo "export PATH=${LANG_RT_PATH}/node/bin:\${PATH};"
     echo "export PATH=${rvm_rubies_path}/${ruby_version}/bin:\${PATH};"
-    echo "export PYTHONPATH=${next_pythonpath}:${PYTHONPATH};"
+
+    # We don't include the old PYTHONPATH in the current PYTHONPATH so
+    # that pip doesn't favor installed packages from other virtual
+    # environments.
+    echo "export PYTHONPATH=${next_pythonpath};"
     echo "export PYTHONDONTWRITEBYTECODE=1;"
     echo "export LD_LIBRARY_PATH=${rvm_rubies_lib}:\${LD_LIBRARY_PATH};"
     echo "export LD_LIBRARY_PATH=${LANG_RT_PATH}/usr/lib:\${LD_LIBRARY_PATH};"

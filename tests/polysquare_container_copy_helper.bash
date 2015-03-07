@@ -23,7 +23,7 @@ function polysquare_container_copy_setup {
     rm -rf "${temporary_container_directory}"
     mv "${CONTAINER_DIR}" "${temporary_container_directory}"
 
-    export ORIGINAL_CONTAINER_DIR="${temporary_container_directory}"
+    export _POLYSQUARE_COPY_LAST_CONTAINER="${temporary_container_directory}"
 
     cp -rf "${temporary_container_directory}" "${CONTAINER_DIR}"
 }
@@ -31,6 +31,6 @@ function polysquare_container_copy_setup {
 function polysquare_container_copy_teardown {
     __polysquare_delete_script_outputs
     rm -rf "${CONTAINER_DIR}"
-    mv "${ORIGINAL_CONTAINER_DIR}" "${CONTAINER_DIR}"
-    unset ORIGINAL_CONTAINER_DIR
+    mv "${_POLYSQUARE_COPY_LAST_CONTAINER}" "${CONTAINER_DIR}"
+    unset _POLYSQUARE_COPY_LAST_CONTAINER
 }

@@ -12,13 +12,13 @@ load polysquare_python_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 setup() {
-    polysquare_container_copy_setup
     polysquare_python_setup
+    polysquare_container_copy_setup
 }
 
 teardown() {
-    polysquare_python_teardown
     polysquare_container_copy_teardown
+    polysquare_python_teardown
 }
 
 @test "Prospector is available after running python setup script" {
