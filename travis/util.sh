@@ -166,7 +166,7 @@ function polysquare_monitor_command_output {
     eval "${script_output_return}='${output}'"
 }
 
-__polysquare_script_failures=0;
+__polysquare_script_failures="${__polysquare_script_failures-0}"
 function polysquare_note_failure_and_continue {
     local status_return="$1"
     local concat_cmd=$(echo "${*:2}" | xargs echo)
@@ -339,12 +339,16 @@ function polysquare_fetch_and_exec {
 
 function polysquare_run_check_script {
     polysquare_fetch_and_exec "$@"
+    local status="$?"
     >&2 printf "\n"
+    (exit "${status}")
 }
 
 function polysquare_run_deploy_script {
     polysquare_fetch_and_exec "$@"
+    local status="$?"
     >&2 printf "\n"
+    (exit "${status}")
 }
 
 if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then

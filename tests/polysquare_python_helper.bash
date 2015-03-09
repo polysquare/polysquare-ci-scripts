@@ -7,11 +7,15 @@
 # See LICENCE.md for Copyright information
 
 load polysquare_project_copy_helper
+load polysquare_container_generate_helper
 
 function polysquare_python_setup {
+    polysquare_generate_container_setup \
+        python polysquare_setup_and_teardown_example_project
     polysquare_project_copy_setup python
 }
 
 function polysquare_python_teardown {
     polysquare_project_copy_teardown
+    polysquare_generate_container_teardown
 }

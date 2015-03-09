@@ -31,5 +31,16 @@ function polysquare_run_if_python_module_unavailable {
 # Runs pip install with some pre-set options for caching
 function polysquare_pip_install {
     pip install --cache-dir "${CONTAINER_DIR}/_languages/python/pip-cache" \
-        -I "$@"
+        "$@"
+}
+
+function polysquare_pip_install_deps {
+    local deps="$1"
+
+    if ! [ -f "${CONTAINER_DIR}/_languages/python/.installed-${deps}" ] ; then
+        polysquare_pip_install -e ".[${deps}]" \
+            --process-dependency-links -I
+        mkdir -p "${CONTAINER_DIR}/_languages/python"
+        touch "${CONTAINER_DIR}/_languages/python/.installed-${deps}"
+    fi
 }

@@ -12,13 +12,13 @@ load polysquare_python_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 setup() {
-    polysquare_container_copy_setup
     polysquare_python_setup
+    polysquare_container_copy_setup
 }
 
 teardown() {
-    polysquare_python_teardown
     polysquare_container_copy_teardown
+    polysquare_python_teardown
 }
 
 @test "Find bugs with prospector" {
@@ -31,8 +31,6 @@ teardown() {
     printf " = 1\n" >> "${_POLYSQUARE_TEST_PROJECT}/example/example.py"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
-
-    echo "${output}"
 
     [[ "${status}" == "1" ]]
     [[ "${lines[5]}" == "        example/example.py:" ]]
@@ -50,8 +48,6 @@ teardown() {
     printf " = 1\n" >> "${_POLYSQUARE_TEST_PROJECT}/tests/unit_test.py"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
-
-    echo "${output}"
 
     [[ "${status}" == "3" ]]
     [[ "${lines[5]}" == "        tests/unit_test.py:" ]]
@@ -117,8 +113,8 @@ teardown() {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/test.sh" -m example
 
     [[ "${status}" == "0" ]]
-    [[ "${lines[11]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]
-    [[ "${lines[12]}" == \
+    [[ "${lines[13]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]
+    [[ "${lines[14]}" == \
        "    tests.unit_test.TestUnit.test_simple_case ... ok" ]]
 }
 

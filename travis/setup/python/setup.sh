@@ -33,7 +33,7 @@ function polysquare_install_python_dependencies {
     function polysquare_install_python_setup_dependencies {
         function polysquare_install_python_documentation_tools {
             polysquare_task "Installing pandoc" \
-                polysquare_fatal_error_on_failure 
+                polysquare_fatal_error_on_failure \
                     polysquare_run_if_unavailable pandoc \
                         cabal install pandoc
             polysquare_task "Installing python documentation converters" \
@@ -48,18 +48,18 @@ function polysquare_install_python_dependencies {
     }
 
     function polysquare_install_python_linters {
-        local linters_to_install=(pylint
+        local linters_to_install=(pep8
+                                  pylint
                                   pylint-common
                                   dodgy
                                   frosted
                                   mccabe
                                   pep257
-                                  pep8
                                   pyflakes
                                   pyroma
                                   vulture
                                   git+https://github.com/landscapeio/prospector
-                                  flake8
+                                  flake8==2.3.0
                                   flake8-blind-except
                                   flake8-docstrings
                                   flake8-double-quotes
@@ -80,17 +80,18 @@ function polysquare_install_python_dependencies {
             linters_to_install+=("http://sourceforge.net/projects/pychecker/files/pychecker/0.8.19/pychecker-0.8.19.tar.gz/download")
         fi
 
+        # Force reinstallation here to ensure we get the right pep8 version
         local linters_space_separated="${linters_to_install[*]}"
         polysquare_fatal_error_on_failure \
             polysquare_run_if_unavailable prospector \
-                polysquare_pip_install "${linters_space_separated}"
+                polysquare_pip_install -I "${linters_space_separated}"
     }
 
     polysquare_task "Installing setup dependencies" \
         polysquare_install_python_setup_dependencies
     polysquare_task "Installing test dependencies" \
-        polysquare_fatal_error_on_failure polysquare_pip_install -e ".[test]" \
-            --process-dependency-links
+        polysquare_note_failure_and_continue status \
+            polysquare_pip_install_deps test
     polysquare_task "Installing coverage tools" \
         polysquare_fatal_error_on_failure \
             polysquare_run_if_unavailable coverage \
