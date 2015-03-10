@@ -86,6 +86,8 @@ else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi
 
+mkdir -p "${CONTAINER_DIR}/_cache"
+
 # Print a final \n
 
 >&2 printf "\n"
