@@ -62,7 +62,7 @@ if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
     >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
     >&2 eval "${curl_command}" \
         "public-travis-scripts.polysquare.org/util.sh" \
-            -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+            -o "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
     
     POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
 else
