@@ -61,7 +61,7 @@ _polysquare_install_program init_newline/polysquare-init-newline.cpp \
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
     >&2 mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}"
     >&2 eval "${curl_command}" \
-        "public-travis-scripts.polysquare.org/travis/util.sh" \
+        "public-travis-scripts.polysquare.org/util.sh" \
             -O "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
     
     POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
