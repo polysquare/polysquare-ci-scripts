@@ -13,10 +13,15 @@
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 polysquare_fetch_and_source "python-util.sh"
 
-polysquare_fetch_and_fwd "setup/project/language.sh" \
-    -l haskell \
-    -l ruby \
-    -d "${CONTAINER_DIR}"
+# Set up some programming languages our tools are written in.
+polysquare_fetch_and_fwd "setup/project/haskell_setup.sh" \
+    -d "${CONTAINER_DIR}" \
+    -v 7.8.4
+
+polysquare_fetch_and_fwd "setup/project/ruby_setup.sh" \
+    -d "${CONTAINER_DIR}" \
+    -v 1.9.3-p551
+
 polysquare_fetch_and_exec "setup/project/project.sh"
 
 polysquare_fetch "check/project/check.sh"

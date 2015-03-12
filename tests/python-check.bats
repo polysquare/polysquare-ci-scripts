@@ -32,6 +32,8 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
+
     [[ "${status}" == "1" ]]
     [[ "${lines[5]}" == "        example/example.py:" ]]
     [[ "${lines[6]}" == "            L7:80 None: pep8 - E501" ]]
@@ -49,6 +51,8 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
+
     [[ "${status}" == "3" ]]
     [[ "${lines[5]}" == "        tests/unit_test.py:" ]]
     [[ "${lines[6]}" == "            L18:80 None: pep8 - E501" ]]
@@ -61,6 +65,8 @@ teardown() {
         "${_POLYSQUARE_TEST_PROJECT}/example/example.py"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
+
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
 
     [[ "${status}" == "3" ]]
 }
@@ -77,6 +83,8 @@ teardown() {
     } >> "${bug_file}"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
+
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
 
     local int_div_warning=("        example/example.py:10:" \
                            "Using integer division (1 / 3) may return" \
@@ -97,6 +105,8 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
+
     [[ "${status}" == "1" ]]
     [[ "${lines[6]}" == "        example/example.py:" ]]
     [[ "${lines[7]}" == "            L9:- None: vulture - unused-function" ]]
@@ -106,11 +116,15 @@ teardown() {
 @test "Success on no bugs found" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
+
     [[ "${status}" == "0" ]]
 }
 
 @test "Run unit tests" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/test.sh" -m example
+
+    echo "OUTPUT OF THE LINT SCRIPT IS AS FOLLOWS: ${output}"
 
     [[ "${status}" == "0" ]]
     [[ "${lines[13]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]

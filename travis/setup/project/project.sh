@@ -4,7 +4,7 @@
 # Travis CI Script to set up project level linters. This script
 # assumes that a working and containerized installation of
 # both ruby and python are available. If they aren't, consider
-# running the setup/language.sh script first to install them.
+# running the language setup scripts in setup/project to install them.
 #
 # See LICENCE.md for Copyright information
 
@@ -16,7 +16,7 @@ function polysquare_set_up_project_linters {
         polysquare_fatal_error_on_failure \
             polysquare_run_if_unavailable mdl \
                 gem install \
-                    --user-install --conservative --no-ri --no-rdoc mdl
+                    --conservative --no-ri --no-rdoc mdl
     polysquare_task "Installing polysquare style guide linter" \
         polysquare_fatal_error_on_failure \
             polysquare_run_if_unavailable polysquare-generic-file-linter \

@@ -57,31 +57,46 @@ function polysquare_setup_python {
         # or for some other reason).
         local build_path="${container_dir}/_cache/python/${python_version}"
         local download_cache="${container_dir}/_cache/python/download"
+        local py_ver_cont="${python_container_dir}/${python_version}"
 
         mkdir -p "${build_path}"
 
         export PATH="${python_build_dir}/bin:${PATH}"
+        export PYTHONDONTWRITEBYTECODE=1
         polysquare_fatal_error_on_failure which python-build
 
         polysquare_fatal_error_on_failure \
             PYTHON_BUILD_CACHE_PATH="${download_cache}" \
                 PYTHON_BUILD_BUILD_PATH="${build_path}" \
                     python-build --keep "${python_version}" \
-                        "${python_container_dir}/${python_version}"
+                        "${py_ver_cont}"
+        
+        # Get rid of a bunch of things which we don't need
+        python_path=$(echo "${py_ver_cont}"/lib/python*)
+
+        # Unit tests and test data (~40MB)
+        find "${python_path}" -type d -name "test" -execdir rm -rf {} \; \
+            2>/dev/null
+
+        # Compiled python objects
+        find "${python_path}" -type f -name "*.pyc" -execdir rm -rf {} \; \
+            2>/dev/null
+        find "${python_path}" -type f -name "*.pyo" -execdir rm -rf {} \; \
+            2>/dev/null
     }
 
     function polysquare_activate_python {
         # There's only one python lib directory, so use a glob to find
         # out what it is
-        local py_cont="${python_container_dir}"
         local py_ver_cont="${python_container_dir}/${python_version}"
         local python_path
 
-        python_path=$(echo "${py_cont}"/"${python_version}"/lib/python*)
+        python_path=$(echo "${py_ver_cont}"/lib/python*)
 
-        echo "export PATH=${python_build_dir}/${python_version}/bin:\${PATH};"
+        echo "export PATH=${py_ver_cont}/bin:\${PATH};"
         echo "export PYTHONPATH=${python_path}/site-packages;"
         echo "export PYTHONDONTWRITEBYTECODE=1;"
+        echo "export VIRTUAL_ENV=${py_ver_cont};"
         echo "export POLYSQUARE_PYTHON_ACTIVE_VERSION=${python_version};"
         echo "export POLYSQUARE_PYTHON_ACTIVE_CONTAINER=${py_ver_cont};"
     }

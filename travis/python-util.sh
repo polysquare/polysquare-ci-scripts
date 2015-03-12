@@ -39,7 +39,7 @@ function polysquare_pip_install_deps {
 
     if ! [ -f "${CONTAINER_DIR}/_languages/python/.installed-${deps}" ] ; then
         polysquare_pip_install -e ".[${deps}]" \
-            --process-dependency-links -I
+            --process-dependency-links
         mkdir -p "${CONTAINER_DIR}/_languages/python"
         touch "${CONTAINER_DIR}/_languages/python/.installed-${deps}"
     fi
