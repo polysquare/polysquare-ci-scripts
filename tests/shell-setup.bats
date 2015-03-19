@@ -21,10 +21,6 @@ teardown() {
     polysquare_container_copy_teardown
 }
 
-@test "Copied container dir has done-stamp already in-place" {
-    [ -e "${CONTAINER_DIR}/_languages/done-stamp" ]
-}
-
 function shell_setup {
     local container="${CONTAINER_DIR}"
     local boot=$(bash "${bootstrap}" -d "${container}" -s setup/shell/setup.sh)

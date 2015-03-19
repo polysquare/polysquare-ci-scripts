@@ -11,8 +11,12 @@
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 
-polysquare_fetch_and_fwd "setup/project/language.sh" \
-    -l python \
-    -l ruby \
-    -d "${CONTAINER_DIR}"
+polysquare_fetch_and_fwd "setup/project/python_setup.sh" \
+    -d "${CONTAINER_DIR}" \
+    -v 2.7
+
+polysquare_fetch_and_fwd "setup/project/ruby_setup.sh" \
+    -d "${CONTAINER_DIR}" \
+    -v 1.9.3-p551
+
 polysquare_fetch_and_exec "setup/project/project.sh"

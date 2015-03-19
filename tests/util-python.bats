@@ -12,7 +12,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/python-util.sh"
     local python_version
     polysquare_get_python_version python_version
 
-    [[ "${python_version}" =~ ^[1-9]\.[1-9]\.[1-9]$ ]]
+    [[ "${python_version}" =~ ^[1-9]\.[1-9]$ ]]
 }
 
 @test "Run command if python module unavailable" {
