@@ -113,9 +113,12 @@ function polysquare_prepare_caches {
     polysquare_task "Copying language installations to container" \
         polysquare_fatal_error_on_failure \
             polysquare_copy_installation_dirs_to_cache_container
-
     polysquare_task "Cleaning up temporary build files" \
         polysquare_cleanup_build_artefacts
+    polysquare_task "Cleaning up cached CI scripts" \
+        polysquare_fatal_error_on_failure rm -rf "${CONTAINER_DIR}/_scripts"
+    polysquare_task "Cleaning up per-test caches" \
+        polysquare_fatal_error_on_failure rm -rf "${CONTAINER_DIR}/_cache"
 }
 
 polysquare_task "Preparing container for caching" \
