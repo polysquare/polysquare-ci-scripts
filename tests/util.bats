@@ -10,6 +10,8 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 @test "Calling print error prints bangs then args" {
     run polysquare_print_error "arg1 arg2 arg3"
+
+    # shellcheck disable=SC2154
     [ "${lines[0]}" = "!!! arg1 arg2 arg3" ]
 }
 
@@ -20,7 +22,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     run polysquare_task "Description" toplevel_only_task_function
 
-    [ "${lines[0]}" = "=> Description" ]
+    [ "${lines[0]}" = "=> Description" ] # shellcheck disable=SC2154
 }
 
 @test "Print description after dots and one indent on second task level" {
@@ -34,6 +36,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     run polysquare_task "Description" toplevel_only_task_function
 
+    # shellcheck disable=SC2154
     [ "${lines[1]}" = "    ... Secondary description" ]
 }
 
@@ -48,7 +51,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     run polysquare_task "Description" toplevel_only_task_function
 
-    [ "${lines[2]}" = "        output" ]
+    [ "${lines[2]}" = "        output" ] # shellcheck disable=SC2154
 }
 
 @test "Print description after dots and two indents on third task level" {
@@ -66,42 +69,41 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     run polysquare_task "Description" toplevel_only_task_function
 
+    # shellcheck disable=SC2154
     [ "${lines[2]}" = "        ... Tertiary description" ]
 }
 
 @test "Repeat switch for list" {
     polysquare_repeat_switch_for_list rval "-x" one two three
 
-    [ "${rval}" = "-x one -x two -x three" ]
+    [ "${rval?}" = "-x one -x two -x three" ]
 }
 
 @test "Repeat switch for list does not produce switch with no value" {
     polysquare_repeat_switch_for_list rval "-x" ""
-    [ "${rval}" = "" ]
+    [ -z "${rval}" ]
 }
 
 @test "Single find extension argument" {
     polysquare_get_find_extensions_arguments rval sh
-    [ "${rval}" = " -name \"*.sh\"" ]
+    [ "${rval?}" = " -name \"*.sh\"" ]
 }
 
 @test "Output of find command can be sorted" {
-    local tempdir=$(mktemp -d "/tmp/psq-find-output.XXXXXX")
+    local -r tempdir=$(mktemp -d "/tmp/psq-find-output.XXXXXX")
     mkdir -p "${tempdir}/a"
     mkdir -p "${tempdir}/b"
     touch "${tempdir}/a/1"
     touch "${tempdir}/a/2"
     touch "${tempdir}/b/1"
     touch "${tempdir}/b/2"
-    touch "${tempdir}/c"
 
     run polysquare_sorted_find "${tempdir}" -type f
 
-    [ "${lines[0]}" == "${tempdir}/c" ]
-    [ "${lines[1]}" == "${tempdir}/a/1" ]
-    [ "${lines[2]}" == "${tempdir}/a/2" ]
-    [ "${lines[3]}" == "${tempdir}/b/1" ]
-    [ "${lines[4]}" == "${tempdir}/b/2" ]
+    [ "${lines[0]}" == "${tempdir}/a/1" ] # shellcheck disable=SC2154
+    [ "${lines[1]}" == "${tempdir}/a/2" ] # shellcheck disable=SC2154
+    [ "${lines[2]}" == "${tempdir}/b/1" ] # shellcheck disable=SC2154
+    [ "${lines[3]}" == "${tempdir}/b/2" ] # shellcheck disable=SC2154
 }
 
 @test "Compare string versions less" {
@@ -131,7 +133,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         rval \
         true
 
-    [ "${lines[0]}" = "0" ]
+    [ "${lines[0]}" = "0" ] # shellcheck disable=SC2154
 }
 
 @test "Monitoring command status with false return value" {
@@ -141,14 +143,14 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         rval \
         false
 
-    [ "${lines[0]}" = "1" ]
+    [ "${lines[0]}" = "1" ] # shellcheck disable=SC2154
 }
 
 @test "Monitoring command status prints initial newline on output" {
     run polysquare_task "Task" \
         polysquare_monitor_command_status status echo "output"
 
-    [ "${lines[1]}" = "    output" ]
+    [ "${lines[1]}" = "    output" ] # shellcheck disable=SC2154
 }
 
 @test "Monitoring command status no newline on no output" {
@@ -156,7 +158,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         polysquare_monitor_command_status status \
             polysquare_task "Secondary" true
 
-    [ "${lines[1]}" = "    ... Secondary" ]
+    [ "${lines[1]}" = "    ... Secondary" ] # shellcheck disable=SC2154
 }
 
 @test "Monitoring command output prints dots whilst command executing" {
@@ -170,7 +172,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
     # Number of dots should be ${seconds_sleep} - 1, since
     # we start printing dots a little bit after we start sleeping.
-    [ "${output}" = ".." ]
+    [ "${output?}" = ".." ]
 }
 
 @test "Monitoring command output to standard output" {
@@ -181,7 +183,8 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         command_output \
         echo stdout
 
-    command_output=$(cat "${lines[1]}")
+    # shellcheck disable=SC2154
+    local -r command_output=$(cat "${lines[1]}")
 
     [ "${command_output}" = "stdout" ]
 }
@@ -191,6 +194,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
         command_status \
         false
 
+    # shellcheck disable=SC2154
     [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
 }
 
@@ -198,10 +202,11 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run print_returned_args_on_newlines \
         polysquare_report_failures_and_continue \
         1 \
-        command_status \
+        command_status_return \
         true
 
-    command_status="${lines[0]}"
+    # shellcheck disable=SC2154
+    local -r command_status="${lines[0]}"
 
     [ "${command_status}" = "0" ]
 }
@@ -210,10 +215,11 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run print_returned_args_on_newlines \
         polysquare_report_failures_and_continue \
         1 \
-        command_status \
+        command_status_return \
         false
 
-    command_status="${lines[0]}"
+    # shellcheck disable=SC2154
+    local -r command_status="${lines[0]}"
 
     [ "${command_status}" = "1" ]
 }
@@ -222,10 +228,11 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run print_returned_args_on_newlines \
         polysquare_note_failure_and_continue \
         1 \
-        command_status \
+        command_status_return \
         true
 
-    command_status="${lines[0]}"
+    # shellcheck disable=SC2154
+    local -r command_status="${lines[0]}"
 
     [ "${command_status}" = "0" ]
 }
@@ -234,10 +241,11 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run print_returned_args_on_newlines \
         polysquare_note_failure_and_continue \
         1 \
-        command_status \
+        command_status_return \
         false
 
-    command_status="${lines[0]}"
+    # shellcheck disable=SC2154
+    local -r command_status="${lines[0]}"
 
     [ "${command_status}" = "1" ]
 }
@@ -246,7 +254,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run polysquare_fatal_error_on_failure \
         false
 
-    [ "${status}" = "1" ]
+    [ "${status?}" = "1" ]
 }
 
 @test "Exit with success when no fatal errors to be reported" {
@@ -258,6 +266,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run polysquare_fatal_error_on_failure \
         false
 
+    # shellcheck disable=SC2154
     [ "${lines[0]}" = "!!! Subcommand false failed with 1" ]
 }
 
@@ -265,14 +274,12 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     run polysquare_run_if_unavailable __definitely_unavailable \
         echo "true"
 
-    echo "${output}"
-
-    [ "${lines[0]}" = "true" ]
+    [ "${lines[0]}" = "true" ] # shellcheck disable=SC2154
 }
 
 @test "Dont run subsequent command if another is available" {
     run polysquare_run_if_unavailable bash \
         echo "true"
 
-    [ "${output}" = "" ]
+    [ -z "${output}" ]
 }

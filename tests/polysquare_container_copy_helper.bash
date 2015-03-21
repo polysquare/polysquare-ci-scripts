@@ -11,21 +11,21 @@ function polysquare_container_copy_setup {
     # the old one out of the way. This ensures taht when scripts
     # invoke bootstrap.sh, they will only use executables in the
     # copy of CONTAINER_DIR's path
-    local temporary_container_directory=$(mktemp -d "${HOME}/.psq-cont.XXXXXX")
+    local -r temp_container_dir=$(mktemp -d "${HOME}/.psq-cont.XXXXXX")
 
-    # Move the container directory on top of temporary_container_directory
+    # Move the container directory on top of temp_container_dir
     # and then copy it back in place.
     #
     # This will ensure that that the tests are only modifying their own
     # copy of the container directory. The container directory must
     # always stay in the same place since the language installations often
     # have hardcoded references to it.
-    rm -rf "${temporary_container_directory}"
-    mv "${CONTAINER_DIR}" "${temporary_container_directory}"
+    rm -rf "${temp_container_dir}"
+    mv "${CONTAINER_DIR}" "${temp_container_dir}"
 
-    export _POLYSQUARE_COPY_LAST_CONTAINER="${temporary_container_directory}"
+    export _POLYSQUARE_COPY_LAST_CONTAINER="${temp_container_dir}"
 
-    cp -rf "${temporary_container_directory}" "${CONTAINER_DIR}"
+    cp -rf "${temp_container_dir}" "${CONTAINER_DIR}"
 }
 
 function polysquare_container_copy_teardown {

@@ -18,7 +18,7 @@ function polysquare_cabal_install_binary {
     local binary="$1"
 
     polysquare_get_system_identifier sys_id
-    local url="public-travis-hs-binaries.polysquare.org/${sys_id}/${binary}"
+    local url="public-travis-hs-binaries.polysquare.org/${sys_id?}/${binary}"
     local hs_ver_cont="${POLYSQUARE_HASKELL_ACTIVE_CONTAINER}"
     local output_file="${hs_ver_cont}/cabal/bin/${binary}"
 

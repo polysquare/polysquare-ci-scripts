@@ -43,14 +43,14 @@ teardown() {
 
 @test "Ruby 2.0.0-p0 installation can be activated and has correct verison" {
     local setup="${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/ruby_setup.sh"
-    local script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 2.0.0-p0)
+    local -r script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 2.0.0-p0)
     eval "${script}"
 
     which gem
     which ruby
     
     run ruby --version
-    [[ "${output}" =~ ^.*2.0.0p0.*$ ]]
+    [[ "${output?}" =~ ^.*2.0.0p0.*$ ]]
 }
 
 
@@ -66,14 +66,14 @@ teardown() {
 
 @test "Ruby 1.9.3-p551 installation can be activated and has correct verison" {
     local setup="${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/ruby_setup.sh"
-    local script=$(bash "${setup}" -d "{CONTAINER_DIR}" -v 1.9.3-p551)
+    local -r script=$(bash "${setup}" -d "{CONTAINER_DIR}" -v 1.9.3-p551)
     eval "${script}"
 
     which gem
     which ruby
     
     run ruby --version
-    [[ "${output}" =~ ^.*1.9.3p551.*$ ]]
+    [[ "${output?}" =~ ^.*1.9.3p551.*$ ]]
 }
 
 

@@ -16,7 +16,8 @@ setup() {
 
     local directory="${_POLYSQUARE_TEST_PROJECT}"
 
-    export _PROJECT_FILE_TO_LINT=$(mktemp "${directory}/test-XXXXXX.sh")
+    _PROJECT_FILE_TO_LINT=$(mktemp "${directory}/test-XXXXXX.sh")
+    export _PROJECT_FILE_TO_LINT
 }
 
 teardown() {
@@ -53,7 +54,7 @@ function write_invalid_header_to {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Lint files with failure using style-guide-linter" {
@@ -63,15 +64,15 @@ function write_invalid_header_to {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
-    [ "${status}" == "1" ]
+    [ "${status?}" == "1" ]
 }
 
 @test "Lint files in multiple directories" {
-    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
-    local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
+    local -r directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
+    local -r project_file_to_lint_one=$(mktemp "${directory_one}/testXXXXXX.sh")
 
-    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
-    local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
+    local -r directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
+    local -r project_file_to_lint_two=$(mktemp "${directory_two}/testXXXXXX.sh")
 
     # Enter the test project directory, since we're linting two different
     # subdirs from there
@@ -87,13 +88,13 @@ function write_invalid_header_to {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${directory_one}" -d "${directory_two}" -e sh
 
-    [ "${status}" == "1" ]
+    [ "${status?}" == "1" ]
 }
 
 @test "Lint files with multiple extensions" {
     local directory="${_POLYSQUARE_TEST_PROJECT}"
-    local project_file_to_lint_one=$(mktemp "${directory}/test-XXXXXX.sh")
-    local project_file_to_lint_two=$(mktemp "${directory}/test-XXXXXX.bash")
+    local -r project_file_to_lint_one=$(mktemp "${directory}/testXXXXXX.sh")
+    local -r project_file_to_lint_two=$(mktemp "${directory}/testXXXXXX.bash")
 
     pushd "${directory}"
     rm -f "${_PROJECT_FILE_TO_LINT}"
@@ -108,15 +109,15 @@ function write_invalid_header_to {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${directory}" -e sh -e bash
 
-    [ "${status}" == "1" ]
+    [ "${status?}" == "1" ]
 }
 
 @test "Exclude one file from linting" {
-    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
-    local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
+    local -r directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
+    local -r project_file_to_lint_one=$(mktemp "${directory_one}/testXXXXXX.sh")
 
-    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
-    local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
+    local -r directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
+    local -r project_file_to_lint_two=$(mktemp "${directory_two}/testXXXXXX.sh")
 
     # Enter the test project directory, since we're linting two different
     # subdirs from there
@@ -134,16 +135,16 @@ function write_invalid_header_to {
         -d "${directory_one}" -d "${directory_two}" -e sh \
             -x "${project_file_to_lint_two}"
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Exclude many files from linting" {
-    local directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
-    local project_file_to_lint_one=$(mktemp "${directory_one}/test-XXXXXX.sh")
+    local -r directory_one=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/1.XXXXXX")
+    local -r project_file_to_lint_one=$(mktemp "${directory_one}/testXXXXXX.sh")
 
-    local directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
-    local project_file_to_lint_two=$(mktemp "${directory_two}/test-XXXXXX.sh")
-    local project_file_to_lint_three=$(mktemp "${directory_two}/test-XXXXXX.sh")
+    local -r directory_two=$(mktemp -d "${_POLYSQUARE_TEST_PROJECT}/2.XXXXXX")
+    local -r project_file_to_lint_two=$(mktemp "${directory_two}/testXXXXXX.sh")
+    local -r project_file_to_lint_three=$(mktemp "${directory_two}/XXXXXX.sh")
 
     # Enter the test project directory, since we're linting two different
     # subdirs from there
@@ -163,19 +164,19 @@ function write_invalid_header_to {
             -x "${project_file_to_lint_two}" \
             -x "${project_file_to_lint_three}"
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Lint markdown documentation with success using mdl" {
     rm -f "${_PROJECT_FILE_TO_LINT}"
 
     # Valid markdown documentation
-    markdown_doc=$(mktemp "${_POLYSQUARE_TEST_PROJECT}/Documentation.XXXXXX.md")
+    mktemp "${_POLYSQUARE_TEST_PROJECT}/Documentation.XXXXXX.md"
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Lint markdown documentation with failure using mdl" {
@@ -188,6 +189,6 @@ function write_invalid_header_to {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/project/lint.sh" \
         -d "${_POLYSQUARE_TEST_PROJECT}" -e sh
 
-    [ "${status}" == "1" ]
+    [ "${status?}" == "1" ]
 }
 

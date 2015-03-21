@@ -33,7 +33,7 @@ function get_exclusions_arguments() {
         fi
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 function get_extensions_arguments() {
@@ -44,7 +44,7 @@ function get_extensions_arguments() {
         cmd_append="${cmd_append} -name \"*.${extension}\""
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 failures=0
@@ -87,7 +87,7 @@ get_exclusions_arguments excl_args
 get_extensions_arguments ext_args
 
 for dir in ${directories} ; do
-    cmd="find ${dir} -type f ${excl_args} ${ext_args}"
+    cmd="find ${dir} -type f ${excl_args?} ${ext_args?}"
     files=$(eval "${cmd}")
 
     for file in ${files} ; do

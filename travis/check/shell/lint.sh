@@ -33,13 +33,13 @@ function _polysquare_resolve_link {
 }
 
 function _polysquare_abs_dirname {
-  local cwd="$(pwd)"
+  local -r cwd="$(pwd)"
   local path="$1"
 
   while [ -n "$path" ]; do
     cd "${path%/*}"
     local name="${path##*/}"
-    path="$(_polysquare_resolve_link "$name" || true)"
+    path="$(_polysquare_resolve_link "$name")"
   done
 
   pwd
@@ -74,12 +74,12 @@ function polysquare_check_shell_files {
     done
 
     # Will be deleted at the end of this script
-    local temp_bats_files_dir=$(mktemp -d /tmp/psq-extracted-bats.XXXXXX)
-    local abs_path_to_bats=$(_polysquare_abs_dirname "$(which bats)")
+    local -r temp_bats_dir=$(mktemp -d /tmp/psq-extracted-bats.XXXXXX)
+    local -r abs_path_to_bats=$(_polysquare_abs_dirname "$(which bats)")
     local bats_preprocess_executable="${abs_path_to_bats}/bats-preprocess"
     for file in ${bats_files} ; do
-        local containing_dir="${temp_bats_files_dir}/${file%/*}"
-        local output_file="${temp_bats_files_dir}/${file##*/}"
+        local containing_dir="${temp_bats_dir}/${file%/*}"
+        local output_file="${temp_bats_dir}/${file##*/}"
         mkdir -p "${containing_dir}"
         eval "${bats_preprocess_executable} < ${file} > ${output_file}"
         sed -i "s/env bats/env bash/g" "${output_file}"
@@ -92,7 +92,7 @@ function polysquare_check_shell_files {
     polysquare_task "Linting shell files with bashlint" \
         polysquare_check_files_with bashlint "${shell_files}"
 
-    rm -rf "${temp_bats_files_dir}"
+    rm -rf "${temp_bats_dir}"
 }
 
 polysquare_task "Linting shell files" polysquare_check_shell_files

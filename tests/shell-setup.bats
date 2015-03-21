@@ -21,30 +21,20 @@ teardown() {
     polysquare_container_copy_teardown
 }
 
-function shell_setup {
-    local container="${CONTAINER_DIR}"
-    local boot=$(bash "${bootstrap}" -d "${container}" -s setup/shell/setup.sh)
-    eval "${boot}"
-}
-
 @test "Shellcheck is available after running bash setup script" {
     run which shellcheck
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Bashlint is available after running bash setup script" {
-    shell_setup
-
     run which bashlint
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "BATS is available after running bash setup script" {
-    shell_setup
-
     run which bats
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }

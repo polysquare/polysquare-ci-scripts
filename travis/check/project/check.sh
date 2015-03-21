@@ -25,8 +25,8 @@ polysquare_repeat_switch_for_list dir_switches "-d" "${directories}"
 
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/project/lint.sh" \
-    "$excl_switches" \
-    "$ext_switches" \
-    "$dir_switches"
+    "${excl_switches?}" \
+    "${ext_switches?}" \
+    "${dir_switches?}"
 
 polysquare_exit_with_failure_on_script_failures

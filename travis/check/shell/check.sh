@@ -24,15 +24,15 @@ export POLYSQUARE_CHECK_SCRIPTS="${POLYSQUARE_CI_SCRIPTS_DIR}/check"
 
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/project/check.sh" \
-    "$excl_switches" \
-    "$dir_switches" \
+    "${excl_switches?}" \
+    "${dir_switches?}" \
     -e sh \
     -e bash \
     -e bats
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/shell/lint.sh" \
-    "$excl_switches" \
-    "$dir_switches"
+    "${excl_switches?}" \
+    "${dir_switches?}"
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/shell/test.sh"
 

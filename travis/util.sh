@@ -57,7 +57,7 @@ function polysquare_task {
     fi
 
     # Use command substitution to only filter stderr
-    local arguments=$(echo "${*:3}" | xargs echo)
+    local -r arguments=$(echo "${*:3}" | xargs echo)
     eval "${function_name} ${arguments}" 2> >(polysquare_apply_indent)
     (( __polysquare_indent_level-- ))
 }
@@ -80,7 +80,7 @@ function __polysquare_output_with_initial_newline {
 
 function polysquare_monitor_command_status {
     local script_status_return="$1"
-    local concat_cmd=$(echo "${*:2}" | xargs echo)
+    local -r concat_cmd=$(echo "${*:2}" | xargs echo)
 
     eval "${concat_cmd}" > >(__polysquare_output_with_initial_newline)
     local result=$?
@@ -116,26 +116,27 @@ function __polysquare_convert_message_to_status {
         fi
     done
 
-    eval "${status_return}"="'${_internal_status}'"
+    eval "${status_return}='${_internal_status}'"
 }
 
 function polysquare_monitor_command_output {
     local script_status_return="$1"
     local script_output_return="$2"
-    local cmd=$(echo "${*:3}" | xargs echo)
-    local output="$(mktemp -t psq-util-sh.XXXXXX)"
+    local -r cmd=$(echo "${*:3}" | xargs echo)
+    local -r _output_file=$(mktemp -t psq-util-sh.XXXXXX)
     local result=0
-    __polysquare_script_output_files+=("${output}")
+    __polysquare_script_output_files+=("${_output_file}")
 
-    local start_time=$(date +"%s")
+    local start_time
+    start_time=$(date +"%s")
 
     # Execute the process - create a named pipe where we will watch for
     # its exit code, but redirect all output to ${output}
-    local fifo=$(mktemp /tmp/psq-monitor-fifo.XXXXXX)
+    local -r fifo=$(mktemp /tmp/psq-monitor-fifo.XXXXXX)
     rm -f "${fifo}"
     mkfifo "${fifo}"
     exec 3<>"${fifo}" # Open fifo pipe for read/write.
-    (eval "${cmd} > ${output} 2>&1"; echo "$?" > "${fifo}") &
+    (eval "${cmd} > ${_output_file} 2>&1"; echo "$?" > "${fifo}") &
 
     # This is effectively a tool to feed the travis-ci script
     # watchdog. Print a dot every POLYSQUARE_DOT_SLEEP seconds (waiting
@@ -146,7 +147,9 @@ function polysquare_monitor_command_output {
         read -t 1 -u 3 result
         if [[ "$?" != "0" ]] ; then
             if [[ -z "${_POLYSQUARE_DONT_PRINT_DOTS}" ]] ; then
-                local current_time=$(date +"%s")
+                local current_time
+
+                current_time=$(date +"%s")
                 local time_delta=$((current_time - start_time))
 
                 if [ "${time_delta}" -ge "${POLYSQUARE_DOT_SLEEP}" ] ; then
@@ -163,13 +166,13 @@ function polysquare_monitor_command_output {
     rm -f "${fifo}"
 
     eval "${script_status_return}='${result}'"
-    eval "${script_output_return}='${output}'"
+    eval "${script_output_return}='${_output_file}'"
 }
 
 __polysquare_script_failures="${__polysquare_script_failures-0}"
 function polysquare_note_failure_and_continue {
     local status_return="$1"
-    local concat_cmd=$(echo "${*:2}" | xargs echo)
+    local -r concat_cmd=$(echo "${*:2}" | xargs echo)
     polysquare_monitor_command_status status "${concat_cmd}"
     if [[ "${status}" != "0" ]] ; then
         (( __polysquare_script_failures++ ))
@@ -180,7 +183,7 @@ function polysquare_note_failure_and_continue {
 
 function polysquare_report_failures_and_continue {
     local status_return="$1"
-    local concat_cmd=$(echo "${*:2}" | xargs echo)
+    local -r concat_cmd=$(echo "${*:2}" | xargs echo)
     polysquare_monitor_command_output status output_file "${concat_cmd}"
 
     if [[ "${status}" != "0" ]] ; then
@@ -201,7 +204,7 @@ function polysquare_fatal_error_on_failure {
     # or a series of subscripts, have failed.
     polysquare_report_failures_and_continue exit_status "$@"
 
-    if [[ "${exit_status}" != "0" ]] ; then
+    if [[ "${exit_status?}" != "0" ]] ; then
         exit "${exit_status}"
     fi
 }
@@ -225,7 +228,7 @@ function polysquare_get_find_exclusions_arguments {
         fi
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 function polysquare_get_find_extensions_arguments {
@@ -315,7 +318,7 @@ function polysquare_get_system_identifier {
                 "${config_project}/config.guess"
 
     chmod +x "${CONTAINER_DIR}/shell/bin/config.guess" > /dev/null 2>&1
-    local _system_identifier="$(config.guess)"
+    local -r _system_identifier="$(config.guess)"
 
     eval "${_system_identifier_var}='${_system_identifier}'"
 }
@@ -323,7 +326,7 @@ function polysquare_get_system_identifier {
 function polysquare_fetch_and_get_local_file {
     result=$1
     local url="${POLYSQUARE_HOST}/$2"
-    local domain="$(echo "${url}" | cut -d/ -f1)"
+    local -r domain="$(echo "${url}" | cut -d/ -f1)"
     local path="${url#$domain}"
     local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path:1}"
     

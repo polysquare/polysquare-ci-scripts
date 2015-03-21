@@ -33,7 +33,7 @@ teardown() {
 
 @test "Node 0.12.0 installation can be activated and has correct verison" {
     local setup="${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/node_setup.sh"
-    local script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 0.12.0)
+    local -r script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 0.12.0)
     echo "${script}"
     eval "${script}"
 
@@ -41,18 +41,18 @@ teardown() {
     which node
     
     run node --version
-    [[ "${output}" =~ ^.*0.12.0.*$ ]]
+    [[ "${output?}" =~ ^.*0.12.0.*$ ]]
 }
 
 @test "Node 0.11.0 installation can be activated and has correct verison" {
     local setup="${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/node_setup.sh"
-    local script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 0.11.0)
+    local -r script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 0.11.0)
     eval "${script}"
 
     which npm
     which node
     
     run node --version
-    [[ "${output}" =~ ^.*0.11.0.*$ ]]
+    [[ "${output?}" =~ ^.*0.11.0.*$ ]]
 }
 

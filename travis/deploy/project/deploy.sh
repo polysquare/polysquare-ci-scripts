@@ -58,9 +58,9 @@ function polysquare_prepare_caches {
             find "${haskell_dir}" -type f -name "*.o" -execdir rm -rf {} \; \
                 2>/dev/null
             find "${haskell_dir}" -type f -name \
-                "*_debug-ghc${haskell_version}.so" -execdir \
+                "*_debug-ghc*.so" -execdir \
                     rm -rf {} \; 2>/dev/null
-            find "${haskell_dir}" -type f -name "*_l-ghc${haskell_version}.so" \
+            find "${haskell_dir}" -type f -name "*_l-ghc*.so" \
                 -execdir rm -rf {} \; 2>/dev/null
 
             # Profiling, debug, other libraries
@@ -80,7 +80,7 @@ function polysquare_prepare_caches {
             local python_dir="${lang_rt_path}/python"
 
             local cmd="find ${lang_rt_path}/python -type f -name \"*.pth\""
-            local easy_install_pth_files=$(eval "${cmd}")
+            local -r easy_install_pth_files=$(eval "${cmd}")
 
             find "${python_dir}" -type f -name "*.pyc" -execdir \
                 rm -f ";" 2>/dev/null
@@ -116,9 +116,9 @@ function polysquare_prepare_caches {
     polysquare_task "Cleaning up temporary build files" \
         polysquare_cleanup_build_artefacts
     polysquare_task "Cleaning up cached CI scripts" \
-        polysquare_fatal_error_on_failure rm -rf "${CONTAINER_DIR}/_scripts"
+        polysquare_fatal_error_on_failure rm -rf "${container_dir}/_scripts"
     polysquare_task "Cleaning up per-test caches" \
-        polysquare_fatal_error_on_failure rm -rf "${CONTAINER_DIR}/_cache"
+        polysquare_fatal_error_on_failure rm -rf "${container_dir}/_cache"
 }
 
 polysquare_task "Preparing container for caching" \

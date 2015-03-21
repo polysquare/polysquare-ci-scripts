@@ -30,7 +30,7 @@ function get_exclusions_arguments() {
         fi
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 failures=0
@@ -65,7 +65,7 @@ check_status_of pip install bashlint
 printf "\n   ... Linting files "
 get_exclusions_arguments excl_args
 for directory in ${directories} ; do
-    cmd="find ${directory} -type f -name \"*.sh\" ${excl_args}"
+    cmd="find ${directory} -type f -name \"*.sh\" ${excl_args?}"
     shell_files=$(eval "${cmd}")
 
     for file in ${shell_files} ; do
