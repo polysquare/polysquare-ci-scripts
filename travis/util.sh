@@ -302,6 +302,22 @@ function polysquare_download_file_if_output_unavailable {
     fi
 }
 
+# This function uses config.guess from the autoconf suite to get a unique
+# machine identifier. This is useful if we want to download binaries.
+function polysquare_get_system_identifier {
+    local _system_identfier_var="$1"
+
+    polysquare_run_if_unavailable config.guess \
+        polysquare_download_file_if_output_unavailable \
+            "${CONTAINER_DIR}/shell/bin/config.guess" \
+                "public-autoconf-scripts.polysquare.org/config.guess"
+
+    chmod +x "${CONTAINER_DIR}/shell/bin/config.guess" > /dev/null 2>&1
+    local _system_identifier="$(config.guess)"
+
+    eval "${_system_identifier_var}='${_system_identifier}'"
+}
+
 function polysquare_fetch_and_get_local_file {
     result=$1
     local url="${POLYSQUARE_HOST}/$2"
