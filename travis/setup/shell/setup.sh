@@ -11,7 +11,9 @@
 # See LICENCE.md for Copyright information
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
-source "${POLYSQUARE_CI_SCRIPTS_DIR}/python-util.sh"
+
+polysquare_fetch_and_source "python-util.sh"
+polysquare_fetch_and_source "haskell-util.sh"
 
 # Set up some programming languages our tools are written in.
 polysquare_fetch_and_fwd "setup/project/haskell_setup.sh" \
@@ -48,9 +50,8 @@ function polysquare_install_shell_linting_utils {
     polysquare_fatal_error_on_failure \
         polysquare_run_if_unavailable bashlint \
             polysquare_pip_install bashlint
-    polysquare_fatal_error_on_failure \
-        polysquare_run_if_unavailable shellcheck \
-            cabal install shellcheck
+    polysquare_run_if_unavailable shellcheck \
+        polysquare_cabal_install_binary shellcheck
 }
 
 polysquare_task "Installing shell testing utilities" \
