@@ -95,9 +95,6 @@ function polysquare_setup_haskell {
             -execdir rm -rf {} \; 2>/dev/null
         find "${hs_ver_cont}" -type f -name "*_l-ghc${haskell_version}.so" \
             -execdir rm -rf {} \; 2>/dev/null
-        find "${hs_ver_cont}" -type f -name "*.so" \
-            ! -path "${hs_ver_cont}/ghc/lib/ghc-${haskell_version}/*" \
-                -execdir rm -rf {} \; 2>/dev/null
 
         # Profiling, debug, other libraries
         find "${hs_ver_cont}" -type f -name "lib*_p.a" -execdir rm -rf {} \; \
@@ -113,6 +110,11 @@ function polysquare_setup_haskell {
 
         # Documentation (~100Mb)
         polysquare_fatal_error_on_failure rm -rf "${hs_ver_cont}/ghc/share/doc"
+        
+        # Logs and other temporary files
+        polysquare_fatal_error_on_failure rm -rf \
+            "${haskell_build_dir}/tmp"
+        polysquare_fatal_error_on_failure rm -rf "${hs_ver_cont}/hsenv.log"
         
         # Disable library-profiling and documentation building
         echo "${cabal_config_append}" >> "${hs_ver_cont}/cabal/config"
