@@ -20,21 +20,21 @@ teardown() {
 
 @test "hsenv is installed in container" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/haskell_setup.sh" -d \
-        "${CONTAINER_DIR}"
+        "${CONTAINER_DIR}" -f
 
     [ -f "${CONTAINER_DIR}/_languages/haskell/haskell-build/bin/hsenv" ]
 }
 
 @test "Can install GHC versions" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/haskell_setup.sh" -d \
-        "${CONTAINER_DIR}" -v "7.8.4"
+        "${CONTAINER_DIR}" -v "7.8.4" -f
 
     [ -f "${CONTAINER_DIR}/_languages/haskell/.hsenv_7.8.4/ghc/bin/ghc" ]
 }
 
 @test "GHC 7.8.4 installation can be activated and has correct verison" {
     bash "${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/haskell_setup.sh" -d \
-        "${CONTAINER_DIR}" -v "7.8.4"
+        "${CONTAINER_DIR}" -v "7.8.4" -f
 
     PATH="${CONTAINER_DIR}/_languages/haskell/.hsenv_7.8.4/ghc/bin:${PATH}" \
         run ghc --version

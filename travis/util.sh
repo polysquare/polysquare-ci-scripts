@@ -351,6 +351,11 @@ function polysquare_fetch_and_eval {
     eval "$(bash ${fetched_file} "${@:2}")"
 }
 
+function polysquare_eval_and_fwd {
+    echo "$@"
+    eval "$@"
+}
+
 function polysquare_fetch_and_fwd {
     local fetched_file=""
     polysquare_fetch_and_get_local_file fetched_file "$1"
