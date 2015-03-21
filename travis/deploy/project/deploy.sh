@@ -52,22 +52,43 @@ function polysquare_prepare_caches {
 
     function polysquare_cleanup_build_artefacts {
         function polysquare_cleanup_haskell_artefacts {
-            local cabal_lib="${lang_rt_path}/.cabal/lib"
-            find "${cabal_lib}" -type f -name "*.a" -execdir \
-                rm -f ";" 2>/dev/null
-            find "${cabal_lib}" -type f -name "*.o" -execdir \
-                rm -f ";" 2>/dev/null
-            find "${lang_rt_path}/.cabal/packages" -type f \
-                -name "*.tar.gz" -execdir rm -f ";" 2>/dev/null
+            local haskell_dir="${lang_rt_path}/haskell"
+        
+            # Object code and dynamic libraries
+            find "${haskell_dir}" -type f -name "*.o" -execdir rm -rf {} \; \
+                2>/dev/null
+            find "${haskell_dir}" -type f -name \
+                "*_debug-ghc${haskell_version}.so" -execdir \
+                    rm -rf {} \; 2>/dev/null
+            find "${haskell_dir}" -type f -name "*_l-ghc${haskell_version}.so" \
+                -execdir rm -rf {} \; 2>/dev/null
+
+            # Profiling, debug, other libraries
+            find "${haskell_dir}" -type f -name "lib*_p.a" -execdir \
+                rm -rf {} \; 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_l.a" -execdir \
+                rm -rf {} \; 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_thr.a" -execdir \
+                rm -rf {} \; 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_debug.a" -execdir \
+                rm -rf {} \; 2>/dev/null
+            find "${haskell_dir}" -type f -name "*.p_*" -execdir rm -rf {} \; \
+                2>/dev/null 
         }
 
         function polysquare_cleanup_python_artefacts {
             local python_dir="${lang_rt_path}/python"
 
+            local cmd="find ${lang_rt_path}/python -type f -name \"*.pth\""
+            local easy_install_pth_files=$(eval "${cmd}")
+
             find "${python_dir}" -type f -name "*.pyc" -execdir \
                 rm -f ";" 2>/dev/null
             find "${lang_rt_path}" -type d -name "__pycache__" -execdir \
                 rm -rf ";" 2>/dev/null
+            for file in ${easy_install_pth_files} ; do
+                touch -mt 0001010000 "${file}" 2>/dev/null
+            done
         }
 
         function polysquare_cleanup_node_artefacts {
@@ -78,14 +99,14 @@ function polysquare_prepare_caches {
             done
         }
 
-        polysquare_run_if_dir_exists "${lang_rt_path}/.cabal" \
-            polysquare_task "Cleaning up haskell artefacts" \
+        polysquare_task "Cleaning up haskell artefacts" \
+            polysquare_run_if_dir_exists "${lang_rt_path}/haskell" \
                 polysquare_cleanup_haskell_artefacts
-        polysquare_run_if_dir_exists "${lang_rt_path}/python" \
-            polysquare_task "Cleaning up python artefacts" \
+        polysquare_task "Cleaning up python artefacts" \
+            polysquare_run_if_dir_exists "${lang_rt_path}/python" \
                 polysquare_cleanup_python_artefacts
-        polysquare_run_if_dir_exists "${lang_rt_path}/node" \
-            polysquare_task "Cleaning up node artefacts" \
+        polysquare_task "Cleaning up node artefacts" \
+            polysquare_run_if_dir_exists "${lang_rt_path}/node" \
                 polysquare_cleanup_node_artefacts
     }
 
@@ -94,8 +115,7 @@ function polysquare_prepare_caches {
             polysquare_copy_installation_dirs_to_cache_container
 
     polysquare_task "Cleaning up temporary build files" \
-        polysquare_fatal_error_on_failure \
-            polysquare_cleanup_build_artefacts
+        polysquare_cleanup_build_artefacts
 }
 
 polysquare_task "Preparing container for caching" \

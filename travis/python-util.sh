@@ -13,6 +13,14 @@ function polysquare_get_python_version {
     eval "${python_version_variable}='${_python_version}'"
 }
 
+function polysquare_get_python_version_at_minor {
+    polysquare_get_python_version full_python_version
+    local python_version_at_minor_variable="$1"
+    local _python_version_at_minor="${full_python_version:0:3}"
+
+    eval "${python_version_at_minor_variable}='${_python_version_at_minor}'"
+}
+
 function polysquare_python_is_pypy {
     local is_pypy_variable="$1"
     python --version 2>&1 | grep PyPy > /dev/null
