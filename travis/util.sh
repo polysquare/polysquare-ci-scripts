@@ -290,12 +290,9 @@ function polysquare_run_if_unavailable {
     fi
 }
 
-function polysquare_fetch_and_get_local_file {
-    result=$1
-    local url="${POLYSQUARE_HOST}/$2"
-    local domain="$(echo "${url}" | cut -d/ -f1)"
-    local path="${url#$domain}"
-    local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path:1}"
+function polysquare_download_file_if_output_unavailable {
+    local output_file="$1"
+    local url="$2"
 
     # Only download if we don't have the script already. This means
     # that if a project wants a newer script, it has to clear its caches.
@@ -303,6 +300,16 @@ function polysquare_fetch_and_get_local_file {
         curl -LSs "${url}" --create-dirs -o "${output_file}" \
             --retry 999 --retry-max-time 0 -C -
     fi
+}
+
+function polysquare_fetch_and_get_local_file {
+    result=$1
+    local url="${POLYSQUARE_HOST}/$2"
+    local domain="$(echo "${url}" | cut -d/ -f1)"
+    local path="${url#$domain}"
+    local output_file="${POLYSQUARE_CI_SCRIPTS_DIR}/${path:1}"
+    
+    polysquare_download_file_if_output_unavailable "${output_file}" "${url}"
 
     eval "${result}='${output_file}'"
 }
