@@ -95,7 +95,7 @@ function polysquare_install_python_dependencies {
     polysquare_task "Installing setup dependencies" \
         polysquare_install_python_setup_dependencies
     polysquare_task "Installing test dependencies" \
-        polysquare_note_failure_and_continue status \
+        polysquare_fatal_error_on_failure \
             polysquare_pip_install_deps test
     polysquare_task "Installing coverage tools" \
         polysquare_fatal_error_on_failure \
