@@ -113,8 +113,8 @@ teardown() {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/test.sh" -m example
 
     [[ "${status}" == "0" ]]
-    [[ "${lines[13]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]
-    [[ "${lines[14]}" == \
+    [[ "${lines[11]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]
+    [[ "${lines[12]}" == \
        "    tests.unit_test.TestUnit.test_simple_case ... ok" ]]
 }
 
