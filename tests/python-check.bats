@@ -160,4 +160,6 @@ teardown() {
 
     [[ "${status?}" == "0" ]]
     [[ "${lines[1]}" == "    running install" ]] # shellcheck disable=SC2154
+
+    run python setup.py uninstall
 }
