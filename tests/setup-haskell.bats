@@ -39,6 +39,6 @@ teardown() {
     PATH="${CONTAINER_DIR}/_languages/haskell/.hsenv_7.8.4/ghc/bin:${PATH}" \
         run ghc --version
 
-    [[ "${output}" =~ ^.*7.8.4.*$ ]]
+    [[ "${output?}" =~ ^.*7.8.4.*$ ]]
 }
 

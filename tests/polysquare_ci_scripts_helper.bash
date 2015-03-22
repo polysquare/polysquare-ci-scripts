@@ -6,10 +6,15 @@
 #
 # See LICENCE.md for Copyright information
 
-export POLYSQUARE_TRAVIS_SCRIPTS=$(cd "${BATS_TEST_DIRNAME}/../travis"; pwd)
-export _POLYSQUARE_DONT_PRINT_DOTS=1
-export _POLYSQUARE_TESTING_WITH_BATS=1
-export POLYSQUARE_HOST="127.0.0.1:8080"
+function polysquare_ci_scripts_helper_exports {
+    travis_scripts="${BATS_TEST_DIRNAME}/../travis"
+    POLYSQUARE_TRAVIS_SCRIPTS=$(cd "${travis_scripts}"; pwd)
+
+    export POLYSQUARE_TRAVIS_SCRIPTS
+    export _POLYSQUARE_DONT_PRINT_DOTS=1
+    export _POLYSQUARE_TESTING_WITH_BATS=1
+    export POLYSQUARE_HOST="127.0.0.1:8080"
+}
 
 function print_returned_args_on_newlines {
     local function_name="$1"
@@ -23,6 +28,8 @@ function print_returned_args_on_newlines {
     for index in "${!arguments_to_check[@]}" ; do
         local argument_name="${arguments_to_check[$index]}"
         eval "local argument_value=\$$argument_name"
-        echo "${argument_value}"
+        echo "${argument_value?}"
     done
 }
+
+polysquare_ci_scripts_helper_exports

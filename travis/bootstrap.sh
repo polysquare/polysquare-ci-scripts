@@ -37,9 +37,9 @@ function _polysquare_install_program {
     if [[ "$?" == "1" ]] ; then
         progs_base="public-travis-programs.polysquare.org"
         indent_src="${progs_base}/${relative_src}"
-        indent_prog="${CONTAINER_DIR}/shell/bin/${prog_name}"
+        indent_prog="${container_dir}/shell/bin/${prog_name}"
 
-        >&2 mkdir -p "${CONTAINER_DIR}/shell/bin"
+        >&2 mkdir -p "${container_dir}/shell/bin"
         eval "${curl_command}" "${indent_src}" | c++ -xc++ -o "${indent_prog}" -
         >&2 chmod +x "${indent_prog}"
     fi
@@ -50,7 +50,7 @@ function eval_and_fwd {
 }
 
 eval_and_fwd "export CONTAINER_DIR=${container_dir};"
-eval_and_fwd "export PATH=${CONTAINER_DIR}/shell/bin/:\${PATH};"
+eval_and_fwd "export PATH=\${CONTAINER_DIR}/shell/bin/:\${PATH};"
 
 _polysquare_install_program indent/polysquare-indent.cpp polysquare_indent
 _polysquare_install_program init_newline/polysquare-init-newline.cpp \
@@ -64,7 +64,7 @@ if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
         "public-travis-scripts.polysquare.org/util.sh" \
             -o "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
     
-    POLYSQUARE_CI_SCRIPTS_DIR="${CONTAINER_DIR}/_scripts"
+    POLYSQUARE_CI_SCRIPTS_DIR="${container_dir}/_scripts"
 else
     POLYSQUARE_CI_SCRIPTS_DIR=$(dirname "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP}")
 fi
@@ -86,7 +86,7 @@ else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi
 
-mkdir -p "${CONTAINER_DIR}/_cache"
+mkdir -p "${container_dir}/_cache"
 
 # Print a final \n
 

@@ -25,7 +25,7 @@ function get_exclusions_arguments() {
         cmd_append="${cmd_append} -x ${exclusion}"
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 get_exclusions_arguments lint_exclusions
@@ -33,8 +33,8 @@ get_exclusions_arguments lint_exclusions
 # Sets up container for us to use later. This makes the
 # psq-travis-container-exec command available for use.
 bash cmake-install.sh -v "${CMAKE_VERSION}"
-eval "bash cmake-lint.sh -n ${NAMESPACE} ${lint_exclusions}"
-eval "bash project-lint.sh -d . -e cmake -e txt ${lint_exclusions}"
+eval "bash cmake-lint.sh -n ${NAMESPACE} ${lint_exclusions?}"
+eval "bash project-lint.sh -d . -e cmake -e txt ${lint_exclusions?}"
 
 # Create a temporary wrapper script which forwards on to cmake-tests.sh
 tests_wrapper=$(mktemp /tmp/tmp.XXXXXXX)

@@ -56,7 +56,7 @@ function get_exclusions_arguments() {
         fi
     done
 
-    eval "${result}"="'${cmd_append}'"
+    eval "${result}='${cmd_append}'"
 }
 
 printf "\n   ... Installing linters "
@@ -64,8 +64,8 @@ check_status_of pip install cmakelint polysquare-cmake-linter
 
 printf "\n   ... Running linters"
 get_exclusions_arguments excl
-lint_cmake_modules_cmd="find . -type f -name \"*.cmake\" ${excl} -print0 | xargs -L1 -0 echo"
-lint_cmake_lists_cmd="find . -type f -name \"CMakeLists.txt\" ${excl} -print0 | xargs -L1 -0 echo"
+lint_cmake_modules_cmd="find . -type f -name \"*.cmake\" ${excl?} -print0 | xargs -L1 -0 echo"
+lint_cmake_lists_cmd="find . -type f -name \"CMakeLists.txt\" ${excl?} -print0 | xargs -L1 -0 echo"
 lint_cmake_modules=$(eval "${lint_cmake_modules_cmd}")
 lint_cmake_lists=$(eval "${lint_cmake_lists_cmd}")
 

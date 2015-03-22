@@ -26,12 +26,12 @@ function polysquare_generate_container_setup {
             2> /dev/null
     fi
 
-    local test_container_dir_temp=$(mktemp -d "/tmp/container-swp.XXXXXX")
-    rm -rf "${test_container_dir_temp}"
-    mv "${CONTAINER_DIR}" "${test_container_dir_temp}"
+    local -r temp_cont_dir_temp=$(mktemp -d "/tmp/container-swp.XXXXXX")
+    rm -rf "${temp_cont_dir_temp}"
+    mv "${CONTAINER_DIR}" "${temp_cont_dir_temp}"
     mv "${test_container_dir}" "${CONTAINER_DIR}"
 
-    export _POLYSQUARE_GENERATE_LAST_CONTAINER="${test_container_dir_temp}"
+    export _POLYSQUARE_GENERATE_LAST_CONTAINER="${temp_cont_dir_temp}"
     export _POLYSQUARE_GENERATE_TEST_CONTAINER="${test_container_dir}"
 }
 

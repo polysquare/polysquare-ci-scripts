@@ -170,7 +170,7 @@ function polysquare_setup_node {
 function polysquare_setup_ruby {
     # Install rvm
     function polysquare_install_rvm {
-        local rvm_script=$(mktemp /tmp/psq-rvm-install.XXXXXX)
+        local -r rvm_script=$(mktemp /tmp/psq-rvm-install.XXXXXX)
         curl -LSs https://get.rvm.io > "${rvm_script}"
 
         polysquare_fatal_error_on_failure \
@@ -257,7 +257,7 @@ function polysquare_restore_language_runtimes_from_cache {
 function polysquare_activate_languages {
     local rvm_rubies_path="${HOME}/.rvm/rubies"
     local rvm_rubies_lib="${rvm_rubies_path}/${ruby_version}/lib"
-    local gem_user_dir=$(ruby -rubygems -e 'puts Gem.user_dir')
+    local -r gem_user_dir=$(ruby -rubygems -e 'puts Gem.user_dir')
 
     echo "export PATH=${LANG_RT_PATH}/usr/bin:\${PATH};"
     echo "export PATH=${HOME}/.cabal/bin:\${PATH};"

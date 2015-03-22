@@ -26,13 +26,13 @@ export POLYSQUARE_CHECK_SCRIPTS="${POLYSQUARE_CI_SCRIPTS_DIR}/check"
 
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/project/check.sh" \
-    "$excl_switches" \
-    "$dir_switches" \
+    "${excl_switches?}" \
+    "${dir_switches?}" \
     -e py
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/python/lint.sh" \
-    "$dir_switches" \
-    "$excl_switches"
+    "${dir_switches?}" \
+    "${excl_switches?}"
 polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/python/test.sh" \
     -m "${module}"

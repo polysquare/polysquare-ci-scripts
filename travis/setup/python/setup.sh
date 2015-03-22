@@ -11,7 +11,9 @@
 # See LICENCE.md for Copyright information
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
+
 polysquare_fetch_and_source "python-util.sh"
+polysquare_fetch_and_source "haskell-util.sh"
 
 # Set up some programming languages our tools are written in.
 polysquare_fetch_and_fwd "setup/project/haskell_setup.sh" \
@@ -38,9 +40,8 @@ function polysquare_install_python_dependencies {
     function polysquare_install_python_setup_dependencies {
         function polysquare_install_python_documentation_tools {
             polysquare_task "Installing pandoc" \
-                polysquare_fatal_error_on_failure \
-                    polysquare_run_if_unavailable pandoc \
-                        cabal install pandoc
+                polysquare_run_if_unavailable pandoc \
+                    polysquare_cabal_install pandoc
             polysquare_task "Installing python documentation converters" \
                 polysquare_fatal_error_on_failure \
                     polysquare_run_if_python_module_unavailable \

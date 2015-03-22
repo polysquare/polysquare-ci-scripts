@@ -38,7 +38,7 @@ function polysquare_setup_node {
     function polysquare_install_node {
         # Set PYTHONPATH and use nodeenv to download a binary node for the
         # specified version
-        local python_path=$(echo "${node_env_dir}"/lib/python*)
+        local -r python_path=$(echo "${node_env_dir}"/lib/python*)
         
         polysquare_fatal_error_on_failure \
             PYTHONPATH="${python_path}/site-packages" \

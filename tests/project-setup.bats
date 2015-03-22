@@ -24,11 +24,11 @@ teardown() {
 @test "Polysquare style guide linter is available after running setup script" {
     run which polysquare-generic-file-linter
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }
 
 @test "Markdownlint is available after running setup script" {
     run which mdl
 
-    [ "${status}" == "0" ]
+    [ "${status?}" == "0" ]
 }

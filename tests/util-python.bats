@@ -12,7 +12,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/python-util.sh"
     local python_version
     polysquare_get_python_version python_version
 
-    [[ "${python_version}" =~ ^[1-9]\.[1-9]$ ]]
+    [[ "${python_version}" =~ ^[1-9]\.[1-9].*$ ]]
 }
 
 @test "Get python version at minor" {
@@ -25,11 +25,11 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/python-util.sh"
 @test "Run command if python module unavailable" {
     run polysquare_run_if_python_module_unavailable __unavailable echo "true"
 
-    [[ "${output}" == "true" ]]
+    [[ "${output?}" == "true" ]]
 }
 
 @test "Dont run command if python module available" {
     run polysquare_run_if_python_module_unavailable sys echo "true"
 
-    [[ "${output}" == "" ]]
+    [ -z "${output}" ]
 }

@@ -53,7 +53,7 @@ teardown() {
     PATH="${CONTAINER_DIR}/_languages/python/2.7/bin:${PATH}" \
         run python --version
 
-    [[ "${output}" =~ ^.*2.7.*$ ]]
+    [[ "${output?}" =~ ^.*2.7.*$ ]]
 }
 
 @test "Python 3.4 installation can be activated and has correct verison" {
@@ -63,6 +63,6 @@ teardown() {
     PATH="${CONTAINER_DIR}/_languages/python/2.7/bin:${PATH}" \
         run python --version
 
-    [[ "${output}" =~ ^.*2.7.*$ ]]
+    [[ "${output?}" =~ ^.*2.7.*$ ]]
 }
 

@@ -32,9 +32,15 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
-    [[ "${status}" == "1" ]]
+    [[ "${status?}" == "1" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[5]}" == "        example/example.py:" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[6]}" == "            L7:80 None: pep8 - E501" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[7]}" == "            line too long (224 > 79 characters)" ]]
 }
 
@@ -49,9 +55,15 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
-    [[ "${status}" == "3" ]]
+    [[ "${status?}" == "3" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[5]}" == "        tests/unit_test.py:" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[6]}" == "            L18:80 None: pep8 - E501" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[7]}" == "            line too long (224 > 79 characters)" ]]
 }
 
@@ -62,7 +74,7 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
-    [[ "${status}" == "3" ]]
+    [[ "${status?}" == "3" ]]
 }
 
 @test "Find bugs with pychecker" {
@@ -82,8 +94,8 @@ teardown() {
                            "Using integer division (1 / 3) may return" \
                            "integer or float")
 
-    [[ "${status}" == "1" ]]
-    [[ "${lines[2]}" ==  "${int_div_warning[@]}" ]]
+    [[ "${status?}" == "1" ]]
+    [[ "${lines[2]}" ==  "${int_div_warning[@]}" ]] # shellcheck disable=SC2154
 }
 
 @test "Find unused functions with vulture" {
@@ -97,23 +109,33 @@ teardown() {
 
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
-    [[ "${status}" == "1" ]]
+    [[ "${status?}" == "1" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[6]}" == "        example/example.py:" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[7]}" == "            L9:- None: vulture - unused-function" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[8]}" == "            Unused function _my_function" ]]
 }
 
 @test "Success on no bugs found" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/lint.sh"
 
-    [[ "${status}" == "0" ]]
+    [[ "${status?}" == "0" ]]
 }
 
 @test "Run unit tests" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/test.sh" -m example
 
-    [[ "${status}" == "0" ]]
+    [[ "${status?}" == "0" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[11]}" == "    test_simple_case (tests.unit_test.TestUnit)" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[12]}" == \
        "    tests.unit_test.TestUnit.test_simple_case ... ok" ]]
 }
@@ -122,9 +144,13 @@ teardown() {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/test.sh"  -m example
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/coverage.sh"
 
-    [[ "${status}" == "0" ]]
+    [[ "${status?}" == "0" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[2]}" == \
        "        Name               Stmts   Miss  Cover   Missing" ]]
+
+    # shellcheck disable=SC2154
     [[ "${lines[7]}" == \
        "        TOTAL                  2      1    50%   " ]]
 }
@@ -132,6 +158,6 @@ teardown() {
 @test "Install python project" {
     run bash "${POLYSQUARE_TRAVIS_SCRIPTS}/check/python/install.sh"
 
-    [[ "${status}" == "0" ]]
-    [[ "${lines[1]}" == "    running install" ]]
+    [[ "${status?}" == "0" ]]
+    [[ "${lines[1]}" == "    running install" ]] # shellcheck disable=SC2154
 }

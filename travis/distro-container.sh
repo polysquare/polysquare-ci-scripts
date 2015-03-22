@@ -22,7 +22,7 @@
 # See LICENCE.md for Copyright information
 
 function check_status_of() {
-    local concat_cmd=$(echo "$@" | xargs echo)
+    local -r concat_cmd=$(echo "$@" | xargs echo)
     eval "${concat_cmd}"
     local result=$?
     if [[ $result != 0 ]] ; then
@@ -31,8 +31,8 @@ function check_status_of() {
 }
 
 function output_on_failure() {
-    local output_file=$(mktemp /tmp/tmp.XXXXXXX)
-    local concat_cmd=$(echo "$@" | xargs echo)
+    local -r output_file=$(mktemp /tmp/tmp.XXXXXXX)
+    local -r concat_cmd=$(echo "$@" | xargs echo)
     eval "${concat_cmd}" > "${output_file}" 2>&1
     local result=$?
     if [[ $result != 0 ]] ; then

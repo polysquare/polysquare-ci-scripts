@@ -8,12 +8,13 @@
 
 function polysquare_get_python_version {
     local python_version_variable="$1"
-    local _python_version=$(python --version 2>&1 | cut -d " " -f2 | head -n1)
+    local -r _py_ver=$(python --version 2>&1 | cut -d " " -f2 | head -n1)
 
-    eval "${python_version_variable}='${_python_version}'"
+    eval "${python_version_variable}='${_py_ver}'"
 }
 
 function polysquare_get_python_version_at_minor {
+    local full_python_version=""
     polysquare_get_python_version full_python_version
     local python_version_at_minor_variable="$1"
     local _python_version_at_minor="${full_python_version:0:3}"
