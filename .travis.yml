@@ -11,7 +11,9 @@ before_install:
  - export __POLYSQUARE_CI_SCRIPTS_BOOTSTRAP="~/container/_scripts/bootstrap.sh"
  - eval "$(bash ~/container/_scripts/bootstrap.sh -d ~/container -s setup/shell/setup.sh)"
  # For now
- - polysquare_task "Installing pandoc" polysquare_fatal_error_on_failure cabal install pandoc
+ - source ~/container/_scripts/haskell-util.sh
+ - polysquare_task "Installing pandoc" polysquare_run_if_unavailable pandoc \
+   polysquare_cabal_install_binary pandoc
 script:
  - polysquare_run_check_script check/shell/check.sh -d travis -d tests
  - polysquare_run_deploy_script deploy/shell/deploy.sh -d ~/container

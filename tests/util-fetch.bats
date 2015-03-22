@@ -83,5 +83,5 @@ teardown() {
     echo "echo server_side_file_variable=1" > "${server_side_file}"
     polysquare_fetch_and_exec "fetch-local-test.sh"
 
-    [ "${server_side_file_variable?}" != "1" ]
+    [ -z "${server_side_file_variable}" ]
 }
