@@ -7,7 +7,7 @@
 # See LICENCE.md for Copyright information
 
 source "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
-source "${POLYSQUARE_CI_SCRIPTS_DIR}/python-util.sh"
+polysquare_fetch_and_source "python-util.sh"
 
 while getopts "x:d:" opt; do
     case "$opt" in
