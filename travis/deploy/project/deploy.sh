@@ -37,40 +37,30 @@ function polysquare_prepare_caches {
             local haskell_dir="${lang_rt_path}/haskell"
         
             # Object code and dynamic libraries
-            find "${haskell_dir}" -type f -name "*.o" -execdir rm -rf {} \; \
-                2>/dev/null
+            find "${haskell_dir}" -type f -name "*.o" -delete 2>/dev/null
             find "${haskell_dir}" -type f -name \
-                "*_debug-ghc*.so" -execdir \
-                    rm -rf {} \; 2>/dev/null
+                "*_debug-ghc*.so" -delete 2>/dev/null
             find "${haskell_dir}" -type f -name "*_l-ghc*.so" \
-                -execdir rm -rf {} \; 2>/dev/null
+                -delete  2>/dev/null
 
             # Profiling, debug, other libraries
-            find "${haskell_dir}" -type f -name "lib*_p.a" -execdir \
-                rm -rf {} \; 2>/dev/null
-            find "${haskell_dir}" -type f -name "lib*_l.a" -execdir \
-                rm -rf {} \; 2>/dev/null
-            find "${haskell_dir}" -type f -name "lib*_thr.a" -execdir \
-                rm -rf {} \; 2>/dev/null
-            find "${haskell_dir}" -type f -name "lib*_debug.a" -execdir \
-                rm -rf {} \; 2>/dev/null
-            find "${haskell_dir}" -type f -name "*.p_*" -execdir rm -rf {} \; \
-                2>/dev/null 
+            find "${haskell_dir}" -type f -name "lib*_p.a" -delete 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_l.a" -delete 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_thr.a" -delete 2>/dev/null
+            find "${haskell_dir}" -type f -name "lib*_debug.a" -delete \
+                2>/dev/null
+            find "${haskell_dir}" -type f -name "*.p_*" -delete 2>/dev/null
         }
 
         function polysquare_cleanup_python_artefacts {
             local python_dir="${lang_rt_path}/python"
 
-            local cmd="find ${lang_rt_path}/python -type f -name \"*.pth\""
-            local -r easy_install_pth_files=$(eval "${cmd}")
-
-            find "${python_dir}" -type f -name "*.pyc" -execdir \
-                rm -f ";" 2>/dev/null
-            find "${lang_rt_path}" -type d -name "__pycache__" -execdir \
-                rm -rf ";" 2>/dev/null
-            for file in ${easy_install_pth_files} ; do
-                touch -mt 0001010000 "${file}" 2>/dev/null
-            done
+            find "${python_dir}" -type f -name "easy-install.pth" -delete \
+                2>/dev/null
+            find "${python_dir}" -type f -name "*.pyc" -delete 2>/dev/null
+            find "${python_dir}" -type f -name "*.egg-link" -delete 2>/dev/null
+            find "${lang_rt_path}" -type d -name "__pycache__" -delete \
+                2>/dev/null
         }
 
         function polysquare_cleanup_node_artefacts {
