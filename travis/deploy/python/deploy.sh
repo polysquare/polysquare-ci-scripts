@@ -17,13 +17,15 @@ while getopts "d:" opt; do
 done
 
 function polysquare_make_python_doc_converters_available_at_deploy {
+    local cabal_bin="${POLYSQUARE_HASKELL_ACTIVE_CONTAINER}/cabal/bin"
+
     # VIRTUAL_ENV/bin stays executable during a python build, so
     # put symlinks to pandoc in there
     while IFS= read -r -d '' path ; do
         file=$(basename "${path}")
         polysquare_fatal_error_on_failure ln -s \
             "${path}" "${VIRTUAL_ENV}/bin/${file}"
-    done < <(find "${HOME}/virtualenv/.cabal/bin" -type f -print0)
+    done < <(find "${cabal_bin}" -type f -print0)
 }
 
 polysquare_task "Preparing documentation converters for deploy step" \

@@ -10,6 +10,10 @@
 #
 # See LICENCE.md for Copyright information
 
+fail_msg="Run and eval output of bootstrap.sh before using util.sh"
+: "${POLYSQUARE_CI_SCRIPTS_DIR?${fail_msg}}"
+: "${CONTAINER_DIR?${fail_msg}}"
+
 export POLYSQUARE_HOST="${POLYSQUARE_HOST-public-travis-scripts.polysquare.org}"
 export POLYSQUARE_DOT_SLEEP="${POLYSQUARE_DOT_SLEEP-15}"
 export POLYSQUARE_SETUP_SCRIPTS="${POLYSQUARE_HOST}/setup";
@@ -123,7 +127,7 @@ function polysquare_monitor_command_output {
     local script_status_return="$1"
     local script_output_return="$2"
     local -r cmd=$(echo "${*:3}" | xargs echo)
-    local -r _output_file=$(mktemp -t psq-util-sh.XXXXXX)
+    local -r _output_file=$(mktemp "${CONTAINER_DIR}/_cache/util-sh.XXXXXX")
     local result=0
     __polysquare_script_output_files+=("${_output_file}")
 
@@ -132,7 +136,7 @@ function polysquare_monitor_command_output {
 
     # Execute the process - create a named pipe where we will watch for
     # its exit code, but redirect all output to ${output}
-    local -r fifo=$(mktemp /tmp/psq-monitor-fifo.XXXXXX)
+    local -r fifo=$(mktemp "${CONTAINER_DIR}/_cache/.psq-monitor-fifo.XXXXXX")
     rm -f "${fifo}"
     mkfifo "${fifo}"
     exec 3<>"${fifo}" # Open fifo pipe for read/write.
@@ -195,6 +199,7 @@ function polysquare_report_failures_and_continue {
         polysquare_print_error "Consider deleting the travis build cache"
     fi
 
+    rm -rf "${output_file}" > /dev/null 2>&1
     eval "${status_return}='${status}'"
 }
 

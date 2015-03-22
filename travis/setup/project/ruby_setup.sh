@@ -81,7 +81,7 @@ function polysquare_setup_ruby {
         polysquare_task "Installing RVM-Download" polysquare_setup_rvm_download
     fi
 
-    if ! [ -d "${ruby_container_dir}/${ruby_version}" ] ; then
+    if ! [ -d "${ruby_container_dir}/versions/${ruby_version}" ] ; then
         polysquare_task "Installing ruby version ${ruby_version}" \
             polysquare_install_ruby
     fi

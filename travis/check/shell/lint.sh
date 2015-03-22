@@ -74,7 +74,7 @@ function polysquare_check_shell_files {
     done
 
     # Will be deleted at the end of this script
-    local -r temp_bats_dir=$(mktemp -d /tmp/psq-extracted-bats.XXXXXX)
+    local -r temp_bats_dir=$(mktemp -d "${CONTAINER_DIR}/_cache/bats.XXXXXX")
     local -r abs_path_to_bats=$(_polysquare_abs_dirname "$(which bats)")
     local bats_preprocess_executable="${abs_path_to_bats}/bats-preprocess"
     for file in ${bats_files} ; do

@@ -9,7 +9,8 @@ load polysquare_ci_scripts_helper
 source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 
 setup() {
-    server_dir=$(mktemp -d /tmp/psq-container.XXXXXX)
+    local temp_dir="${POLYSQUARE_TEST_TMP?}"
+    server_dir=$(mktemp -d "${temp_dir}/container.XXXXXX")
     export server_dir
     mkdir -p "${server_dir}" > /dev/null 2>&1
     pushd "${server_dir}" > /dev/null 2>&1
@@ -19,7 +20,7 @@ setup() {
     export __polysquare_fake_host_pid=$!
     popd > /dev/null 2>&1
 
-    POLYSQUARE_CI_SCRIPTS_DIR=$(mktemp -d /tmp/psq-container.XXXXXX)
+    POLYSQUARE_CI_SCRIPTS_DIR=$(mktemp -d "${temp_dir}/scripts.XXXXXX")
     export POLYSQUARE_CI_SCRIPTS_DIR
 
     mkdir -p "${POLYSQUARE_CI_SCRIPTS_DIR}" > /dev/null 2>&1

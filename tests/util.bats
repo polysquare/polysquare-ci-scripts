@@ -90,7 +90,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
 }
 
 @test "Output of find command can be sorted" {
-    local -r tempdir=$(mktemp -d "/tmp/psq-find-output.XXXXXX")
+    local -r tempdir=$(mktemp -d "${POLYSQUARE_TEST_TMP?}/find-output.XXXXXX")
     mkdir -p "${tempdir}/a"
     mkdir -p "${tempdir}/b"
     touch "${tempdir}/a/1"
@@ -99,6 +99,7 @@ source "${POLYSQUARE_TRAVIS_SCRIPTS}/util.sh"
     touch "${tempdir}/b/2"
 
     run polysquare_sorted_find "${tempdir}" -type f
+    rm -rf "${tempdir}"
 
     [ "${lines[0]}" == "${tempdir}/a/1" ] # shellcheck disable=SC2154
     [ "${lines[1]}" == "${tempdir}/a/2" ] # shellcheck disable=SC2154
