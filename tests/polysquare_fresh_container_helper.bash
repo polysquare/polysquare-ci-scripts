@@ -11,7 +11,8 @@ function polysquare_fresh_container_setup {
     # the old one out of the way. This ensures taht when scripts
     # invoke bootstrap.sh, they will only use executables in the
     # copy of CONTAINER_DIR's path
-    local -r temp_container_dir=$(mktemp -d "${HOME}/.psq-cont.XXXXXX")
+    local -r temp_dir="${POLYSQUARE_TEST_TMP?}"
+    local -r temp_container_dir=$(mktemp -d "${temp_dir}/fresh-cont.XXXXXX")
 
     # Move the container directory on top of temp_container_dir
     # and then copy it back in place.
@@ -38,7 +39,8 @@ function polysquare_fresh_container_teardown {
     __polysquare_delete_script_outputs
 
     # Restore cache before removing container copy
-    local -r cache_backup=$(mktemp -d "/tmp/psq-cache.XXXXXX")
+    local -r temp_dir="${POLYSQUARE_TEST_TMP}"
+    local -r cache_backup=$(mktemp -d "${temp_dir}/cache-backup.XXXXXX")
     rm -rf "${cache_backup}"
 
     mv "${CONTAINER_DIR}/_cache" "${cache_backup}"

@@ -27,16 +27,13 @@ while getopts "x:e:d:" opt; do
 done
 
 function polysquare_check_files_for_style_guide {
-    local excl
-    local ext
-    local cmd
     local lint_files
 
     polysquare_get_find_exclusions_arguments excl "${exclusions}"
     polysquare_get_find_extensions_arguments ext "${extensions}"
 
     for directory in ${directories} ; do
-        cmd="polysquare_sorted_find ${directory} -type f ${ext} ${excl}"
+        local cmd="polysquare_sorted_find ${directory} -type f ${ext?} ${excl?}"
         lint_files+=$(eval "${cmd}")
         lint_files+=" "
     done
@@ -44,8 +41,15 @@ function polysquare_check_files_for_style_guide {
     polysquare_task "Linting files with polysquare style guide linter" \
         polysquare_check_files_with polysquare-generic-file-linter \
             "${lint_files}"
+
+    local -r md_directories_exclude="${PWD}/.psq-test-tmp ${CONTAINER_DIR}"
+    polysquare_get_find_exclusions_arguments excl "${md_directories_exclude}"
+    polysquare_get_find_extensions_arguments ext "md"
+
+    local -r md_files=$(polysquare_sorted_find \
+                       "${PWD}" -type f "${excl?}" "${ext?}")
     polysquare_task "Linting markdown documentation" \
-        polysquare_report_failures_and_continue exit_status mdl .
+        polysquare_check_files_with mdl "${md_files}"
 }
 
 polysquare_task "Checking compliance with polysquare style guide" \

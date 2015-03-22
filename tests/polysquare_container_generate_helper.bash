@@ -15,18 +15,19 @@ function polysquare_generate_container_setup {
     local language="$1"
     local gen_func="$2"
 
-    local test_container_dir="${HOME}/.container-dir-test/${language}"
+    local temp_dir="${POLYSQUARE_TEST_TMP?}"
+    local test_container_dir="${temp_dir}/generate-cont/${language}"
 
     # Base of this container.
     if ! [ -d "${test_container_dir}" ] ; then
-        mkdir -p "${HOME}/.container-dir-test"
+        mkdir -p "${test_container_dir%/*}"
         cp -TRf "${CONTAINER_DIR}" "${test_container_dir}"
 
         (eval "${gen_func} \"${test_container_dir}\" \"${language}\"") \
             2> /dev/null
     fi
 
-    local -r temp_cont_dir_temp=$(mktemp -d "/tmp/container-swp.XXXXXX")
+    local -r temp_cont_dir_temp=$(mktemp -d "$(pwd)/.psq-container-swp.XXXXXX")
     rm -rf "${temp_cont_dir_temp}"
     mv "${CONTAINER_DIR}" "${temp_cont_dir_temp}"
     mv "${test_container_dir}" "${CONTAINER_DIR}"

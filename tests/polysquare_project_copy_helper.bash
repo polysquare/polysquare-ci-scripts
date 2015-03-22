@@ -8,9 +8,10 @@
 function polysquare_project_copy_setup {
     local lang="$1"
     local cont="${CONTAINER_DIR}"
+    local temp_dir="${POLYSQUARE_TEST_TMP?}"
     local bootstrap="${BATS_TEST_DIRNAME}/../travis/bootstrap.sh"
     local project_language_base="${BATS_TEST_DIRNAME}/../sample/${lang}"
-    local -r sample_project_copy="$(mktemp -d /tmp/psq-project.XXXXXX)"
+    local -r sample_project_copy=$(mktemp -d "${temp_dir}/copy-project.XXXXXX")
     local boot
 
     cp -TRf "${project_language_base}" "${sample_project_copy}"

@@ -63,7 +63,7 @@ if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
     >&2 eval "${curl_command}" \
         "public-travis-scripts.polysquare.org/util.sh" \
             -o "${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
-    
+
     POLYSQUARE_CI_SCRIPTS_DIR="${container_dir}/_scripts"
 else
     POLYSQUARE_CI_SCRIPTS_DIR=$(dirname "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP}")
@@ -77,6 +77,8 @@ if [ -z "${_POLYSQUARE_TESTING_WITH_BATS}" ] ; then
     eval_and_fwd "source ${POLYSQUARE_CI_SCRIPTS_DIR}/util.sh"
 fi
 
+mkdir -p "${container_dir}/_cache"
+
 # Now that we've set everything up, pass control to our setup script (remember
 # that bash 4.3 is now in our PATH).
 if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
@@ -85,8 +87,6 @@ if [ -z "${__POLYSQUARE_CI_SCRIPTS_BOOTSTRAP+x}" ] ; then
 else
     bash "${POLYSQUARE_CI_SCRIPTS_DIR}/${setup_script}"
 fi
-
-mkdir -p "${container_dir}/_cache"
 
 # Print a final \n
 

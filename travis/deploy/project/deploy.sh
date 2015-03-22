@@ -32,24 +32,6 @@ function polysquare_run_if_dir_exists {
 function polysquare_prepare_caches {
     lang_rt_path="${container_dir}/_languages"
 
-    function polysquare_copy_installation_dirs_to_cache_container {
-        # shellcheck disable=SC2034
-        local python_dirs=""
-        # shellcheck disable=SC2034
-        local ruby_dirs="gem"
-        # shellcheck disable=SC2034
-        local haskell_dirs="ghc cabal"
-        # shellcheck disable=SC2034
-        local node_dirs=""
-
-        for lang in ${languages[*]} ; do
-            dirs_variable="${lang}_dirs"
-            for dir in ${!dirs_variable} ; do
-                cp -TRf "${HOME}/.${dir}" "${lang_rt_path}/.${dir}"
-            done
-        done
-    }
-
     function polysquare_cleanup_build_artefacts {
         function polysquare_cleanup_haskell_artefacts {
             local haskell_dir="${lang_rt_path}/haskell"
@@ -110,15 +92,15 @@ function polysquare_prepare_caches {
                 polysquare_cleanup_node_artefacts
     }
 
-    polysquare_task "Copying language installations to container" \
-        polysquare_fatal_error_on_failure \
-            polysquare_copy_installation_dirs_to_cache_container
     polysquare_task "Cleaning up temporary build files" \
         polysquare_cleanup_build_artefacts
     polysquare_task "Cleaning up cached CI scripts" \
         polysquare_fatal_error_on_failure rm -rf "${container_dir}/_scripts"
+
+    # Our fifos and other operational data is in here, so we have to
+    # use rm -rf directly instead of polysquare_fatal_error_on_failure
     polysquare_task "Cleaning up per-test caches" \
-        polysquare_fatal_error_on_failure rm -rf "${container_dir}/_cache"
+        rm -rf "${container_dir}/_cache" > /dev/null 2>&1
 }
 
 polysquare_task "Preparing container for caching" \
