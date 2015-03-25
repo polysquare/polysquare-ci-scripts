@@ -66,7 +66,7 @@ teardown() {
 
 @test "Ruby 1.9.3-p551 installation can be activated and has correct verison" {
     local setup="${POLYSQUARE_TRAVIS_SCRIPTS}/setup/project/ruby_setup.sh"
-    local -r script=$(bash "${setup}" -d "{CONTAINER_DIR}" -v 1.9.3-p551)
+    local -r script=$(bash "${setup}" -d "${CONTAINER_DIR}" -v 1.9.3-p551)
     eval "${script}"
 
     which gem

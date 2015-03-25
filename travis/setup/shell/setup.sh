@@ -44,6 +44,23 @@ function polysquare_install_shell_testing_utils {
     polysquare_fatal_error_on_failure \
         polysquare_run_if_unavailable bats \
             npm install -g bat-fork
+
+    polysquare_fatal_error_on_failure \
+        gem install --conservative --no-ri --no-rdoc bundler simplecov
+
+    # Clone local fork of bashcov and install it from there
+    local bashcov_working_dir="${CONTAINER_DIR}/_cache/bashcov_working_dir"
+    mkdir -p "${bashcov_working_dir}" > /dev/null 2>&1
+    pushd "${bashcov_working_dir}" > /dev/null 2>&1
+    polysquare_fatal_error_on_failure git clone \
+        git://github.com/smspillaz/bashcov
+    pushd bashcov > /dev/null 2>&1
+    polysquare_fatal_error_on_failure bundle install
+    polysquare_fatal_error_on_failure rake install
+    popd > /dev/null 2>&1
+    popd > /dev/null 2>&1
+
+    rm -rf "${bashcov_working_dir}" > /dev/null 2>&1
 }
 
 function polysquare_install_shell_linting_utils {

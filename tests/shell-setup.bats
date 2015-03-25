@@ -38,3 +38,9 @@ teardown() {
 
     [ "${status?}" == "0" ]
 }
+
+@test "Bashcov is available after running bash setup script" {
+    run which bats
+
+    [ "${status?}" == "0" ]
+}

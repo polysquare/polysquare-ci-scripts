@@ -33,7 +33,7 @@ polysquare_note_failure_and_continue status bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/shell/lint.sh" \
     "${excl_switches?}" \
     "${dir_switches?}"
-polysquare_note_failure_and_continue status bash \
+polysquare_note_failure_and_continue status bashcov bash \
     "${POLYSQUARE_CI_SCRIPTS_DIR}/check/shell/test.sh"
 
 polysquare_exit_with_failure_on_script_failures
