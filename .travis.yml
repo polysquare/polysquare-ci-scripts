@@ -1,18 +1,17 @@
-language: c
+language: python
 sudo: false
 cache:
   directories:
-    - ~/container
+    - ~/virtualenv
+    - container
 before_install:
- # As a special case for this project, copy all the shell scripts into
- # the container directory, so that we can use them directly.
- - mkdir -p ~/container/_scripts
- - rsync -r -u travis/* ~/container/_scripts/
- - export __POLYSQUARE_CI_SCRIPTS_BOOTSTRAP="~/container/_scripts/bootstrap.sh"
- - eval "$(bash ~/container/_scripts/bootstrap.sh -d ~/container -s setup/shell/setup.sh)"
- # Install pandoc
- - source ~/container/_scripts/haskell-util.sh
- - eval "$(polysquare_task 'Installing pandoc' polysquare_run_if_unavailable pandoc polysquare_cabal_install_binary pandoc)"
+ # As a special case for this project, we specify our ciscripts
+ # directory as -r so that changes from the pull-request are
+ # used during the build process.
+ - eval "$(curl -LSs file://$(pwd)/ciscripts/bootstrap.py | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e)"
 script:
- - polysquare_run_check_script check/shell/check.sh -d travis -d tests
- - polysquare_run_deploy_script deploy/shell/deploy.sh -d ~/container
+ - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" --lint-exclude "*/sample/*"
+after_success:
+ - polysquare_run coverage/python/coverage.py
+after_script:
+ - polysquare_cleanup

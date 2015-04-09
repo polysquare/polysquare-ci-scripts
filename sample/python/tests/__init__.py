@@ -2,5 +2,5 @@
 #
 # Entry point for tests
 #
-# See LICENCE.md for Copyright information
+# See /LICENCE.md for Copyright information
 """Entry point for tests."""

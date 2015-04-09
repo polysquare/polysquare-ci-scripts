@@ -2,7 +2,7 @@
 #
 # Installation and setup script for example python project
 #
-# See LICENCE.md for Copyright information
+# See /LICENCE.md for Copyright information
 """Installation and setup script for example python project."""
 
 from setuptools import find_packages
