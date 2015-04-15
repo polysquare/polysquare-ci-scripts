@@ -67,12 +67,24 @@ class TestForceMkDir(TestCase):
                             FileContains("Contents"))
 
 
+def write_bootstrap_script_into_container(directory_name):
+    """Write a bootstrap script into the container specified."""
+    scripts_dir = os.path.join(directory_name, "_scripts", "ciscripts")
+    bootstrap.force_mkdir(scripts_dir)
+    shutil.copyfile(os.path.join(os.path.dirname(bootstrap.__file__),
+                                 "bootstrap.py"),
+                    os.path.join(scripts_dir, "bootstrap.py"))
+
+
 @contextmanager
 def removable_container_dir(directory_name):
     """A contextmanager which deletes a container when the test is complete."""
     current_cwd = os.getcwd()
     shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
     try:
+        # Put a /bootstrap.py script in the container directory
+        # so that we don't keep on trying to fetch it all the time
+        write_bootstrap_script_into_container(directory_name)
         yield bootstrap.ContainerDir(shell, directory=directory_name)
     finally:
         shutil.rmtree(os.path.join(current_cwd, directory_name))
@@ -616,6 +628,7 @@ class TestMain(TrackedLoadedModulesTestCase):
                     captured_output = testutil.CapturedOutput()
 
                     with captured_output:
+                        write_bootstrap_script_into_container("container")
                         bootstrap.main(["-d",
                                         "container",
                                         "-s",
