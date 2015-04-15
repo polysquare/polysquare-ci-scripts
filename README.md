@@ -6,7 +6,7 @@ A redirect to the raw version of these scripts exists at
 `https://public-travis-scripts.polysquare.org`. You can curl them to
 a python interpreter.
 
-    $(curl -LSshttps://public-travis-scripts.polysquare.org/bootstrap.py |
+    $(curl -LSs https://public-travis-scripts.polysquare.org/bootstrap.py |
       python /dev/stdin -s setup/project/setup.py)
 
 ## Status ##
