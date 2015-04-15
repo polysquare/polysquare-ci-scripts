@@ -53,7 +53,7 @@ def run(cont, util, shell, argv=list()):
             "*/build/*",
             "*/dist/*",
             "*.egg-info/*"
-        ] + result.lint_exclude
+        ] + (result.lint_exclude or list())
 
         cont.fetch_and_import("check/project/lint.py").run(cont,
                                                            util,
