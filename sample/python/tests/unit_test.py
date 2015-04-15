@@ -2,7 +2,7 @@
 #
 # Test cases for example project.
 #
-# See LICENCE.md for Copyright information
+# See /LICENCE.md for Copyright information
 """Test cases for usage of example."""
 
 from testtools import TestCase
