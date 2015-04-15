@@ -300,6 +300,10 @@ class ContainerDir(ContainerBase):
         else:
             self._scripts_dir = force_mkdir(os.path.join(self._container_dir,
                                                          "_scripts"))
+            # Ensure that we have a /bootstrap.py script in our
+            # container.
+            self._fetch_script(self.script_path("bootstrap.py"),
+                               "bootstrap.py")
             self._force_created_scripts_directory = True
 
         sys.path = [self._scripts_dir] + sys.path
@@ -317,6 +321,17 @@ class ContainerDir(ContainerBase):
 
         self._failures = 0
         self._shell = shell
+
+    def _fetch_script(self,
+                      info,
+                      script_path,
+                      domain="public-travis-scripts.polysquare.org"):
+        """Download a script if it doesn't exist."""
+        if not os.path.exists(info.fs_path):
+            with open_and_force_mkdir(info.fs_path, "w") as scr:
+                remote = os.path.join(domain, script_path)
+                scr.write(urlopen("http://{0}".format(remote)).read())
+                scr.truncate()
 
     def clean(self, util):
         """Clean this container and all sub-containers."""
@@ -386,12 +401,7 @@ class ContainerDir(ContainerBase):
         # First try to find the script locally in the
         # current working directory.
         info = self.script_path(script_path)
-
-        if not os.path.exists(info.fs_path):
-            with open_and_force_mkdir(info.fs_path, "w") as scr:
-                remote = os.path.join(domain, script_path)
-                scr.write(urlopen("http://{0}".format(remote)).read())
-                scr.truncate()
+        self._fetch_script(info, script_path)
 
         key = "{0}/{1}".format(domain, script_path)
 
