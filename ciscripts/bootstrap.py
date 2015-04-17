@@ -308,7 +308,8 @@ def _fetch_script(info,
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
             remote = os.path.join(domain, script_path)
-            scr.write(urlopen("http://{0}".format(remote)).read().decode())
+            scr.write(urlopen("http://{0}".format(remote),
+                              timeout=60).read().decode())
             scr.truncate()
 
 

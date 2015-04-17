@@ -445,5 +445,6 @@ def get_system_identifier(container):
                      os.stat(system_identifier_config_guess).st_mode |
                      stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    result = subprocess.check_output([system_identifier_config_guess]).strip()
+    result = subprocess.check_output(["sh",
+                                      system_identifier_config_guess]).strip()
     return result.decode()
