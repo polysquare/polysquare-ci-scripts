@@ -74,10 +74,11 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
 
 def _get_parent_env_value(env_script, var):
     """Evaluate env_script and return value of variable in a shell."""
-    return subprocess.check_output(["bash",
-                                    "-c",
-                                    (env_script +
-                                     (" echo \"${%s}\"" % var))]).strip()
+    result = subprocess.check_output(["bash",
+                                      "-c",
+                                      (env_script +
+                                       (" echo \"${%s}\"" % var))]).strip()
+    return result.decode()
 
 
 class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
@@ -268,10 +269,9 @@ class TestExecute(TestCase):
                          "/does-not-exist")
 
         self.assertThat(captured_output.stderr,
-                        DocTestMatches("python: can't open file"
-                                       " '/does-not-exist': ... "
+                        DocTestMatches(".../does-not-exist... "
                                        "!!! Process python /does-not-exist "
-                                       "failed with 2",
+                                       "failed with ...",
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE |
                                        doctest.REPORT_NDIFF))
@@ -345,7 +345,8 @@ class TestExecutablePaths(TestCase):
                                   ":" +
                                   (os.environ.get("PATH") or ""))
 
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -359,7 +360,8 @@ class TestExecutablePaths(TestCase):
                                   ":" +
                                   (os.environ.get("PATH") or ""))
 
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
 
                 self.assertEqual(None,
@@ -368,7 +370,8 @@ class TestExecutablePaths(TestCase):
     def test_file_not_in_path_not_found(self):
         """Check that executables not in PATH are not found."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -388,7 +391,8 @@ class TestExecutablePaths(TestCase):
 
             os.environ["PATH"] = link + ":" + path_var
 
-            with tempfile.NamedTemporaryFile(dir=linked) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=linked) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -404,7 +408,8 @@ class TestExecutablePaths(TestCase):
                                                          base,
                                                          path_var)
 
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -415,7 +420,8 @@ class TestExecutablePaths(TestCase):
     def test_execute_function_if_not_found_by_which(self):
         """Execute function with where_unavailable if executable not found."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -430,7 +436,8 @@ class TestExecutablePaths(TestCase):
     def test_no_execute_function_if_found_by_which(self):
         """where_unavailable doesn't execute function if executable found."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
@@ -449,7 +456,8 @@ class TestApplicationToFilePatterns(TestCase):
     def test_apply_to_matching_files_by_prefix(self):
         """Apply functions to files matching prefix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir) as temp_file:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir) as temp_file:
                 temp_file.write("")
                 temp_file.flush()
 
@@ -464,7 +472,8 @@ class TestApplicationToFilePatterns(TestCase):
     def test_apply_to_matching_files_by_suffix(self):
         """Apply functions to files matching suffix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir,
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir,
                                              suffix=".tmp") as temp_file:
                 temp_file.write("")
                 temp_file.flush()
@@ -480,7 +489,8 @@ class TestApplicationToFilePatterns(TestCase):
     def test_no_apply_files_not_matching_suffix(self):
         """Don't apply functions to files not matching suffix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
-            with tempfile.NamedTemporaryFile(dir=temp_dir,
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir,
                                              suffix=".tmp") as temp_file:
                 temp_file.write("")
                 temp_file.flush()
@@ -541,7 +551,7 @@ class TestGetSystemIdentifier(TestCase):
                 cache_dir = os.path.join(temp_dir, directory)
                 try:
                     os.makedirs(cache_dir)
-                except OSError, error:
+                except OSError as error:
                     if error.errno != errno.EEXIST:  # suppress(PYC90)
                         raise error
 

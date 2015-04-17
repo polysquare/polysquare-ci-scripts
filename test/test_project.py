@@ -245,7 +245,7 @@ class TestProjectContainerSetup(TestCase):
         """Remove container."""
         try:
             shutil.rmtree(cls.container_temp_dir)
-        except OSError, err:
+        except OSError as err:
             if err.errno != errno.ENOENT:  # suppress(PYC90)
                 raise err
 
@@ -286,7 +286,9 @@ class TestProjectContainerSetup(TestCase):
 
     def test_lint_with_style_guide_linter_success(self):
         """Success code if all files satisfy style guide linter."""
-        with tempfile.NamedTemporaryFile(dir=os.getcwd(), suffix=".sh") as f:
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=os.getcwd(),
+                                         suffix=".sh") as f:
             write_valid_header(f)
 
             self.assertThat("check/project/lint.py",
@@ -297,7 +299,9 @@ class TestProjectContainerSetup(TestCase):
 
     def test_lint_with_style_guide_linter_failure(self):
         """Failure code if one file doesn't satisfy style guide linter."""
-        with tempfile.NamedTemporaryFile(dir=os.getcwd(), suffix=".sh") as f:
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=os.getcwd(),
+                                         suffix=".sh") as f:
             write_invalid_header(f)
             container = self.__class__.container
 
@@ -310,11 +314,13 @@ class TestProjectContainerSetup(TestCase):
     def test_lint_files_in_multiple_subdirectories(self):
         """Style guide linter runs over multiple subdirectories."""
         success_dir = tempfile.mkdtemp(dir=os.getcwd())
-        success_file = tempfile.NamedTemporaryFile(dir=success_dir,
+        success_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=success_dir,
                                                    suffix=".sh")
 
         failure_dir = tempfile.mkdtemp(dir=os.getcwd())
-        failure_file = tempfile.NamedTemporaryFile(dir=failure_dir,
+        failure_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=failure_dir,
                                                    suffix=".sh")
 
         write_valid_header(success_file)
@@ -331,8 +337,12 @@ class TestProjectContainerSetup(TestCase):
     def test_lint_files_with_multiple_extensions(self):
         """Style guide linter runs over multiple extensions."""
         cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".zh")
-        failure_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".sh")
+        success_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".zh")
+        failure_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".sh")
 
         write_valid_header(success_file)
         write_invalid_header(failure_file)
@@ -346,8 +356,12 @@ class TestProjectContainerSetup(TestCase):
     def test_files_can_be_excluded_from_linting(self):
         """Exclude certain files from style guide linter."""
         cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".sh")
-        failure_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".zh")
+        success_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".sh")
+        failure_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".zh")
 
         write_valid_header(success_file)
         write_invalid_header(failure_file)
@@ -364,9 +378,14 @@ class TestProjectContainerSetup(TestCase):
     def test_many_files_can_be_excluded_from_linting(self):
         """Exclude many files from style guide linting."""
         cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".sh")
-        failure_file = tempfile.NamedTemporaryFile(dir=cwd, suffix=".zh")
-        second_failure_file = tempfile.NamedTemporaryFile(dir=cwd,
+        success_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".sh")
+        failure_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                   dir=cwd,
+                                                   suffix=".zh")
+        second_failure_file = tempfile.NamedTemporaryFile(mode="wt",
+                                                          dir=cwd,
                                                           suffix=".zh")
 
         write_valid_header(success_file)
@@ -397,7 +416,9 @@ class TestProjectContainerSetup(TestCase):
 
     def test_linting_of_markdown_documentation_with_failure(self):
         """Lint markdown documentation with success exit code."""
-        with tempfile.NamedTemporaryFile(dir=os.getcwd(), suffix=".md") as f:
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=os.getcwd(),
+                                         suffix=".md") as f:
             f.write("Level One\n==\n\n## Level Two ##\n")
             f.flush()
 

@@ -25,7 +25,7 @@ from contextlib import contextmanager
 try:
     from Queue import Queue
 except ImportError:
-    from queue import queue  # suppress(F811,E301,E101,F401,unused-import)
+    from queue import Queue  # suppress(F811,E301,E101,F401,unused-import)
 
 
 def print_message(message):
@@ -241,8 +241,8 @@ def output_on_fail(process, outputs):
 
     if status != 0:
         IndentedLogger.message("\n")
-        IndentedLogger.message(stdout)
-        IndentedLogger.message(stderr)
+        IndentedLogger.message(stdout.decode())
+        IndentedLogger.message(stderr.decode())
 
     return status
 
@@ -269,7 +269,7 @@ def long_running_suppressed_output(dot_timeout=10):
         try:
             status = output_on_fail(process, outputs)
         finally:
-            os.write(write, "done")
+            os.write(write, "done".encode("utf-8"))
             dots_thread.join()
             os.close(read)
             os.close(write)
@@ -294,7 +294,7 @@ def running_output(process, outputs):
 
                     read_first_byte = True
 
-                IndentedLogger.message(data)
+                IndentedLogger.message(data.decode())
             else:
                 return
 
@@ -353,7 +353,7 @@ def execute(container, output_strategy, *args, **kwargs):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    env=env)
-    except OSError, error:
+    except OSError as error:
         raise Exception("Failed to execute {0} - {1}".format(" ".join(args),
                                                              str(error)))
 
@@ -439,10 +439,11 @@ def get_system_identifier(container):
         config_project = "{0}/cgit/config.git/plain".format(domain)
         with open(system_identifier_config_guess, "w") as config_guess:
             remote = url_opener()(config_project + "/config.guess")
-            config_guess.write(remote.read())
+            config_guess.write(remote.read().decode())
 
             os.chmod(system_identifier_config_guess,
                      os.stat(system_identifier_config_guess).st_mode |
                      stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    return subprocess.check_output([system_identifier_config_guess]).strip()
+    result = subprocess.check_output([system_identifier_config_guess]).strip()
+    return result.decode()
