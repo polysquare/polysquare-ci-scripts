@@ -71,12 +71,13 @@ def get(container, util, shell, version):
                 "PYTHONPATH": os.path.join(py_path, "site-packages"),
                 "VIRTUAL_ENV": self._installation
             }
-            env_to_append = {
+            env_to_prepend = {
                 "PATH": os.path.join(self._installation,
                                      "bin")
             }
 
-            return tuple_type(overwrite=env_to_overwrite, append=env_to_append)
+            return tuple_type(overwrite=env_to_overwrite,
+                              prepend=env_to_prepend)
 
     return PythonContainer(version, container_path, shell)
 

@@ -23,10 +23,10 @@ def run(cont, util, shell, argv=None):
         config_python = "setup/project/configure_python.py"
         config_ruby = "setup/project/configure_ruby.py"
 
-        cont.fetch_and_import(config_ruby).run(cont,
-                                               util,
-                                               shell,
-                                               rb_ver)
+        rb_cont = cont.fetch_and_import(config_ruby).run(cont,
+                                                         util,
+                                                         shell,
+                                                         rb_ver)
         py_cont = cont.fetch_and_import(config_python).run(cont,
                                                            util,
                                                            shell,
@@ -43,7 +43,8 @@ def run(cont, util, shell, argv=None):
                                    "--no-ri",
                                    "--no-rdoc",
                                    "mdl",
-                                   instant_fail=True)
+                                   instant_fail=True,
+                                   path=rb_cont.executable_path())
 
         with util.Task("Installing polysquare style guide linter"):
             linter = "polysquare-generic-file-linter"
@@ -51,4 +52,6 @@ def run(cont, util, shell, argv=None):
                                    py_util.pip_install,
                                    py_cont,
                                    util,
-                                   linter)
+                                   linter,
+                                   instant_fail=True,
+                                   path=py_cont.executable_path())

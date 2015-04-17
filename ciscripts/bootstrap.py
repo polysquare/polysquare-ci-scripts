@@ -39,7 +39,7 @@ def force_mkdir(directory):
     """Recursively make all directories, ignores existing directories."""
     try:
         os.makedirs(directory)
-    except OSError, error:
+    except OSError as error:
         if error.errno != errno.EEXIST:  # suppress(PYC90)
             raise error
 
@@ -64,9 +64,9 @@ class BashParentEnvironment(object):
     def overwrite_environment_variable(self, key, value):
         """Generate and execute script to overwrite variable key."""
         if value is not None:
-            self._printer("export {0}=\"{1}\"".format(key, value))
+            self._printer("export {0}=\"{1}\"".format(key, value).encode())
         else:
-            self._printer("unset {0}".format(key))
+            self._printer("unset {0}".format(key).encode())
 
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
@@ -76,23 +76,23 @@ class BashParentEnvironment(object):
             script = ("export " + key + "=$(echo -n \"${" + key + "}\" | "
                       "awk -v RS=: -v ORS=: '$0 != \"'" + part + "'\"' | "
                       "sed 's/:$//')")
-            self._printer(script)
+            self._printer(script.encode())
 
     def prepend_environment_variable(self, key, value):
         """Generate and execute script to prepend value to key."""
         script = "export " + key + "=\"" + value + "\":\"${" + key + "}\""
-        self._printer(script)
+        self._printer(script.encode())
 
     def define_command(self, name, command):
         """Define a function called name which runs command."""
         code = ("function %s {"
                 "    %s \"$@\"\n"
                 "}") % (name, command)
-        self._printer(code)
+        self._printer(code.encode())
 
     def exit(self, status):
         """Cause the shell to exit with status."""
-        self._printer("exit {0}".format(status))
+        self._printer("exit {0}".format(status).encode())
 
 
 class ContainerBase(object):
@@ -150,7 +150,7 @@ class ContainerBase(object):
         finally:
             try:
                 self._delete(path)
-            except OSError, error:
+            except OSError as error:
                 if error.errno != errno.ENOENT:
                     raise error
 
@@ -166,7 +166,7 @@ def _keys_for_activation(language):
                           "_POLYSQUARE_DEACTIVATED_%s_{key}" % language_upper,
                           "_POLYSQUARE_INSERTED_%s_{key}" % language_upper)
 
-ActiveEnvironment = namedtuple("ActiveEnvironment", "overwrite append")
+ActiveEnvironment = namedtuple("ActiveEnvironment", "overwrite prepend")
 
 
 class LanguageBase(ContainerBase):
@@ -187,8 +187,8 @@ class LanguageBase(ContainerBase):
 
         This function should return environment variables in the tuple
         LanguageBase.ActiveEnvironment, which has the attributes
-        'append' for environment variables which are intended
-        to be appended to the parent path and 'overwrite', for
+        'prepend' for environment variables which are intended
+        to be prepended to the parent path and 'overwrite', for
         variables that should be overwritten.
         """
         return
@@ -214,7 +214,7 @@ class LanguageBase(ContainerBase):
                                                 util.maybe_environ(key))
             util.overwrite_environment_variable(self._parent_shell, key, value)
 
-        for key, value in active_environment.append.items():
+        for key, value in active_environment.prepend.items():
             inserted = activation_keys.inserted.format(key=key)
             util.overwrite_environment_variable(self._parent_shell,
                                                 inserted,
@@ -252,7 +252,7 @@ class LanguageBase(ContainerBase):
                                                 backup,
                                                 None)
 
-        for key in active_environment.append.keys():
+        for key in active_environment.prepend.keys():
             inserted = activation_keys.inserted.format(key=key)
             util.remove_from_environment_variable(self._parent_shell,
                                                   key,
@@ -269,6 +269,15 @@ class LanguageBase(ContainerBase):
                                             None)
 
         return True
+
+    def executable_path(self):
+        """Return executable path for this container.
+
+        This is effectively the contents of what will be prepended to the
+        PATH variable if this container is activated.
+        """
+        prepend = self._active_environment(ActiveEnvironment).prepend
+        return prepend.get("PATH", "")
 
     @contextmanager
     def activated(self, util):
@@ -299,7 +308,7 @@ def _fetch_script(info,
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
             remote = os.path.join(domain, script_path)
-            scr.write(urlopen("http://{0}".format(remote)).read())
+            scr.write(urlopen("http://{0}".format(remote)).read().decode())
             scr.truncate()
 
 
@@ -480,7 +489,8 @@ class ContainerDir(ContainerBase):
 def escaped_printer(text):
     """Print text in a format suitable for consumption by a shell."""
     # suppress(anomalous-backslash-in-string)
-    sys.stdout.write(text.replace(";", "\;").replace("\n", ";\n") + ";\n")
+    to_write = text.decode().replace(";", "\;").replace("\n", ";\n") + ";\n"
+    sys.stdout.write(to_write)
 
 
 def main(argv):

@@ -132,7 +132,7 @@ def make_loadable_module_path(abs_path, loadable, mode="w"):
     """
     try:
         os.makedirs(os.path.dirname(abs_path))
-    except OSError, error:
+    except OSError as error:
         if error.errno != errno.EEXIST:  # suppress(PYC90)
             raise error
 
@@ -269,23 +269,24 @@ class TestBashParentEnvironment(TestCase):
 
         def printer(script):
             """Add script to evaluate_script."""
-            evaluate_script.extend(script + ";\n")
+            evaluate_script.extend(script + b";\n")
 
         environment = bootstrap.BashParentEnvironment(printer)
         environment.exit(status)
         process = subprocess.Popen(["bash", "/dev/stdin"],
                                    stdin=subprocess.PIPE)
-        process.communicate(input=str(evaluate_script))
+        process.communicate(input=bytes(evaluate_script))
         process.stdin.close()
         self.assertEqual(process.wait(), status)
 
 
 def _parent_env(output, key):
     """Get environment variable in shell after evaluating output."""
-    return subprocess.check_output(["bash",
-                                    "-c",
-                                    output +
-                                    (" echo \"${%s}\"" % key)]).strip()
+    result = subprocess.check_output(["bash",
+                                      "-c",
+                                      output +
+                                      (" echo \"${%s}\"" % key)]).strip()
+    return result.decode()
 
 
 class TestLanguageContainer(TrackedLoadedModulesTestCase):
@@ -386,6 +387,18 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         finally:
             with testutil.CapturedOutput():
                 language_container.deactivate(self._util)
+
+    def test_get_executable_path(self):
+        """Get executable path from prepend variable."""
+        prepend = {
+            "PATH": "VALUE"
+        }
+        lang_container = self._get_lang_container("language",
+                                                  prepend=prepend,
+                                                  override=dict())
+
+        self.assertEqual(lang_container.executable_path(),
+                         "VALUE")
 
     def test_activating_container_returns_true(self):
         """Activating container returns true initially."""

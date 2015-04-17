@@ -36,7 +36,7 @@ def _force_makedirs(path):
     """Make directories even if path exists."""
     try:
         os.makedirs(path)
-    except OSError, error:
+    except OSError as error:
         if error.errno != errno.EEXIST:  # suppress(PYC90)
             raise error
 
@@ -103,7 +103,7 @@ def get(container, util, shell, version, installer=_no_installer_available):
                 try:
                     _force_makedirs(os.path.dirname(local_file_path))
                     remote = util.url_opener()(url)
-                    with open(local_file_path, "w") as local_file:
+                    with open(local_file_path, "wb") as local_file:
                         local_file.write(remote.read())
                         os.chmod(local_file_path,
                                  os.stat(local_file_path).st_mode |
@@ -250,13 +250,14 @@ def get(container, util, shell, version, installer=_no_installer_available):
                 "HASKELL_PACAKGE_SANDBOX": ghc_package_path_var
             }
 
-            env_to_append = {
+            env_to_prepend = {
                 "LIBRARY_PATH": shared_lib,
                 "PATH": path_prependix
 
             }
 
-            return tuple_type(overwrite=env_to_overwrite, append=env_to_append)
+            return tuple_type(overwrite=env_to_overwrite,
+                              prepend=env_to_prepend)
 
     return HaskellContainer(version, container_path, shell, installer)
 
@@ -281,7 +282,7 @@ def run(container, util, shell, version):
             with util.in_dir(cache_dir):
                 local_name = os.path.join(cache_dir,
                                           os.path.basename(remote_url))
-                with open(local_name, "w") as local_file:
+                with open(local_name, "wb") as local_file:
                     local_file.write(util.url_opener()(remote_url).read())
 
                 with tarfile.open(local_name) as local_tar:

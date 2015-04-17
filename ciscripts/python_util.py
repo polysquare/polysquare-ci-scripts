@@ -19,10 +19,15 @@ def get_python_version(precision):  # suppress(unused-function)
 
     1 gets the major version, 2 gets major and minor, 3 gets the patch version.
     Use distutils' version comparison functions to compare between versions.
+
+    Note that on some implementations of python the version output comes
+    through on stdout, on others it comes through on stderr. Just join them
+    both and parse the whole string.
     """
-    version = subprocess.Popen(["python", "--version"],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE).communicate()[1]
+    output = subprocess.Popen(["python", "--version"],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE).communicate()
+    version = "".join([o.decode() for o in output])
     return ".".join(version.split(" ")[1].split(".")[0:precision]).strip()
 
 
