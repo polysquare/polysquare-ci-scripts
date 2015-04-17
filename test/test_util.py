@@ -9,6 +9,8 @@ import copy
 
 import doctest
 
+import errno
+
 import os
 
 import platform
@@ -19,7 +21,7 @@ import subprocess
 
 import tempfile
 
-from tempfile import mkdtemp
+from test import testutil
 
 from ciscripts.bootstrap import (BashParentEnvironment,
                                  escaped_printer)
@@ -34,8 +36,6 @@ from testtools.matchers import (Contains,
                                 MatchesAll,
                                 MatchesAny,
                                 Not)
-
-import testutil
 
 
 class TestPrintMessage(TestCase):
@@ -72,6 +72,14 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
         super(OverwrittenEnvironmentVarsTestCase, self).tearDown()
 
 
+def _get_parent_env_value(env_script, var):
+    """Evaluate env_script and return value of variable in a shell."""
+    return subprocess.check_output(["bash",
+                                    "-c",
+                                    (env_script +
+                                     (" echo \"${%s}\"" % var))]).strip()
+
+
 class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
 
     """Test case for util.overwrite_environment_variable."""
@@ -81,13 +89,6 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
         super(TestOverwriteEnvironmentVariables, self).__init__(*args,
                                                                 **kwargs)
         self._parent = BashParentEnvironment(escaped_printer)
-
-    def _get_parent_env_value(self, env_script, var):
-        """Evaluate env_script and return value of variable in a shell."""
-        return subprocess.check_output(["bash",
-                                        "-c",
-                                        (env_script +
-                                         (" echo \"${%s}\"" % var))]).strip()
 
     def test_overwritten_environment_variables_in_os_environ(self):
         """Test that overwritten environment variables are in os.environ."""
@@ -126,8 +127,7 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
                                               "VAR",
                                               "SECOND_VALUE")
 
-        parent_env_value = self._get_parent_env_value(captured_output.stdout,
-                                                      "VAR")
+        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
         self.assertThat(parent_env_value.split(":"),
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
@@ -147,8 +147,7 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
             util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
             util.overwrite_environment_variable(self._parent, "VAR", None)
 
-        parent_env_value = self._get_parent_env_value(captured_output.stdout,
-                                                      "VAR")
+        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
         self.assertEqual(parent_env_value.strip(), "")
 
     def test_remove_value_from_environment_variable_in_os_environ(self):
@@ -174,8 +173,7 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
                                               "SECOND_VALUE")
             util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
 
-        parent_env_value = self._get_parent_env_value(captured_output.stdout,
-                                                      "VAR")
+        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
         self.assertThat(parent_env_value.split(":"),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
@@ -251,6 +249,7 @@ class TestExecute(TestCase):
                                           util.output_on_fail,
                                           "false"))
 
+    # suppress(no-self-use)
     def test_instant_failure_calls_through_to_container(self):
         """Execute a command with failure."""
         container = Mock()
@@ -316,8 +315,8 @@ class TestExecute(TestCase):
         # where there's a little bit of lag between terminating threads, so
         # there might be three dots. Match both cases.
         self.assertThat(captured_output.stderr.strip(),
-                        MatchesAny(Equals(".."),
-                                   Equals("...")))
+                        MatchesAny(Equals(".."),  # suppress(PYC90)
+                                   Equals("...")))  # suppress(PYC90)
 
 
 class TestExecutablePaths(TestCase):
@@ -412,6 +411,7 @@ class TestExecutablePaths(TestCase):
                 self.assertEqual(temp_file.name,
                                  util.which(os.path.basename(temp_file.name)))
 
+    # suppress(no-self-use)
     def test_execute_function_if_not_found_by_which(self):
         """Execute function with where_unavailable if executable not found."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
@@ -426,6 +426,7 @@ class TestExecutablePaths(TestCase):
 
                 mock.assert_called_with("arg")
 
+    # suppress(no-self-use)
     def test_no_execute_function_if_found_by_which(self):
         """where_unavailable doesn't execute function if executable found."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
@@ -444,6 +445,7 @@ class TestApplicationToFilePatterns(TestCase):
 
     """Test cases for apply_to_files/directories_matching."""
 
+    # suppress(no-self-use)
     def test_apply_to_matching_files_by_prefix(self):
         """Apply functions to files matching prefix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
@@ -458,6 +460,7 @@ class TestApplicationToFilePatterns(TestCase):
 
                 function_applied.assert_called_with(temp_file.name)
 
+    # suppress(no-self-use)
     def test_apply_to_matching_files_by_suffix(self):
         """Apply functions to files matching suffix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
@@ -473,6 +476,7 @@ class TestApplicationToFilePatterns(TestCase):
 
                 function_applied.assert_called_with(temp_file.name)
 
+    # suppress(no-self-use)
     def test_no_apply_files_not_matching_suffix(self):
         """Don't apply functions to files not matching suffix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
@@ -488,6 +492,7 @@ class TestApplicationToFilePatterns(TestCase):
 
                 function_applied.assert_not_called()  # suppress(PYC70)
 
+    # suppress(no-self-use)
     def test_apply_to_directories_matching(self):
         """Apply functions to directories matching prefix."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
@@ -500,6 +505,7 @@ class TestApplicationToFilePatterns(TestCase):
 
                 function_applied.assert_called_with(matched)
 
+    # suppress(no-self-use)
     def test_no_apply_to_directories_not_matching(self):
         """Don't apply to directories."""
         with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
@@ -520,34 +526,36 @@ class TestGetSystemIdentifier(TestCase):
         """Initialize this TestCase."""
         super(TestGetSystemIdentifier, self).__init__(*args, **kwargs)
         self._temporary_directory = None
+        self.container = None
 
     def setUp(self):  # suppress(N802)
         """Create a stub class with a temporary directory to store files in."""
         super(TestGetSystemIdentifier, self).setUp()
 
-        class StubContainer(object):
-
-            """A stub container with the named_cache_dir function defined."""
-
-            def __init__(self, temporary_directory):
-                """Initialize this StubContainer in temporary_directory."""
-                super(StubContainer, self).__init__()
-                self._temporary_directory = temporary_directory
-
+        def named_cache_dir_func(temp_dir):
+            """Return a function to create named cache dirs in temp_dir."""
             def named_cache_dir(self, directory):
                 """Create a named cache directory."""
-                cache_dir = os.path.join(self._temporary_directory, directory)
+                del self
+
+                cache_dir = os.path.join(temp_dir, directory)
                 try:
                     os.makedirs(cache_dir)
-                except OSError:
-                    pass
+                except OSError, error:
+                    if error.errno != errno.EEXIST:  # suppress(PYC90)
+                        raise error
 
                 return cache_dir
 
-        self._temporary_directory = mkdtemp(prefix=os.path.join(os.getcwd(),
-                                                                "sysid"))
+            return named_cache_dir
 
-        self.container = StubContainer(self._temporary_directory)
+        temp_dir_prefix = os.path.join(os.getcwd(), "sysid")
+        self._temporary_directory = tempfile.mkdtemp(prefix=temp_dir_prefix)
+        cache_dir_func = named_cache_dir_func(self._temporary_directory)
+
+        self.container = type("StubContainer",
+                              (object, ),
+                              {"named_cache_dir": cache_dir_func})()
 
     def tearDown(self):  # suppress(N802)
         """Remove the temporary directory for this container."""

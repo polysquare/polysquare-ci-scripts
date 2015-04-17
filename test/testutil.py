@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from six import StringIO
 
 
-class CapturedOutput(object):
+class CapturedOutput(object):  # suppress(too-few-public-methods)
 
     """Represents the captured contents of stdout and stderr."""
 
@@ -79,19 +79,13 @@ def server_in_tempdir(parent, prefix):
     """Create a server in a temporary directory, shutting down on exit."""
     import threading
 
-    from six.moves import socketserver
-    from six.moves import SimpleHTTPServer
-
-    class QuietHttpRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
-
-        """A SimpleHTTPRequestHandler derivative that doesn't log anything."""
-
-        def log_message(self, _, *args):
-            """Skip logging of all messages."""
-            pass
+    from six.moves import socketserver  # suppress(import-error)
+    from six.moves import SimpleHTTPServer  # suppress(import-error)
 
     with in_tempdir(parent, prefix) as temp_dir:
-        handler = QuietHttpRequestHandler
+        handler = type("QuietHTTPHandler",
+                       (SimpleHTTPServer.SimpleHTTPRequestHandler, object),
+                       {"log_message": lambda s, m, *args: None})
         server = socketserver.TCPServer(("localhost", 0), handler)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
@@ -106,9 +100,14 @@ def server_in_tempdir(parent, prefix):
 
 def _build_http_connection(superclass, resolver):
     """Build a connection handler for superclass, resolving with resolver."""
-    class Connection(superclass):
+    class Connection(superclass):  # suppress(too-few-public-methods)
 
         """A connection that resolves with resolver."""
+
+        def __init__(self, *args, **kwargs):
+            """Initialize this connection object."""
+            super(superclass, self).__init__(*args, **kwargs)
+            self.sock = None
 
         def connect(self):
             """Create a connection, resolving using resolver."""
@@ -122,8 +121,8 @@ def _build_http_connection(superclass, resolver):
 @contextmanager
 def overridden_dns(dns_map):
     """Context manager to override the urllib HTTP DNS resolution."""
-    from six.moves import http_client
-    from six.moves import urllib
+    from six.moves import http_client  # suppress(import-error)
+    from six.moves import urllib  # suppress(import-error)
 
     def resolver(host, port):
         """If host is in dns_map, use host from map, otherwise pass through."""
@@ -144,23 +143,15 @@ def overridden_dns(dns_map):
     https_connection = _build_http_connection(http_client.HTTPSConnection,
                                               resolver)
 
-    class HTTPHandler(urllib.request.HTTPHandler):
+    http_hnd = type("HTTPHandler",
+                    (urllib.request.HTTPHandler, object),
+                    {"http_open": lambda s, r: s.do_open(http_connection, r)})
+    https_hnd = type("HTTPHandler",
+                     (urllib.request.HTTPSHandler, object),
+                     {"https_open": lambda s, r: s.do_open(https_connection,
+                                                           r)})
 
-        """HTTPHandler with overridden DNS resolution."""
-
-        def http_open(self, request):
-            """Open link at request."""
-            return self.do_open(http_connection, request)
-
-    class HTTPSHandler(urllib.request.HTTPSHandler):
-
-        """HTTPSHandler with overridden DNS resolution."""
-
-        def https_open(self, request):
-            """Open link at request."""
-            return self.do_open(https_connection, request)
-
-    custom_opener = urllib.request.build_opener(HTTPHandler, HTTPSHandler)
+    custom_opener = urllib.request.build_opener(http_hnd, https_hnd)
     urllib.request.install_opener(custom_opener)
 
     try:

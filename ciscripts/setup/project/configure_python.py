@@ -15,13 +15,21 @@ import shutil
 
 def get(container, util, shell, version):
     """Return a PythonContainer for an installed python in container."""
+    del util
     container_path = os.path.join(container.language_dir("python"),
                                   version)
 
+    # This class is intended to be used through LanguageBase, so
+    # most of its methods are private
+    #
+    # suppress(too-few-public-methods)
     class PythonContainer(container.new_container_for("python", version)):
 
         """A container representing an active python installation."""
 
+        # pylint can't detect that this is a new-style class
+        #
+        # suppress(super-on-old-class)
         def __init__(self, version, installation, shell):
             """Initialize a python container for this version."""
             super(PythonContainer, self).__init__(installation,
@@ -41,16 +49,19 @@ def get(container, util, shell, version):
             assert len(py_path) == 1
             return py_path[0]
 
-        def clean(self, util):  # suppress(unused-function)
+        def clean(self, util_mod):  # suppress(unused-function)
             """Clean out cruft in the container."""
             py_path = PythonContainer._get_py_path_from(self._installation)
 
-            util.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
-            util.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(lambda f: os.utime(f, (1, 1)),
+                                    py_path,
+                                    matching=["*.egg-link"])
 
-            util.apply_to_directories(shutil.rmtree,
-                                      py_path,
-                                      matching=["*/test/*"])
+            util_mod.apply_to_directories(shutil.rmtree,
+                                          py_path,
+                                          matching=["*/test/*"])
 
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""
@@ -76,38 +87,33 @@ def run(container, util, shell, version):
     This function returns a PythonContainer, which has a path
     and keeps a reference to its parent container.
     """
-    class PythonBuildManager(object):
+    lang_dir = container.language_dir("python")
+    python_build_dir = os.path.join(lang_dir, "build")
 
-        """An object wrapping the python-build script."""
+    def python_installer():
+        """Create python build manager and return installer function."""
+        if not os.path.exists(python_build_dir):
+            with container.in_temp_cache_dir() as tmp:
+                with util.Task("Downloading pyenv"):
+                    remote = "git://github.com/yyuu/pyenv"
+                    util.execute(container,
+                                 util.output_on_fail,
+                                 "git", "clone", remote, tmp,
+                                 instant_fail=True)
+                with util.Task("Installing pyenv"):
+                    util.execute(container,
+                                 util.output_on_fail,
+                                 "bash",
+                                 os.path.join(tmp,
+                                              "plugins",
+                                              "python-build",
+                                              "install.sh"),
+                                 env={
+                                     "PREFIX": python_build_dir
+                                 },
+                                 instant_fail=True)
 
-        def __init__(self, container):
-            """Initialize the python-build script."""
-            super(PythonBuildManager, self).__init__()
-            lang_dir = container.language_dir("python")
-            self._python_build_dir = os.path.join(lang_dir, "build")
-
-            if not os.path.exists(self._python_build_dir):
-                with container.in_temp_cache_dir() as tmp:
-                    with util.Task("Downloading pyenv"):
-                        remote = "git://github.com/yyuu/pyenv"
-                        util.execute(container,
-                                     util.output_on_fail,
-                                     "git", "clone", remote, tmp,
-                                     instant_fail=True)
-                    with util.Task("Installing pyenv"):
-                        util.execute(container,
-                                     util.output_on_fail,
-                                     "bash",
-                                     os.path.join(tmp,
-                                                  "plugins",
-                                                  "python-build",
-                                                  "install.sh"),
-                                     env={
-                                         "PREFIX": self._python_build_dir
-                                     },
-                                     instant_fail=True)
-
-        def install(self, version):
+        def install(version):
             """Install python version, returning a PythonContainer."""
             py_cont = os.path.join(container.language_dir("python"),
                                    version)
@@ -116,7 +122,7 @@ def run(container, util, shell, version):
 
             if not os.path.exists(py_cont):
                 with util.Task("Installing python version " + version):
-                    py_build = os.path.join(self._python_build_dir,
+                    py_build = os.path.join(python_build_dir,
                                             "bin",
                                             "python-build")
                     util.execute(container,
@@ -134,8 +140,10 @@ def run(container, util, shell, version):
 
             return get(container, util, shell, version)
 
+        return install
+
     with util.Task("Configuring python"):
-        python_container = PythonBuildManager(container).install(version)
+        python_container = python_installer()(version)
         with util.Task("Activating python {0}".format(version)):
             python_container.activate(util)
 

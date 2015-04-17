@@ -12,7 +12,7 @@ import os
 from setuptools import find_packages
 
 
-def run(cont, util, shell, argv=list()):
+def run(cont, util, shell, argv=None):
     """Run tests and static analysis checks on this python project.
 
     This will run the generic project style guide checks on all python files
@@ -32,7 +32,7 @@ def run(cont, util, shell, argv=list()):
                         nargs="*",
                         type=str,
                         help="Patterns of files to exclude from linting")
-    result = parser.parse_args(argv)
+    result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
     python_ver = os.environ["_POLYSQUARE_PYTHON_VERSION"]
@@ -73,8 +73,8 @@ def run(cont, util, shell, argv=list()):
                      util.output_on_fail,
                      "python",
                      "setup.py",
-                     "lint",
-                     "--suppress-codes=LongDescription")
+                     "polysquarelint",
+                     "--suppress-codes=LongDescription,TestSuite")
 
     with util.Task("Running python project tests"):
         with py_cont.deactivated(util):
@@ -92,6 +92,6 @@ def run(cont, util, shell, argv=list()):
                              "--source=" + ",".join(packages),
                              "--omit=" + ",".join(result.coverage_exclude),
                              os.path.join(cwd, "setup.py"),
-                             "test")
+                             "green")
 
                 util.execute(cont, util.running_output, "coverage", "report")

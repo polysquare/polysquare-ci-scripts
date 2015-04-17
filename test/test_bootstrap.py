@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """Test cases for the bootstrap script."""
 
+import errno
+
 import os
 
 import shutil
@@ -17,6 +19,8 @@ import tempfile
 
 from contextlib import contextmanager
 
+from test import testutil
+
 import ciscripts.bootstrap as bootstrap
 
 from nose_parameterized import param, parameterized
@@ -27,8 +31,6 @@ from testtools.matchers import (Contains,
                                 FileContains,
                                 FileExists,
                                 Not)
-
-import testutil
 
 
 class TestForceMkDir(TestCase):
@@ -130,8 +132,9 @@ def make_loadable_module_path(abs_path, loadable, mode="w"):
     """
     try:
         os.makedirs(os.path.dirname(abs_path))
-    except OSError:
-        pass
+    except OSError, error:
+        if error.errno != errno.EEXIST:  # suppress(PYC90)
+            raise error
 
     directory_tree = os.path.dirname(os.path.relpath(abs_path, loadable))
     directory_tree_components = directory_tree.split(os.path.sep)
@@ -277,6 +280,14 @@ class TestBashParentEnvironment(TestCase):
         self.assertEqual(process.wait(), status)
 
 
+def _parent_env(output, key):
+    """Get environment variable in shell after evaluating output."""
+    return subprocess.check_output(["bash",
+                                    "-c",
+                                    output +
+                                    (" echo \"${%s}\"" % key)]).strip()
+
+
 class TestLanguageContainer(TrackedLoadedModulesTestCase):
 
     """Test cases for the LanguageContainer abstract base class."""
@@ -316,7 +327,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         shutil.rmtree(self._container_dir)
         super(TestLanguageContainer, self).tearDown()
 
-    def _get_lang_container(self, language, override={}, prepend={}):
+    def _get_lang_container(self, language, override=None, prepend=None):
         """Get an empty implementation of LanguageBase."""
         container = self._container
 
@@ -335,18 +346,19 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                                                              "0.0",
                                                              shell)
 
+                self._override = override or dict()  # suppress(PYC70)
+                self._prepend = prepend or dict()  # suppress(PYC70)
+
+            def clean(self, util):   # suppress(no-self-use)
+                """Clean out this container."""
+                del util
+
             def _active_environment(self, tuple_type):
                 """Get this language container's environment."""
-                return tuple_type(override, prepend)
+                # suppress(PYC70)
+                return tuple_type(self._override, self._prepend)
 
         return EmptyLanguageContainer()
-
-    def _parent_env(self, output, key):
-        """Get environment variable in shell after evaluating output."""
-        return subprocess.check_output(["bash",
-                                        "-c",
-                                        output +
-                                        (" echo \"${%s}\"" % key)]).strip()
 
     @contextmanager
     def activated_local_envion(self, *args, **kwargs):
@@ -419,7 +431,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         """Activating a container exports _POLYSQUARE_LANGUAGE_VERSION."""
         with self.active_parent_env("language") as out:
             env = "_POLYSQUARE_LANGUAGE_VERSION"
-            self.assertEqual(self._parent_env(out, env),
+            self.assertEqual(_parent_env(out, env),
                              "0.0")
 
     def test_activated_container_sets_polysquare_active_env_var(self):
@@ -432,7 +444,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         """Activating a container exports _POLYSQUARE_ACTIVATED_LANGUAGE."""
         with self.active_parent_env("language") as out:
             env = "_POLYSQUARE_ACTIVATED_LANGUAGE"
-            self.assertEqual(self._parent_env(out, env),
+            self.assertEqual(_parent_env(out, env),
                              "1")
 
     def test_activated_container_sets_overwritten_env_vars(self):
@@ -451,8 +463,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         }
 
         with self.active_parent_env("language", override=override) as out:
-            self.assertEqual(self._parent_env(out,
-                                              "VARIABLE"),
+            self.assertEqual(_parent_env(out, "VARIABLE"),
                              "VALUE")
 
     def test_activated_container_prepends_env_vars(self):
@@ -472,7 +483,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         }
 
         with self.active_parent_env("language", prepend=prepend) as out:
-            self.assertThat(self._parent_env(out, "PATH").split(":"),
+            self.assertThat(_parent_env(out, "PATH").split(":"),
                             Contains("VALUE"))
 
     def test_overwritten_env_vars_restored_on_deactivate(self):
@@ -506,7 +517,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                 pass
 
         out = "export VARIABLE=\"OLD_VALUE\";\n" + captured_output.stdout
-        self.assertEqual(self._parent_env(out, "VARIABLE"),
+        self.assertEqual(_parent_env(out, "VARIABLE"),
                          "OLD_VALUE")
 
     def test_prepended_env_vars_removed_on_deactivate(self):
@@ -534,9 +545,30 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
             with language_container.activated(self._util):
                 pass
 
-        self.assertThat(self._parent_env(captured_output.stdout,
-                                         "PATH").split(":"),
+        self.assertThat(_parent_env(captured_output.stdout,
+                                    "PATH").split(":"),
                         Not(Contains("VALUE")))
+
+
+def _write_setup_script(script_contents):
+    """Write script_contents to setup script and return its path."""
+    loadable = os.path.abspath("container/_scripts")
+    util_script_path = os.path.abspath(os.path.join(loadable,
+                                                    "ciscripts",
+                                                    "util.py"))
+    with make_loadable_module_path(util_script_path, loadable) as f:
+        pass
+
+    setup_script_path = os.path.abspath(os.path.join(loadable,
+                                                     "ciscripts",
+                                                     "setup",
+                                                     "test",
+                                                     "setup.py"))
+    with make_loadable_module_path(setup_script_path, loadable) as f:
+        # Write a simple script to our setup file
+        f.write(script_contents)
+
+    return "setup/test/setup.py"
 
 
 class TestMain(TrackedLoadedModulesTestCase):
@@ -551,31 +583,11 @@ class TestMain(TrackedLoadedModulesTestCase):
         """
         super(TestMain, self).setUp()
 
-    def _write_setup_script(self, script_contents):
-        """Write script_contents to setup script and return its path."""
-        loadable = os.path.abspath("container/_scripts")
-        util_script_path = os.path.abspath(os.path.join(loadable,
-                                                        "ciscripts",
-                                                        "util.py"))
-        with make_loadable_module_path(util_script_path, loadable) as f:
-            pass
-
-        setup_script_path = os.path.abspath(os.path.join(loadable,
-                                                         "ciscripts",
-                                                         "setup",
-                                                         "test",
-                                                         "setup.py"))
-        with make_loadable_module_path(setup_script_path, loadable) as f:
-            # Write a simple script to our setup file
-            f.write(script_contents)
-
-        return "setup/test/setup.py"
-
     def test_create_dir_and_pass_control_to_script(self):
         """Test creating a container and passing control to a script."""
         with testutil.in_tempdir(os.getcwd(), "main_container_test"):
-            self._write_setup_script("def run(cont, util, sh, argv):\n"
-                                     "    print(\"Hello\")\n")
+            _write_setup_script("def run(cont, util, sh, argv):\n"
+                                "    print(\"Hello\")\n")
 
             captured_output = testutil.CapturedOutput()
 
@@ -590,8 +602,8 @@ class TestMain(TrackedLoadedModulesTestCase):
     def test_create_dir_and_pass_args_to_script(self):
         """Test creating a container and passing arguments to a script."""
         with testutil.in_tempdir(os.getcwd(), "main_container_test"):
-            self._write_setup_script("def run(cont, util, sh, argv):\n"
-                                     "    print(argv[0])\n")
+            _write_setup_script("def run(cont, util, sh, argv):\n"
+                                "    print(argv[0])\n")
 
             captured_output = testutil.CapturedOutput()
 

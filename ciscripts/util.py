@@ -25,7 +25,7 @@ from contextlib import contextmanager
 try:
     from Queue import Queue
 except ImportError:
-    from queue import queue  # suppress(F811,E301,E101,F401)
+    from queue import queue  # suppress(F811,E301,E101,F401,unused-import)
 
 
 def print_message(message):
@@ -49,6 +49,10 @@ def prepend_environment_variable(parent, key, value):
     parent.prepend_environment_variable(key, value)
 
 
+# There's no way we can make this function name shorter without making
+# it inconsistent with other names or loosing descriptiveness
+#
+# suppress(invalid-name)
 def remove_from_environment_variable(parent, key, value):
     """Remove value from an environment variable list in key."""
     environ_list = maybe_environ(key).split(":")
@@ -84,13 +88,15 @@ def _match_all(abs_dir, matching, not_matching):
     return True
 
 
-def apply_to_files(func, tree_node, matching=[], not_matching=[]):
+def apply_to_files(func, tree_node, matching=None, not_matching=None):
     """Apply recursively to all files in tree_node.
 
     Function will be applied to all filenames matching 'matching', but
     will not be applied to any file matching matching 'not_matching'.
     """
     result = []
+    matching = matching or list()
+    not_matching = not_matching or list()
     for root, _, filenames in os.walk(tree_node):
         abs_files = [os.path.join(root, f) for f in filenames]
         result.extend([func(f) for f in abs_files if _match_all(f,
@@ -100,13 +106,15 @@ def apply_to_files(func, tree_node, matching=[], not_matching=[]):
     return result
 
 
-def apply_to_directories(func, tree_node, matching=[], not_matching=[]):
+def apply_to_directories(func, tree_node, matching=None, not_matching=None):
     """Apply recursively to all directories in tree_node.
 
     Function will be applied to all filenames matching 'matching', but
     will not be applied to any file matching matching 'not_matching'.
     """
     result = []
+    matching = matching or list()
+    not_matching = not_matching or list()
     for root, directories, _, in os.walk(tree_node):
         abs_dirs = [os.path.join(root, d) for d in directories]
         result.extend([func(d) for d in abs_dirs if _match_all(d,
@@ -133,16 +141,14 @@ class IndentedLogger(object):
     _indent_level = 0
     _printed_on_secondary_indents = False
 
-    def __init__(self):
-        """Initialize this IndentedLogger."""
-        super(IndentedLogger, self).__init__()
-
-    def __enter__(self):
+    @staticmethod  # suppress(PYC90)
+    def __enter__():
         """Increase indent level and return self."""
         IndentedLogger._indent_level += 1
-        return self
+        return IndentedLogger
 
-    def __exit__(self, exc_type, value, traceback):
+    @staticmethod  # suppress(PYC90)
+    def __exit__(exc_type, value, traceback):
         """Decrease indent level.
 
         If we printed anything whilst we were indented on more than level
@@ -159,7 +165,8 @@ class IndentedLogger(object):
             sys.stderr.write("\n")
             IndentedLogger._printed_on_secondary_indents = False
 
-    def message(self, message_to_print):
+    @staticmethod
+    def message(message_to_print):
         """Print a message, with a pre-newline, splitting on newlines."""
         if IndentedLogger._indent_level > 0:
             IndentedLogger._printed_on_secondary_indents = True
@@ -169,11 +176,16 @@ class IndentedLogger(object):
         formatted = formatted.replace("\n", "\n" + indent)
         print_message(formatted)
 
-    def dot(self):
+    @staticmethod
+    def dot():
         """Print a dot, just for status."""
         sys.stderr.write(".")
 
 
+# This is intended to be used as a context manager, so it doesn't
+# need to have public methods.
+#
+# suppress(too-few-public-methods)
 class Task(object):
 
     """A message for a task to being performed.
@@ -189,16 +201,16 @@ class Task(object):
         super(Task, self).__init__()
 
         indicator = "==>" if Task.nest_level == 0 else "..."
-        IndentedLogger().message("\n{0} {1}".format(indicator, description))
+        IndentedLogger.message("\n{0} {1}".format(indicator, description))
 
-    def __enter__(self):
+    def __enter__(self):  # suppress(no-self-use)
         """Increment active nesting level."""
         Task.nest_level += 1
-        IndentedLogger().__enter__()
+        IndentedLogger.__enter__()
 
-    def __exit__(self, exec_type, value, traceback):
+    def __exit__(self, exec_type, value, traceback):  # suppress(no-self-use)
         """Decrement the active nesting level."""
-        IndentedLogger().__exit__(exec_type, value, traceback)
+        IndentedLogger.__exit__(exec_type, value, traceback)
         Task.nest_level -= 1
 
 
@@ -228,18 +240,15 @@ def output_on_fail(process, outputs):
     status = process.wait()
 
     if status != 0:
-        logger = IndentedLogger()
-        logger.message("\n")
-        logger.message(stdout)
-        logger.message(stderr)
+        IndentedLogger.message("\n")
+        IndentedLogger.message(stdout)
+        IndentedLogger.message(stderr)
 
     return status
 
 
 def long_running_suppressed_output(dot_timeout=10):
     """Print dots in a separate thread until our process is done."""
-    logger = IndentedLogger()
-
     def strategy(process, outputs):
         """Partially applied strategy to be passed to execute."""
         def print_dots(status_pipe):
@@ -251,7 +260,7 @@ def long_running_suppressed_output(dot_timeout=10):
                 if len(read) > 0:
                     return
                 else:
-                    logger.dot()
+                    IndentedLogger.dot()
 
         read, write = os.pipe()
         dots_thread = threading.Thread(target=print_dots, args=(read, ))
@@ -272,8 +281,6 @@ def long_running_suppressed_output(dot_timeout=10):
 
 def running_output(process, outputs):
     """Show output of process as it runs."""
-    logger = IndentedLogger()
-
     def output_printer(file_handle):
         """Thread that prints the output of this process."""
         read_first_byte = False
@@ -283,11 +290,11 @@ def running_output(process, outputs):
             if data:
                 if not read_first_byte:
                     if data != "\n":
-                        logger.message("\n")
+                        IndentedLogger.message("\n")
 
                     read_first_byte = True
 
-                logger.message(data)
+                IndentedLogger.message(data)
             else:
                 return
 
@@ -346,9 +353,9 @@ def execute(container, output_strategy, *args, **kwargs):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    env=env)
-    except OSError, e:
+    except OSError, error:
         raise Exception("Failed to execute {0} - {1}".format(" ".join(args),
-                                                             str(e)))
+                                                             str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -357,9 +364,8 @@ def execute(container, output_strategy, *args, **kwargs):
 
         if status != 0:
             cmd = " ".join(args)
-            logger = IndentedLogger()
-            logger.message("!!! Process {0} failed with {1}".format(cmd,
-                                                                    status))
+            IndentedLogger.message("""!!! Process {0} failed """
+                                   """with {1}""".format(cmd, status))
             container.note_failure(instant_fail)
 
         return status
@@ -367,11 +373,11 @@ def execute(container, output_strategy, *args, **kwargs):
 
 def which(executable):
     """Full path to executable."""
-    def is_executable(file):
-        """True if file exists and is executable."""
-        return (os.path.exists(file) and
-                not os.path.isdir(file) and
-                os.access(file, os.F_OK | os.X_OK))
+    def is_executable(path):
+        """True if path exists and is executable."""
+        return (os.path.exists(path) and
+                not os.path.isdir(path) and
+                os.access(path, os.F_OK | os.X_OK))
 
     def normalize(path):
         """Return canonical case-normalized path."""

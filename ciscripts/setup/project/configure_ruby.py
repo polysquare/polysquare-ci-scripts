@@ -23,10 +23,17 @@ def get(container, util, shell, version):
                                   "versions",
                                   version)
 
+    # This class is intended to be used through LanguageBase, so
+    # most of its methods are private
+    #
+    # suppress(too-few-public-methods)
     class RubyContainer(container.new_container_for("ruby", version)):
 
         """A container representing an active ruby installation."""
 
+        # pylint can't detect that this is a new-style class
+        #
+        # suppress(super-on-old-class)
         def __init__(self, version, installation, shell):
             """Initialize a ruby installation for this version."""
             super(RubyContainer, self).__init__(installation,
@@ -92,26 +99,21 @@ def run(container, util, shell, version):
     This function returns a RubyContainer, which has a path
     and keeps a reference to its parent container.
     """
-    class RubyBuildManager(object):
+    lang_dir = container.language_dir("ruby")
+    ruby_build_dir = os.path.join(lang_dir, "build")
 
-        """An object wrapping the ruby-build script."""
+    def ruby_installer():
+        """Get ruby installer (rvm-download)."""
+        if not os.path.exists(ruby_build_dir):
+            with util.Task("Downloading rvm-download"):
+                remote = "git://github.com/garnieretienne/rvm-download"
+                dest = ruby_build_dir
+                util.execute(container,
+                             util.output_on_fail,
+                             "git", "clone", remote, dest,
+                             instant_fail=True)
 
-        def __init__(self, container):
-            """Initialize the ruby-build script."""
-            super(RubyBuildManager, self).__init__()
-            lang_dir = container.language_dir("ruby")
-            self._ruby_build_dir = os.path.join(lang_dir, "build")
-
-            if not os.path.exists(self._ruby_build_dir):
-                with util.Task("Downloading rvm-download"):
-                    remote = "git://github.com/garnieretienne/rvm-download"
-                    dest = self._ruby_build_dir
-                    util.execute(container,
-                                 util.output_on_fail,
-                                 "git", "clone", remote, dest,
-                                 instant_fail=True)
-
-        def install(self, version):
+        def install(version):
             """Install ruby version, returns a RubyContainer."""
             ruby_container_dir = container.language_dir("ruby")
             ruby_version_container = os.path.join(ruby_container_dir,
@@ -121,7 +123,7 @@ def run(container, util, shell, version):
             if not os.path.exists(ruby_version_container):
                 os.makedirs(ruby_version_container)
                 with util.Task("Installing ruby version {0}".format(version)):
-                    rvm_download = os.path.join(self._ruby_build_dir,
+                    rvm_download = os.path.join(ruby_build_dir,
                                                 "bin",
                                                 "rbenv-download")
                     util.execute(container,
@@ -134,8 +136,10 @@ def run(container, util, shell, version):
 
             return get(container, util, shell, version)
 
+        return install
+
     with util.Task("Configuring ruby"):
-        ruby_container = RubyBuildManager(container).install(version)
+        ruby_container = ruby_installer()(version)
         with util.Task("Activating ruby {0}".format(version)):
             ruby_container.activate(util)
 

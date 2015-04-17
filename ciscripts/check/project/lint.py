@@ -8,11 +8,11 @@
 import os
 
 
-def run(cont,
+def run(cont,  # suppress(too-many-arguments)
         util,
-        extensions=[],
-        directories=["."],
-        exclusions=[],
+        extensions=None,
+        directories=None,
+        exclusions=None,
         block_regexps=None):
     """Run the style guide linters on this project.
 
@@ -31,6 +31,11 @@ def run(cont,
     """
     technical_terms_path = os.path.join(cont.named_cache_dir("tech_terms"),
                                         "technical_terms.txt")
+
+    extensions = extensions or list()
+    exclusions = exclusions or list()
+    directories = directories or [os.getcwd()]
+    block_regexps = block_regexps or list()
 
     def lint(linter, *args):
         """Return a function which applies linter to a file."""
@@ -53,7 +58,7 @@ def run(cont,
                              os.path.join(os.getcwd(), "*.egg", "*")])
 
             cache_dir = cont.named_cache_dir("code_spelling_cache")
-            block_regexps = (block_regexps or list()) + [
+            block_regexps = block_regexps + [
                 r"\bsuppress\([^\s]*\)"
             ]
 

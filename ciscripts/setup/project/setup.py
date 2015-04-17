@@ -6,7 +6,7 @@
 """The main setup script to bootstrap and set up a generic project."""
 
 
-def run(cont, util, shell, argv=list()):
+def run(cont, util, shell, argv=None):
     """Install everything necessary to test a generic project.
 
     This script installs ruby 1.9.3 and python 2.7 as well as

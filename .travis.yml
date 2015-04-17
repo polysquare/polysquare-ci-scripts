@@ -2,7 +2,6 @@ language: python
 sudo: false
 cache:
   directories:
-    - ~/virtualenv
     - container
 before_install:
  # As a special case for this project, we specify our ciscripts
@@ -13,5 +12,5 @@ script:
  - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" --lint-exclude "*/sample/*"
 after_success:
  - polysquare_run coverage/python/coverage.py
-after_script:
+before_cache:
  - polysquare_cleanup

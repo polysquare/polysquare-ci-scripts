@@ -8,7 +8,7 @@
 import os
 
 
-def run(cont, util, shell, argv=list()):
+def run(cont, util, shell, argv=None):
     """Submit coverage total to coveralls."""
     del argv
 

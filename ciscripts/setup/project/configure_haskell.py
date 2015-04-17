@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """A script which configures and activates a haskell installation."""
 
+import errno
+
 import os
 import os.path
 
@@ -34,8 +36,18 @@ def _force_makedirs(path):
     """Make directories even if path exists."""
     try:
         os.makedirs(path)
-    except OSError:
-        pass
+    except OSError, error:
+        if error.errno != errno.EEXIST:  # suppress(PYC90)
+            raise error
+
+
+def _rmtree(path):
+    """Remove directory at :path: if it exists."""
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.unlink(path)
 
 
 def get(container, util, shell, version, installer=_no_installer_available):
@@ -48,6 +60,9 @@ def get(container, util, shell, version, installer=_no_installer_available):
 
         """A container representing an active haskell installation."""
 
+        # pylint can't detect that this is a new-style class
+        #
+        # suppress(super-on-old-class)
         def __init__(self, version, installation, shell, installer):
             """Initialize a haskell installation for this version."""
             super(HaskellContainer, self).__init__(installation,
@@ -111,34 +126,26 @@ def get(container, util, shell, version, installer=_no_installer_available):
                                          "install",
                                          pkg_name)
 
-        def _rmtree(self, path):
-            """Remove directory at :path: if it exists."""
-            if os.path.exists(path):
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                else:
-                    os.unlink(path)
-
         def clean(self, util):
             """Clean out cruft in the container."""
             # Source code
-            self._rmtree(os.path.join(self._internal_container, "src"))
-            self._rmtree(os.path.join(self._internal_container, "tmp"))
-            self._rmtree(os.path.join(self._internal_container, "cache"))
-            self._rmtree(os.path.join(self._internal_container,
-                                      "cabal",
-                                      "bootstrap",
-                                      "lib"))
+            _rmtree(os.path.join(self._internal_container, "src"))
+            _rmtree(os.path.join(self._internal_container, "tmp"))
+            _rmtree(os.path.join(self._internal_container, "cache"))
+            _rmtree(os.path.join(self._internal_container,
+                                 "cabal",
+                                 "bootstrap",
+                                 "lib"))
 
             # Documentation
-            self._rmtree(os.path.join(self._internal_container,
-                                      "ghc",
-                                      "share",
-                                      "doc"))
+            _rmtree(os.path.join(self._internal_container,
+                                 "ghc",
+                                 "share",
+                                 "doc"))
 
             # Logs
-            self._rmtree(os.path.join(self._build_dir, "tmp"))
-            self._rmtree(os.path.join(self._internal_container, "hsenv.log"))
+            _rmtree(os.path.join(self._build_dir, "tmp"))
+            _rmtree(os.path.join(self._internal_container, "hsenv.log"))
 
             # Object code and dynamic libraries
             debug_ghc_version = "*_debug-ghc{0}.so".format(self._version)
@@ -168,18 +175,10 @@ def get(container, util, shell, version, installer=_no_installer_available):
                                 self._internal_container,
                                 matching=["*.p_"])
 
-        def _active_environment(self, tuple_type):
-            """Return variables that make up this container's active state."""
-            shared_lib = os.path.join(container.language_dir("haskell"),
-                                      "build",
-                                      "usr",
-                                      "lib")
-
+        def _path_prependix(self):
+            """Get variables to prepend to PATH."""
             path_var_prependix_path = os.path.join(self._internal_container,
                                                    "path_var_prependix")
-            ghc_package_path_var_path = os.path.join(self._internal_container,
-                                                     "ghc_package_path_var")
-
             if os.path.exists(path_var_prependix_path):
                 with open(path_var_prependix_path, "r") as path_data:
                     path_prependix = path_data.read().strip()
@@ -188,11 +187,30 @@ def get(container, util, shell, version, installer=_no_installer_available):
                                               "cabal",
                                               "bin")
 
+            return path_prependix
+
+        def _ghc_package_path(self):
+            """Get GHC package path."""
+            ghc_package_path_var_path = os.path.join(self._internal_container,
+                                                     "ghc_package_path_var")
+
             if os.path.exists(ghc_package_path_var_path):
                 with open(ghc_package_path_var_path, "r") as ppath_data:
                     ghc_package_path_var = ppath_data.read().strip()
             else:
                 ghc_package_path_var = ""
+
+            return ghc_package_path_var
+
+        def _active_environment(self, tuple_type):
+            """Return variables that make up this container's active state."""
+            shared_lib = os.path.join(container.language_dir("haskell"),
+                                      "build",
+                                      "usr",
+                                      "lib")
+
+            path_prependix = self._path_prependix()
+            ghc_package_path_var = self._ghc_package_path()
 
             pp_replacement = ":" + ghc_package_path_var
             pp_replacement = pp_replacement.replace("::", ":").strip()
@@ -249,77 +267,69 @@ def run(container, util, shell, version):
     This function returns a HaskellContainer, which has a path
     and keeps a reference to its parent container.
     """
-    class HaskellBuildManager(object):
+    lang_dir = container.language_dir("haskell")
+    haskell_build_dir = os.path.join(lang_dir, "build")
 
-        """An object wrapping the haskell-build script."""
+    def install_library_from_tar_pkg(container,
+                                     remote_url,
+                                     directory_name):
+        """Install an autotools-distributed library at remote_url.
 
-        def _install_library_from_tar_pkg(self,
-                                          container,
-                                          remote_url,
-                                          directory_name):
-            """Install an autotools-distributed library at remote_url.
+        The directory to change into is specified as directory.
+        """
+        with container.in_temp_cache_dir() as cache_dir:
+            with util.in_dir(cache_dir):
+                local_name = os.path.join(cache_dir,
+                                          os.path.basename(remote_url))
+                with open(local_name, "w") as local_file:
+                    local_file.write(util.url_opener()(remote_url).read())
 
-            The directory to change into is specified as directory.
-            """
-            with container.in_temp_cache_dir() as cache_dir:
-                with util.in_dir(cache_dir):
-                    local_name = os.path.join(cache_dir,
-                                              os.path.basename(remote_url))
-                    with open(local_name, "w") as local_file:
-                        local_file.write(util.url_opener()(remote_url).read())
+                with tarfile.open(local_name) as local_tar:
+                    local_tar.extractall()
 
-                    with tarfile.open(local_name) as local_tar:
-                        local_tar.extractall()
-
-                    with util.in_dir(os.path.join(cache_dir,
-                                                  directory_name)):
-                        build_dir = self._haskell_build_dir
-                        util.execute(container,
-                                     util.long_running_suppressed_output(5),
-                                     os.path.join(os.getcwd(), "configure"),
-                                     "--prefix={0}/usr".format(build_dir),
-                                     instant_fail=True)
-                        util.execute(container,
-                                     util.long_running_suppressed_output(5),
-                                     "make",
-                                     "-j16",
-                                     "install")
-
-        def __init__(self, container):
-            """Initialize the haskell-build script."""
-            super(HaskellBuildManager, self).__init__()
-            lang_dir = container.language_dir("haskell")
-            self._haskell_build_dir = os.path.join(lang_dir, "build")
-
-            gmp_url = "https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2"
-            ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
-
-            if not os.path.exists(self._haskell_build_dir):
-                with util.Task("Downloading hsenv"):
-                    remote = "git://github.com/saturday06/hsenv.sh"
-                    dest = self._haskell_build_dir
+                with util.in_dir(os.path.join(cache_dir,
+                                              directory_name)):
+                    build_dir = haskell_build_dir
                     util.execute(container,
-                                 util.output_on_fail,
-                                 "git", "clone", remote, dest,
+                                 util.long_running_suppressed_output(5),
+                                 os.path.join(os.getcwd(), "configure"),
+                                 "--prefix={0}/usr".format(build_dir),
                                  instant_fail=True)
+                    util.execute(container,
+                                 util.long_running_suppressed_output(5),
+                                 "make",
+                                 "-j16",
+                                 "install")
 
-                with util.Task("Installing libgmp"):
-                    self._install_library_from_tar_pkg(container,
-                                                       gmp_url,
-                                                       "gmp-6.0.0")
+    def haskell_installer():
+        """Install build manager."""
+        gmp_url = "https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2"
+        ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
 
-                with util.Task("Installing libffi"):
-                    self._install_library_from_tar_pkg(container,
-                                                       ffi_url,
-                                                       "libffi-3.2.1")
+        if not os.path.exists(haskell_build_dir):
+            with util.Task("Downloading hsenv"):
+                remote = "git://github.com/saturday06/hsenv.sh"
+                dest = haskell_build_dir
+                util.execute(container,
+                             util.output_on_fail,
+                             "git", "clone", remote, dest,
+                             instant_fail=True)
 
-        def install(self, version):
+            with util.Task("Installing libgmp"):
+                install_library_from_tar_pkg(container, gmp_url, "gmp-6.0.0")
+
+            with util.Task("Installing libffi"):
+                install_library_from_tar_pkg(container,
+                                             ffi_url,
+                                             "libffi-3.2.1")
+
+        def install(version):
             """Install haskell version, returns a HaskellContainer."""
             def deferred_installer(installation, version, activate):
                 """Closure which installs haskell on request."""
                 _force_makedirs(os.path.dirname(installation))
                 with util.Task("Installing haskell version " + version):
-                    hsenv = os.path.join(self._haskell_build_dir,
+                    hsenv = os.path.join(haskell_build_dir,
                                          "bin",
                                          "hsenv")
 
@@ -361,8 +371,10 @@ def run(container, util, shell, version):
 
             return get(container, util, shell, version, deferred_installer)
 
+        return install
+
     with util.Task("Configuring haskell"):
-        haskell_container = HaskellBuildManager(container).install(version)
+        haskell_container = haskell_installer()(version)
         with util.Task("Activating haskell {0}".format(version)):
             haskell_container.activate(util)
 
