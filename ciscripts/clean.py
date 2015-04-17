@@ -7,7 +7,7 @@
 """Scan for installed sub-containers and clean each one out."""
 
 
-def run(container, util, shell, argv=list()):
+def run(container, util, shell, argv=None):
     """Scan for installed sub-containers and clean them out."""
     del shell
     del argv

@@ -47,6 +47,7 @@ class TestDetermineIfPythonModulesAvailable(TestCase):
         """Return false where python module is not available."""
         self.assertFalse(python_util.python_module_available("___unavailable"))
 
+    # suppress(no-self-use)
     def test_run_function_if_python_module_unavailable(self):
         """Function executed if python module unavailable."""
         mock = Mock()
@@ -54,6 +55,7 @@ class TestDetermineIfPythonModulesAvailable(TestCase):
 
         mock.assert_called_with("arg")
 
+    # suppress(no-self-use)
     def test_dont_run_function_if_python_module_available(self):
         """Function not executed when python module available."""
         mock = Mock()

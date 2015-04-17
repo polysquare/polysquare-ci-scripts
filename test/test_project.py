@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """Test cases for a project container."""
 
+import errno
+
 import os
 
 import shutil
@@ -12,6 +14,8 @@ import shutil
 import subprocess
 
 import tempfile
+
+from test import testutil
 
 import ciscripts.bootstrap as bootstrap
 import ciscripts.util as util
@@ -22,10 +26,8 @@ from testtools import TestCase
 from testtools.content import text_content
 from testtools.matchers import Mismatch
 
-import testutil
 
-
-class IsInSubdirectoryOf(object):
+class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
 
     """Match if a path is a subdirectory of the specified path."""
 
@@ -53,6 +55,7 @@ class SubprocessExitWithMismatch(object):
 
     """Detail of a SubprocessExitsWith mismatch."""
 
+    # suppress(too-many-arguments)
     def __init__(self, popen_command, code, expected, stdout, stderr):
         """Initialize this mismatch detail object."""
         super(SubprocessExitWithMismatch, self).__init__()
@@ -75,7 +78,7 @@ class SubprocessExitWithMismatch(object):
         return self._details
 
 
-class SubprocessExitsWith(object):
+class SubprocessExitsWith(object):  # suppress(too-few-public-methods)
 
     """Match if the subprocess to be executed exits with the expected code."""
 
@@ -103,18 +106,18 @@ class SubprocessExitsWith(object):
                                               process.stderr.read())
 
 
-class CIScriptExitsWith(object):
+class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
 
     """Match if the specified ci-script runs with its arguments."""
 
-    def __init__(self, expected_status, container, util, *args, **kwargs):
+    def __init__(self, expected_status, container, util_mod, *args, **kwargs):
         """Initialize matcher with the arguments we run the script with."""
         super(CIScriptExitsWith, self).__init__()
         self._expected_status = expected_status
         self._args = args
         self._kwargs = kwargs
         self._container = container
-        self.__class__.util = util
+        self._util = util_mod
 
     def __str__(self):
         """Represent this matcher as a string."""
@@ -124,8 +127,7 @@ class CIScriptExitsWith(object):
         """Match if this script runs successfully."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            run_args = [self._container,
-                        self.__class__.util] + list(self._args)
+            run_args = [self._container, self._util] + list(self._args)
             run_kwargs = self._kwargs
             self._container.fetch_and_import(script).run(*run_args,
                                                          **run_kwargs)
@@ -243,8 +245,9 @@ class TestProjectContainerSetup(TestCase):
         """Remove container."""
         try:
             shutil.rmtree(cls.container_temp_dir)
-        except OSError:
-            pass
+        except OSError, err:
+            if err.errno != errno.ENOENT:  # suppress(PYC90)
+                raise err
 
     def setUp(self):  # suppress(N802)
         """Create a copy of and enter sample project directory."""

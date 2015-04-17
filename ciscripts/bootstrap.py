@@ -11,6 +11,8 @@ import abc
 
 import argparse
 
+import errno
+
 import imp
 
 import importlib
@@ -37,16 +39,17 @@ def force_mkdir(directory):
     """Recursively make all directories, ignores existing directories."""
     try:
         os.makedirs(directory)
-    except OSError:
-        pass
+    except OSError, error:
+        if error.errno != errno.EEXIST:  # suppress(PYC90)
+            raise error
 
     return directory
 
 
-def open_and_force_mkdir(file, mode):
+def open_and_force_mkdir(path, mode):
     """Recursively create directories for path to file and then open it."""
-    force_mkdir(os.path.dirname(file))
-    return open(file, mode)
+    force_mkdir(os.path.dirname(path))
+    return open(path, mode)
 
 
 class BashParentEnvironment(object):
@@ -65,12 +68,13 @@ class BashParentEnvironment(object):
         else:
             self._printer("unset {0}".format(key))
 
+    # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
         # See http://stackoverflow.com/questions/370047/
-        for v in value.split(":"):
+        for part in value.split(":"):
             script = ("export " + key + "=$(echo -n \"${" + key + "}\" | "
-                      "awk -v RS=: -v ORS=: '$0 != \"'" + v + "'\"' | "
+                      "awk -v RS=: -v ORS=: '$0 != \"'" + part + "'\"' | "
                       "sed 's/:$//')")
             self._printer(script)
 
@@ -146,8 +150,9 @@ class ContainerBase(object):
         finally:
             try:
                 self._delete(path)
-            except OSError:
-                pass
+            except OSError, error:
+                if error.errno != errno.ENOENT:
+                    raise error
 
 ActivationKeys = namedtuple("ActivationKeys",
                             "activated version deactivate inserted")
@@ -238,7 +243,7 @@ class LanguageBase(ContainerBase):
 
         active_environment = self._active_environment(ActiveEnvironment)
 
-        for key, value in active_environment.overwrite.items():
+        for key in active_environment.overwrite.keys():
             backup = activation_keys.deactivate.format(key=key)
             util.overwrite_environment_variable(self._parent_shell,
                                                 key,
@@ -247,7 +252,7 @@ class LanguageBase(ContainerBase):
                                                 backup,
                                                 None)
 
-        for key, value in active_environment.append.items():
+        for key in active_environment.append.keys():
             inserted = activation_keys.inserted.format(key=key)
             util.remove_from_environment_variable(self._parent_shell,
                                                   key,
@@ -287,6 +292,17 @@ class LanguageBase(ContainerBase):
 FetchedModule = namedtuple("FetchedModule", "in_scripts_dir fs_path")
 
 
+def _fetch_script(info,
+                  script_path,
+                  domain="public-travis-scripts.polysquare.org"):
+    """Download a script if it doesn't exist."""
+    if not os.path.exists(info.fs_path):
+        with open_and_force_mkdir(info.fs_path, "w") as scr:
+            remote = os.path.join(domain, script_path)
+            scr.write(urlopen("http://{0}".format(remote)).read())
+            scr.truncate()
+
+
 class ContainerDir(ContainerBase):
 
     """A container that all scripts and other data will be stored in."""
@@ -296,15 +312,14 @@ class ContainerDir(ContainerBase):
         super(ContainerDir, self).__init__(directory)
         if kwargs.get("scripts_directory"):
             self._scripts_dir = kwargs["scripts_directory"]
-            self._force_created_scripts_directory = False
+            self._force_created_scripts_dir = False
         else:
             self._scripts_dir = force_mkdir(os.path.join(self._container_dir,
                                                          "_scripts"))
             # Ensure that we have a /bootstrap.py script in our
             # container.
-            self._fetch_script(self.script_path("bootstrap.py"),
-                               "bootstrap.py")
-            self._force_created_scripts_directory = True
+            _fetch_script(self.script_path("bootstrap.py"), "bootstrap.py")
+            self._force_created_scripts_dir = True
 
         sys.path = [self._scripts_dir] + sys.path
 
@@ -322,21 +337,13 @@ class ContainerDir(ContainerBase):
         self._failures = 0
         self._shell = shell
 
-    def _fetch_script(self,
-                      info,
-                      script_path,
-                      domain="public-travis-scripts.polysquare.org"):
-        """Download a script if it doesn't exist."""
-        if not os.path.exists(info.fs_path):
-            with open_and_force_mkdir(info.fs_path, "w") as scr:
-                remote = os.path.join(domain, script_path)
-                scr.write(urlopen("http://{0}".format(remote)).read())
-                scr.truncate()
-
     def clean(self, util):
         """Clean this container and all sub-containers."""
         info = namedtuple("Info", "language version")
 
+        # Having everything on one line is nice
+        #
+        # suppress(invalid-name)
         with open(self._languages_record_path, "r") as f:
             containers = [info(*(c.split("-"))) for c in f.read().splitlines()]
 
@@ -350,7 +357,7 @@ class ContainerDir(ContainerBase):
                                                   info.version).clean(util)
 
         with util.Task("Cleaning up downloaded scripts"):
-            if self._force_created_scripts_directory:
+            if self._force_created_scripts_dir:
                 self._delete(self._scripts_dir)
 
     def script_path(self, relative_path):
@@ -401,29 +408,28 @@ class ContainerDir(ContainerBase):
         # First try to find the script locally in the
         # current working directory.
         info = self.script_path(script_path)
-        self._fetch_script(info, script_path)
+        _fetch_script(info, script_path)
 
         key = "{0}/{1}".format(domain, script_path)
 
         try:
             return self._module_cache[key]
         except KeyError:
-            pass
-
-        # We try to import the file normally first - this is useful
-        # for tests where we want to be able to get coverage on those
-        # files. If we can't import directly, then we need to
-        # fall back to importing the file.
-        if info.in_scripts_dir:
-            try:
-                name = os.path.relpath(os.path.splitext(info.fs_path)[0],
-                                       start=self._scripts_dir)
-                name = name.replace(os.path.sep, ".")
-                self._module_cache[key] = importlib.import_module(name)
-            except ImportError:
-                self._module_cache[key] = import_file_directly(info.fs_path)
-        else:
-            self._module_cache[key] = import_file_directly(info.fs_path)
+            # We try to import the file normally first - this is useful
+            # for tests where we want to be able to get coverage on those
+            # files. If we can't import directly, then we need to
+            # fall back to importing the file.
+            fs_path = info.fs_path
+            if info.in_scripts_dir:
+                try:
+                    name = os.path.relpath(os.path.splitext(fs_path)[0],
+                                           start=self._scripts_dir)
+                    name = name.replace(os.path.sep, ".")
+                    self._module_cache[key] = importlib.import_module(name)
+                except ImportError:
+                    self._module_cache[key] = import_file_directly(fs_path)
+            else:
+                self._module_cache[key] = import_file_directly(fs_path)
 
         return self._module_cache[key]
 
@@ -473,6 +479,7 @@ class ContainerDir(ContainerBase):
 
 def escaped_printer(text):
     """Print text in a format suitable for consumption by a shell."""
+    # suppress(anomalous-backslash-in-string)
     sys.stdout.write(text.replace(";", "\;").replace("\n", ";\n") + ";\n")
 
 

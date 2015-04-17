@@ -29,11 +29,13 @@ docstring
 docstrings
 eval
 executables
+ghc
 haskell
 __import__
 _languages
 linter
 linters
+LSs
 markdownlint
 matcher	
 mccabe
@@ -46,10 +48,12 @@ prepended
 prepends
 pychecker
 pyflakes
+pylint
 python
 rootfs
 runtime
 runtimes
+rvm
 _scripts
 setup_requires
 setuptools

@@ -7,7 +7,7 @@
 """Activate haskell container in preparation for deployment."""
 
 
-def run(cont, util, shell, argv=list()):
+def run(cont, util, shell, argv=None):
     """Activate haskell container in preparation for deployment."""
     del argv
 
