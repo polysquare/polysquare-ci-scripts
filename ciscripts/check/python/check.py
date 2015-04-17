@@ -83,6 +83,7 @@ def run(cont, util, shell, argv=None):
             assert os.path.exists(tests_dir)
 
             packages = find_packages(exclude=["test"], )
+            coverage_exclude = result.coverage_exclude or list()
 
             with util.in_dir(tests_dir):
                 util.execute(cont,
@@ -90,7 +91,7 @@ def run(cont, util, shell, argv=None):
                              "coverage",
                              "run",
                              "--source=" + ",".join(packages),
-                             "--omit=" + ",".join(result.coverage_exclude),
+                             "--omit=" + ",".join(coverage_exclude),
                              os.path.join(cwd, "setup.py"),
                              "green")
 
