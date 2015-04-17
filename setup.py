@@ -33,6 +33,7 @@ setup(name="polysquare-ci-scripts",
           "green": [
               "nose",
               "nose-parameterized<=0.4.0",
+              "mock",
               "setuptools-green",
               "six",
               "testtools"
