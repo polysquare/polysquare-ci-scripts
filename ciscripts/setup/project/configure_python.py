@@ -55,7 +55,7 @@ def get(container, util, shell, version):
 
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
-            util_mod.apply_to_files(lambda f: os.utime(f, (1, 1)),
+            util_mod.apply_to_files(os.unlink,
                                     py_path,
                                     matching=["*.egg-link"])
 
