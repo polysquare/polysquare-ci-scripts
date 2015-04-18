@@ -47,7 +47,7 @@ def get(container, util, shell, version):
             py_path = fnmatch.filter(os.listdir(py_lib), "python*")
 
             assert len(py_path) == 1
-            return py_path[0]
+            return os.path.join(py_lib, py_path[0])
 
         def clean(self, util_mod):  # suppress(unused-function)
             """Clean out cruft in the container."""
