@@ -47,7 +47,7 @@ def get(container, util, shell, version):
             py_path = fnmatch.filter(os.listdir(py_lib), "python*")
 
             assert len(py_path) == 1
-            return py_path[0]
+            return os.path.join(py_lib, py_path[0])
 
         def clean(self, util_mod):  # suppress(unused-function)
             """Clean out cruft in the container."""
@@ -55,13 +55,15 @@ def get(container, util, shell, version):
 
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
-            util_mod.apply_to_files(lambda f: os.utime(f, (1, 1)),
+            util_mod.apply_to_files(os.unlink,
                                     py_path,
                                     matching=["*.egg-link"])
 
             util_mod.apply_to_directories(shutil.rmtree,
                                           py_path,
                                           matching=["*/test/*"])
+
+            os.utime(os.path.join(py_path, "site-packages", "site.py"), (1, 1))
 
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""

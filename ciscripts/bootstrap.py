@@ -31,8 +31,10 @@ from contextlib import contextmanager
 
 try:
     from urllib.request import urlopen
+    from urllib.error import URLError
 except ImportError:
     from urllib2 import urlopen
+    from urllib2 import URLError
 
 
 def force_mkdir(directory):
@@ -308,8 +310,14 @@ def _fetch_script(info,
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
             remote = os.path.join(domain, script_path)
-            scr.write(urlopen("http://{0}".format(remote)).read().decode())
-            scr.truncate()
+            retrycount = 100
+            while retrycount != 0:
+                try:
+                    scr.write(urlopen("http://{0}".format(remote),
+                                      timeout=60).read().decode())
+                    scr.truncate()
+                except URLError:
+                    retrycount -= 1
 
 
 class ContainerDir(ContainerBase):
@@ -476,12 +484,20 @@ class ContainerDir(ContainerBase):
         requested a new container for.
         """
         key = "{language}-{version}".format(language=language, version=version)
+        added_key = False
         with open(self._languages_record_path, "r") as languages_record:
-            records = set(languages_record.read().splitlines()) | set([key])
+            records = set(languages_record.read().splitlines())
+            if key not in records:
+                records |= set([key])
+                added_key = True
 
-        with open(self._languages_record_path, "w") as languages_record:
-            languages_record.truncate(0)
-            languages_record.write("\n".join(list(records)))
+        # Only modify the file if we added a new language record, otherwise
+        # this file will cause the cache to be constantly marked as
+        # invalid.
+        if added_key:
+            with open(self._languages_record_path, "w") as languages_record:
+                languages_record.truncate(0)
+                languages_record.write("\n".join(list(records)))
 
         return LanguageBase
 

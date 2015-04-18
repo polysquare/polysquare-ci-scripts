@@ -28,11 +28,12 @@ setup(name="polysquare-ci-scripts",
       license="MIT",
       keywords="development linters",
       packages=find_packages(exclude=["test"]),
-      setup_requires=["setuptools-markdown"],
+      setup_requires=["setuptools-markdown>=0.1"],
       extras_require={
           "green": [
               "nose",
-              "nose-parameterized<=0.4.0",
+              "nose-parameterized>=0.4.0",
+              "mock",
               "setuptools-green",
               "six",
               "testtools"

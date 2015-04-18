@@ -588,75 +588,93 @@ class TestMain(TrackedLoadedModulesTestCase):
 
     """Test cases for creating containers on the command line."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize instance variables on this TestCase."""
+        super(TestMain, self).__init__(*args, **kwargs)
+        self._current_dir = None
+        self._test_dir = None
+        self._container_dir = None
+
     def setUp(self):  # suppress(N802)
         """Set up TestMain.
 
-        We always load scripts/util.py and scripts/setup/test/setup.py, so
-        make note of them now.
+        Create a temporary directory to perform all actions in.
         """
         super(TestMain, self).setUp()
+        self._current_dir = os.getcwd()
+        prefix = os.path.join(self._current_dir, "main_container_test")
+        self._test_dir = tempfile.mkdtemp(prefix=prefix)
+        self._container_dir = os.path.join(self._test_dir, "container")
+        os.chdir(self._test_dir)
+
+        write_bootstrap_script_into_container(self._container_dir)
+
+    def tearDown(self):  # suppress(N802)
+        """Tear down TestMain.
+
+        This will remove our temporary directory.
+        """
+        os.chdir(self._current_dir)
+        shutil.rmtree(self._test_dir)
+        super(TestMain, self).tearDown()
 
     def test_create_dir_and_pass_control_to_script(self):
         """Test creating a container and passing control to a script."""
-        with testutil.in_tempdir(os.getcwd(), "main_container_test"):
-            _write_setup_script("def run(cont, util, sh, argv):\n"
-                                "    print(\"Hello\")\n")
+        _write_setup_script("def run(cont, util, sh, argv):\n"
+                            "    print(\"Hello\")\n")
 
-            captured_output = testutil.CapturedOutput()
+        captured_output = testutil.CapturedOutput()
 
-            with captured_output:
-                bootstrap.main(["-d",
-                                "container",
-                                "-s",
-                                "setup/test/setup.py"])
+        with captured_output:
+            bootstrap.main(["-d",
+                            self._container_dir,
+                            "-s",
+                            "setup/test/setup.py"])
 
-            self.assertEqual(captured_output.stdout, "Hello\n")
+        self.assertEqual(captured_output.stdout, "Hello\n")
 
     def test_create_dir_and_pass_args_to_script(self):
         """Test creating a container and passing arguments to a script."""
-        with testutil.in_tempdir(os.getcwd(), "main_container_test"):
-            _write_setup_script("def run(cont, util, sh, argv):\n"
-                                "    print(argv[0])\n")
+        _write_setup_script("def run(cont, util, sh, argv):\n"
+                            "    print(argv[0])\n")
 
-            captured_output = testutil.CapturedOutput()
+        captured_output = testutil.CapturedOutput()
 
-            with captured_output:
-                bootstrap.main(["-d",
-                                "container",
-                                "-s",
-                                "setup/test/setup.py",
-                                "Argument"])
+        with captured_output:
+            bootstrap.main(["-d",
+                            self._container_dir,
+                            "-s",
+                            "setup/test/setup.py",
+                            "Argument"])
 
-            self.assertEqual(captured_output.stdout, "Argument\n")
+        self.assertEqual(captured_output.stdout, "Argument\n")
 
     def test_create_dir_and_pass_control_to_downloaded_script(self):
         """Test creating container and passing control to a fetched script."""
-        with testutil.in_tempdir(os.getcwd(), "main_container_test"):
-            with testutil.server_in_tempdir(os.getcwd(), "server") as server:
-                util_script = "{0}/util.py".format(server[0])
-                with bootstrap.open_and_force_mkdir(util_script, "w") as f:
-                    f.write("")
-                    f.flush()
+        with testutil.server_in_tempdir(os.getcwd(), "server") as server:
+            util_script = "{0}/util.py".format(server[0])
+            with bootstrap.open_and_force_mkdir(util_script, "w") as f:
+                f.write("")
+                f.flush()
 
-                setup_script = "{0}/setup/test/setup.py".format(server[0])
-                with bootstrap.open_and_force_mkdir(setup_script, "w") as f:
-                    # Write a simple script to our setup file
-                    f.write("def run(cont, util, sh, argv):\n"
-                            "  print(\"Hello\")\n")
-                    f.flush()
+            setup_script = "{0}/setup/test/setup.py".format(server[0])
+            with bootstrap.open_and_force_mkdir(setup_script, "w") as f:
+                # Write a simple script to our setup file
+                f.write("def run(cont, util, sh, argv):\n"
+                        "  print(\"Hello\")\n")
+                f.flush()
 
-                    dns_overrides = {
-                        "public-travis-scripts.polysquare.org": server[1]
-                    }
+                dns_overrides = {
+                    "public-travis-scripts.polysquare.org": server[1]
+                }
 
-                with testutil.overridden_dns(dns_overrides):
-                    captured_output = testutil.CapturedOutput()
+            with testutil.overridden_dns(dns_overrides):
+                captured_output = testutil.CapturedOutput()
 
-                    with captured_output:
-                        write_bootstrap_script_into_container("container")
-                        bootstrap.main(["-d",
-                                        "container",
-                                        "-s",
-                                        "setup/test/setup.py"])
+                with captured_output:
+                    bootstrap.main(["-d",
+                                    self._container_dir,
+                                    "-s",
+                                    "setup/test/setup.py"])
 
-                    self.assertEqual(captured_output.stdout, "Hello\n")
+                self.assertEqual(captured_output.stdout, "Hello\n")

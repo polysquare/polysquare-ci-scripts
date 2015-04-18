@@ -408,16 +408,6 @@ def where_unavailable(executable, function, *args, **kwargs):
     return None
 
 
-def url_opener():
-    """Return a function that opens urls as files."""
-    try:
-        from urllib.request import urlopen
-    except ImportError:
-        from urllib2 import urlopen
-
-    return urlopen
-
-
 def url_error():
     """Return class representing a failed urlopen."""
     try:
@@ -426,6 +416,29 @@ def url_error():
         from urllib2 import URLError
 
     return URLError
+
+
+def url_opener():
+    """Return a function that opens urls as files, performing retries."""
+    try:
+        from urllib.request import urlopen
+    except ImportError:
+        from urllib2 import urlopen
+
+    def _urlopen(*args, **kwargs):
+        """Open url, but set the timeout to 30 and retry a few times."""
+        kwargs["timeout"] = kwargs.get("timeout", None) or 30
+        retrycount = 100
+        while retrycount != 0:
+            try:
+                return urlopen(*args, **kwargs)
+            except url_error():
+                retrycount -= 1
+
+        raise Exception("""Failed to open URL {0}, """
+                        """exceeded max retries.""".format(args[0]))
+
+    return _urlopen
 
 
 def get_system_identifier(container):
@@ -441,9 +454,11 @@ def get_system_identifier(container):
             remote = url_opener()(config_project + "/config.guess")
             config_guess.write(remote.read().decode())
 
-            os.chmod(system_identifier_config_guess,
-                     os.stat(system_identifier_config_guess).st_mode |
-                     stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    os.chmod(system_identifier_config_guess,
+             os.stat(system_identifier_config_guess).st_mode |
+             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-    result = subprocess.check_output([system_identifier_config_guess]).strip()
-    return result.decode()
+    output = subprocess.Popen(["sh", system_identifier_config_guess],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE).communicate()
+    return "".join([o.decode() for o in output]).strip()
