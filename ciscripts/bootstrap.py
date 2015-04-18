@@ -484,12 +484,20 @@ class ContainerDir(ContainerBase):
         requested a new container for.
         """
         key = "{language}-{version}".format(language=language, version=version)
+        added_key = False
         with open(self._languages_record_path, "r") as languages_record:
-            records = set(languages_record.read().splitlines()) | set([key])
+            records = set(languages_record.read().splitlines())
+            if key not in records:
+                records |= set([key])
+                added_key = True
 
-        with open(self._languages_record_path, "w") as languages_record:
-            languages_record.truncate(0)
-            languages_record.write("\n".join(list(records)))
+        # Only modify the file if we added a new language record, otherwise
+        # this file will cause the cache to be constantly marked as
+        # invalid.
+        if added_key:
+            with open(self._languages_record_path, "w") as languages_record:
+                languages_record.truncate(0)
+                languages_record.write("\n".join(list(records)))
 
         return LanguageBase
 
