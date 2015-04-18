@@ -63,6 +63,8 @@ def get(container, util, shell, version):
                                           py_path,
                                           matching=["*/test/*"])
 
+            os.utime(os.path.join(py_path, "site-packages", "site.py"), (1, 1))
+
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""
             py_path = PythonContainer._get_py_path_from(self._installation)
