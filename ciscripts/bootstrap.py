@@ -316,6 +316,7 @@ def _fetch_script(info,
                     contents = urlopen("http://{0}".format(remote)).read()
                     scr.write(contents.decode())
                     scr.truncate()
+                    retrycount = 0
                 except URLError:
                     retrycount -= 1
 
