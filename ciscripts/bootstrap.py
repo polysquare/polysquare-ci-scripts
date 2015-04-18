@@ -313,8 +313,8 @@ def _fetch_script(info,
             retrycount = 100
             while retrycount != 0:
                 try:
-                    scr.write(urlopen("http://{0}".format(remote),
-                                      timeout=60).read().decode())
+                    contents = urlopen("http://{0}".format(remote)).read()
+                    scr.write(contents.decode())
                     scr.truncate()
                 except URLError:
                     retrycount -= 1
