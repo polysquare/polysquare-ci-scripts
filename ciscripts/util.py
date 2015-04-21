@@ -281,34 +281,45 @@ def long_running_suppressed_output(dot_timeout=10):
 
 def running_output(process, outputs):
     """Show output of process as it runs."""
+    state = type("State",
+                 (object, ),
+                 {
+                     "printed_message": False,
+                     "read_first_byte": False
+                 })
+
     def output_printer(file_handle):
         """Thread that prints the output of this process."""
-        read_first_byte = False
-
         while True:
-            data = file_handle.read(1)
-            if data:
-                if not read_first_byte:
-                    if data != "\n":
+            character = file_handle.read(1)
+            if character:
+                if not state.read_first_byte:
+                    state.read_first_byte = True
+
+                    if character != "\n":
                         IndentedLogger.message("\n")
 
-                    read_first_byte = True
-
-                IndentedLogger.message(data.decode())
+                IndentedLogger.message(character.decode())
+                state.printed_message = True
             else:
                 return
 
     stdout = threading.Thread(target=output_printer, args=(outputs[0], ))
-    stderr = threading.Thread(target=output_printer, args=(outputs[1], ))
 
     stdout.start()
-    stderr.start()
+    stderr_lines = list(outputs[1])
 
     try:
         status = process.wait()
     finally:
         stdout.join()
-        stderr.join()
+
+    for line in stderr_lines:
+        IndentedLogger.message(line.decode())
+        state.printed_message = True
+
+    if state.printed_message:
+        sys.stderr.write("\n")
 
     return status
 
