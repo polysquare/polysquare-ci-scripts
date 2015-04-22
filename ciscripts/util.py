@@ -30,7 +30,7 @@ except ImportError:
 
 def print_message(message):
     """Print to stderr."""
-    sys.stderr.write("{0}".format(message))
+    sys.stderr.write(message)
 
 
 def overwrite_environment_variable(parent, key, value):
@@ -241,8 +241,8 @@ def output_on_fail(process, outputs):
 
     if status != 0:
         IndentedLogger.message("\n")
-        IndentedLogger.message(stdout.decode())
-        IndentedLogger.message(stderr.decode())
+        IndentedLogger.message(stdout.decode("utf-8"))
+        IndentedLogger.message(stderr.decode("utf-8"))
 
     return status
 
@@ -290,19 +290,26 @@ def running_output(process, outputs):
 
     def output_printer(file_handle):
         """Thread that prints the output of this process."""
+        character = bytearray()
         while True:
-            character = file_handle.read(1)
-            if character:
-                if not state.read_first_byte:
-                    state.read_first_byte = True
+            character += file_handle.read(1)
+            try:
+                if character:
+                    if not state.read_first_byte:
+                        state.read_first_byte = True
 
-                    if character != "\n":
-                        IndentedLogger.message("\n")
+                        if character != "\n":
+                            IndentedLogger.message("\n")
 
-                IndentedLogger.message(character.decode())
-                state.printed_message = True
-            else:
-                return
+                    # If this fails, then we will just read further characters
+                    # until the decode succeeds.
+                    IndentedLogger.message(character.decode("utf-8"))
+                    state.printed_message = True
+                    character = bytearray()
+                else:
+                    return
+            except UnicodeDecodeError:
+                continue
 
     stdout = threading.Thread(target=output_printer, args=(outputs[0], ))
 
@@ -315,7 +322,7 @@ def running_output(process, outputs):
         stdout.join()
 
     for line in stderr_lines:
-        IndentedLogger.message(line.decode())
+        IndentedLogger.message(line.decode("utf-8"))
         state.printed_message = True
 
     if state.printed_message:
@@ -365,8 +372,8 @@ def execute(container, output_strategy, *args, **kwargs):
                                    stderr=subprocess.PIPE,
                                    env=env)
     except OSError as error:
-        raise Exception("Failed to execute {0} - {1}".format(" ".join(args),
-                                                             str(error)))
+        raise Exception(u"Failed to execute {0} - {1}".format(" ".join(args),
+                                                              str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -375,8 +382,8 @@ def execute(container, output_strategy, *args, **kwargs):
 
         if status != 0:
             cmd = " ".join(args)
-            IndentedLogger.message("""!!! Process {0} failed """
-                                   """with {1}""".format(cmd, status))
+            IndentedLogger.message(u"""!!! Process {0} failed """
+                                   u"""with {1}""".format(cmd, status))
             container.note_failure(instant_fail)
 
         return status
@@ -446,8 +453,8 @@ def url_opener():
             except url_error():
                 retrycount -= 1
 
-        raise Exception("""Failed to open URL {0}, """
-                        """exceeded max retries.""".format(args[0]))
+        raise Exception(u"""Failed to open URL {0}, """
+                        u"""exceeded max retries.""".format(args[0]))
 
     return _urlopen
 
@@ -463,7 +470,7 @@ def get_system_identifier(container):
         config_project = "{0}/cgit/config.git/plain".format(domain)
         with open(system_identifier_config_guess, "w") as config_guess:
             remote = url_opener()(config_project + "/config.guess")
-            config_guess.write(remote.read().decode())
+            config_guess.write(remote.read().decode("utf-8"))
 
     os.chmod(system_identifier_config_guess,
              os.stat(system_identifier_config_guess).st_mode |
