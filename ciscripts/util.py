@@ -369,8 +369,7 @@ def execute(container, output_strategy, *args, **kwargs):
     try:
         process = subprocess.Popen(args,
                                    stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   env=env)
+                                   stderr=subprocess.PIPE)
     except OSError as error:
         raise Exception(u"Failed to execute {0} - {1}".format(" ".join(args),
                                                               str(error)))
