@@ -287,6 +287,35 @@ class TestExecute(TestCase):
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE))
 
+    def test_running_output_handles_utf8(self):
+        """Handle utf-8 strings correctly in running output."""
+        captured_output = testutil.CapturedOutput()
+        with captured_output:
+            util.execute(Mock(),
+                         util.running_output,
+                         "python",
+                         "-c",
+                         u"import sys; sys.stdout.write('\N{check mark}');")
+
+        self.assertEqual(captured_output.stderr, u"\n\N{check mark}\n")
+
+    def test_output_on_fail_handles_utf8(self):
+        """Handle utf-8 strings correctly when showing failure output."""
+        captured_output = testutil.CapturedOutput()
+        with captured_output:
+            util.execute(Mock(),
+                         util.output_on_fail,
+                         "python",
+                         "-c",
+                         u"import sys; "
+                         u"sys.stdout.write('\N{check mark}'); "
+                         u"sys.exit(1)")
+
+        self.assertThat(captured_output.stderr[1:],
+                        DocTestMatches(u"\N{check mark}!!! ...",
+                                       doctest.ELLIPSIS |
+                                       doctest.NORMALIZE_WHITESPACE))
+
     def test_running_stderr_at_end(self):
         """Execute a command with success, but display stderr at end."""
         captured_output = testutil.CapturedOutput()
