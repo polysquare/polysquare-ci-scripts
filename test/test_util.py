@@ -19,6 +19,8 @@ import shutil
 
 import subprocess
 
+import sys
+
 import tempfile
 
 from test import testutil
@@ -234,6 +236,16 @@ class TestTask(TestCase):
                          "\n")
 
 
+def _utf8_print_cmd():
+    """Get a path to a python file which prints a utf-8 check box.
+
+    This is needed because coverage on pypy3 would see the inline
+    check box and throw an error, because it doesn't decode it correctly.
+    """
+    return os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                        "utf8_print_cmd.txt")
+
+
 class TestExecute(TestCase):
 
     """Test case for util.execute."""
@@ -289,30 +301,37 @@ class TestExecute(TestCase):
 
     def test_running_output_handles_utf8(self):
         """Handle utf-8 strings correctly in running output."""
+        if (platform.python_implementation() != "CPython" or
+                sys.version_info.major != 3):
+            self.skipTest("""only python 3 can run this example correctly""")
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
             util.execute(Mock(),
                          util.running_output,
                          "python",
-                         "-c",
-                         u"import sys; sys.stdout.write('\N{check mark}');")
+                         _utf8_print_cmd())
 
-        self.assertEqual(captured_output.stderr, u"\n\N{check mark}\n")
+        self.assertThat(captured_output.stderr,
+                        DocTestMatches(u"\N{check mark} ...",
+                                       doctest.ELLIPSIS |
+                                       doctest.NORMALIZE_WHITESPACE))
 
     def test_output_on_fail_handles_utf8(self):
         """Handle utf-8 strings correctly when showing failure output."""
+        if (platform.python_implementation() != "CPython" or
+                sys.version_info.major != 3):
+            self.skipTest("""only python 3 can run this example correctly""")
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
             util.execute(Mock(),
-                         util.output_on_fail,
+                         util.running_output,
                          "python",
-                         "-c",
-                         u"import sys; "
-                         u"sys.stdout.write('\N{check mark}'); "
-                         u"sys.exit(1)")
+                         _utf8_print_cmd())
 
         self.assertThat(captured_output.stderr[1:],
-                        DocTestMatches(u"\N{check mark}!!! ...",
+                        DocTestMatches(u"\N{check mark} ...",
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE))
 
