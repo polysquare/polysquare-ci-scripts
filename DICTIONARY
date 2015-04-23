@@ -49,6 +49,8 @@ prepends
 pychecker
 pyflakes
 pylint
+pypy
+pypy3
 python
 rootfs
 runtime
