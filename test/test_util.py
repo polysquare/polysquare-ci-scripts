@@ -262,6 +262,22 @@ class TestExecute(TestCase):
                                           util.output_on_fail,
                                           "false"))
 
+    def test_execute_passes_environment_variables(self):
+        """Pass specified environment variables to subprocess."""
+        captured_output = testutil.CapturedOutput()
+        with captured_output:
+            util.execute(Mock(),
+                         util.running_output,
+                         "python",
+                         "-c",
+                         "import os; print(os.environ['KEY'])",
+                         env={"KEY": "VALUE"})
+
+        self.assertThat(captured_output.stderr,
+                        DocTestMatches("...VALUE...",
+                                       doctest.ELLIPSIS |
+                                       doctest.NORMALIZE_WHITESPACE))
+
     # suppress(no-self-use)
     def test_instant_failure_calls_through_to_container(self):
         """Execute a command with failure."""
