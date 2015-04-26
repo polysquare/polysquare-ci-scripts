@@ -29,7 +29,7 @@ def _no_installer_available(installation, version):
     """Placeholder for an installer function, throws an error."""
     del installation
     del version
-    raise RuntimeError("Install haskell packages in the before_install stage")
+    raise RuntimeError("""Install haskell packages in the install stage""")
 
 
 def _force_makedirs(path):
@@ -102,7 +102,12 @@ def get(container, util, shell, version, installer=_no_installer_available):
             if not os.path.exists(local_file_path):
                 try:
                     _force_makedirs(os.path.dirname(local_file_path))
-                    remote = util.url_opener()(url)
+
+                    # We know this might fail, so only attempt to
+                    # open the url a few times before giving up.
+                    remote = util.url_opener()(url,
+                                               timeout=3,
+                                               retrycount=3)
                     with open(local_file_path, "wb") as local_file:
                         local_file.write(remote.read())
                         os.chmod(local_file_path,
@@ -119,12 +124,12 @@ def get(container, util, shell, version, installer=_no_installer_available):
                         with open(installed_stamp, "w") as stamp:
                             stamp.write("done")
 
-                        with self.activated(util):
-                            util.execute(container,
-                                         util.long_running_suppressed_output(),
-                                         "cabal",
-                                         "install",
-                                         pkg_name)
+                    # Assumes that container is already active
+                    util.execute(container,
+                                 util.long_running_suppressed_output(),
+                                 "cabal",
+                                 "install",
+                                 pkg_name)
 
         def clean(self, util):
             """Clean out cruft in the container."""
@@ -308,7 +313,7 @@ def run(container, util, shell, version):
         ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
 
         if not os.path.exists(haskell_build_dir):
-            with util.Task("Downloading hsenv"):
+            with util.Task("""Downloading hsenv"""):
                 remote = "git://github.com/saturday06/hsenv.sh"
                 dest = haskell_build_dir
                 util.execute(container,
@@ -316,10 +321,10 @@ def run(container, util, shell, version):
                              "git", "clone", remote, dest,
                              instant_fail=True)
 
-            with util.Task("Installing libgmp"):
+            with util.Task("""Installing libgmp"""):
                 install_library_from_tar_pkg(container, gmp_url, "gmp-6.0.0")
 
-            with util.Task("Installing libffi"):
+            with util.Task("""Installing libffi"""):
                 install_library_from_tar_pkg(container,
                                              ffi_url,
                                              "libffi-3.2.1")
@@ -329,7 +334,7 @@ def run(container, util, shell, version):
             def deferred_installer(installation, version, activate):
                 """Closure which installs haskell on request."""
                 _force_makedirs(os.path.dirname(installation))
-                with util.Task("Installing haskell version " + version):
+                with util.Task("""Installing haskell version """ + version):
                     hsenv = os.path.join(haskell_build_dir,
                                          "bin",
                                          "hsenv")
@@ -367,16 +372,16 @@ def run(container, util, shell, version):
                                            "documentation: False\n"
                                            "tests: False\n")
 
-                with util.Task("Activating haskell {0}".format(version)):
+                with util.Task("""Activating haskell {0}""".format(version)):
                     activate(util)
 
             return get(container, util, shell, version, deferred_installer)
 
         return install
 
-    with util.Task("Configuring haskell"):
+    with util.Task("""Configuring haskell"""):
         haskell_container = haskell_installer()(version)
-        with util.Task("Activating haskell {0}".format(version)):
+        with util.Task("""Activating haskell {0}""".format(version)):
             haskell_container.activate(util)
 
         return haskell_container

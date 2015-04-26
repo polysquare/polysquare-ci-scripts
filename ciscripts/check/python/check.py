@@ -41,7 +41,7 @@ def run(cont, util, shell, argv=None):
                                                        shell,
                                                        python_ver)
 
-    with util.Task("Checking python project style guide compliance"):
+    with util.Task("""Checking python project style guide compliance"""):
         supps = [
             r"\bpylint:disable=[^\s]*\b",
             r"\bNOLINT:[^\s]*\b",
@@ -61,14 +61,14 @@ def run(cont, util, shell, argv=None):
                                                            exclusions=excl,
                                                            block_regexps=supps)
 
-    with util.Task("Creating development installation"):
+    with util.Task("""Creating development installation"""):
         util.execute(cont,
                      util.output_on_fail,
                      "python",
                      "setup.py",
                      "develop")
 
-    with util.Task("Linting python project"):
+    with util.Task("""Linting python project"""):
         util.execute(cont,
                      util.output_on_fail,
                      "python",
@@ -76,7 +76,7 @@ def run(cont, util, shell, argv=None):
                      "polysquarelint",
                      "--suppress-codes=LongDescription,TestSuite")
 
-    with util.Task("Running python project tests"):
+    with util.Task("""Running python project tests"""):
         with py_cont.deactivated(util):
             cwd = os.getcwd()
             tests_dir = os.path.join(cwd, "test")

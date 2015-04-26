@@ -30,7 +30,8 @@ except ImportError:
 
 def print_message(message):
     """Print to stderr."""
-    sys.stderr.write(message)
+    sys.stderr.write(message.encode(sys.getdefaultencoding(),
+                                    "replace").decode("utf-8"))
 
 
 def overwrite_environment_variable(parent, key, value):
@@ -372,8 +373,8 @@ def execute(container, output_strategy, *args, **kwargs):
                                    stderr=subprocess.PIPE,
                                    env=env)
     except OSError as error:
-        raise Exception(u"Failed to execute {0} - {1}".format(" ".join(args),
-                                                              str(error)))
+        raise Exception(u"""Failed to execute """
+                        u"""{0} - {1}""".format(" ".join(args), str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -381,9 +382,10 @@ def execute(container, output_strategy, *args, **kwargs):
         instant_fail = kwargs.get("instant_fail") or False
 
         if status != 0:
-            cmd = " ".join(args)
-            IndentedLogger.message(u"""!!! Process {0} failed """
-                                   u"""with {1}""".format(cmd, status))
+            IndentedLogger.message(u"""!!! Process {0}\n""".format(args[0]))
+            for arg in args[1:]:
+                IndentedLogger.message(u"""!!!         {0}\n""".format(arg))
+            IndentedLogger.message(u"""!!! failed with {0}\n""".format(status))
             container.note_failure(instant_fail)
 
         return status
@@ -446,15 +448,21 @@ def url_opener():
     def _urlopen(*args, **kwargs):
         """Open url, but set the timeout to 30 and retry a few times."""
         kwargs["timeout"] = kwargs.get("timeout", None) or 30
-        retrycount = 100
+
+        if kwargs.get("retrycount"):
+            retrycount = (kwargs["retrycount"] + 1)
+            del kwargs["retrycount"]
+        else:
+            retrycount = 100
+
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
             except url_error():
                 retrycount -= 1
 
-        raise Exception(u"""Failed to open URL {0}, """
-                        u"""exceeded max retries.""".format(args[0]))
+        raise url_error()(u"""Failed to open URL {0}, """
+                          u"""exceeded max retries.""".format(args[0]))
 
     return _urlopen
 

@@ -12,5 +12,5 @@ def run(container, util, shell, argv=None):
     del shell
     del argv
 
-    with util.Task("Cleaning up container to prepare for cache"):
+    with util.Task("""Cleaning up container to prepare for cache"""):
         container.clean(util)

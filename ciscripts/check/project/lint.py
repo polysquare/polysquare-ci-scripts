@@ -49,7 +49,7 @@ def run(cont,  # suppress(too-many-arguments)
 
         return linter_function
 
-    with util.Task("Linting files using polysquare style guide linter"):
+    with util.Task("""Linting files using polysquare style guide linter"""):
         for directory in [os.path.realpath(d) for d in directories]:
             matching = ["*.{0}".format(e) for e in extensions]
             not_matching = ([e for e in exclusions] +
@@ -73,7 +73,7 @@ def run(cont,  # suppress(too-many-arguments)
                                 matching,
                                 not_matching)
 
-    with util.Task("Linting markdown documentation"):
+    with util.Task("""Linting markdown documentation"""):
         for directory in [os.path.realpath(d) for d in directories]:
             matching = ["*.md"]
             not_matching = ([e for e in exclusions] +

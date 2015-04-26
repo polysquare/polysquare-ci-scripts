@@ -8,7 +8,7 @@ sudo: false
 cache:
   directories:
     - container
-before_install:
+install:
  # As a special case for this project, we specify our ciscripts
  # directory as -r so that changes from the pull-request are
  # used during the build process.

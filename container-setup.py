@@ -11,7 +11,7 @@
 def run(cont, util, shell, argv=list()):
     """Set up language runtimes and pass control to python project script."""
 
-    with util.Task("Installing all necessary language runtimes"):
+    with util.Task("""Installing all necessary language runtimes"""):
         rb_ver = "2.1.5"
         py_ver = "2.7"
         hs_ver = "7.8.4"
