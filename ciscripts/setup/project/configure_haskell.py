@@ -29,8 +29,7 @@ def _no_installer_available(installation, version):
     """Placeholder for an installer function, throws an error."""
     del installation
     del version
-    raise RuntimeError("""Install haskell packages in the """
-                       """before_install stage""")
+    raise RuntimeError("""Install haskell packages in the install stage""")
 
 
 def _force_makedirs(path):

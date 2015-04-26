@@ -17,7 +17,6 @@ SCRIPTS_DIRECTORY
 activatable
 autotools
 bashlint
-before_install
 _cache
 ciscripts
 coverage
