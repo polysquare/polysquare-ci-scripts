@@ -28,7 +28,9 @@ def run(cont, util, shell, argv=None):
             # Find the first directory in PATH that is in /home, eg
             # writable by the current user and make a symbolic link
             # from the pandoc binary to.
-            for path in os.environ.get("PATH", "").split(":"):
-                if (os.path.commonprefix([os.path.expanduser("~"),
-                                          path]) == os.path.expanduser("~")):
-                    os.symlink(pandoc_binary, os.path.join(path, "pandoc"))
+            if not util.which("pandoc"):
+                home_dir = os.path.expanduser("~")
+                for path in os.environ.get("PATH", "").split(":"):
+                    if os.path.commonprefix([home_dir, path]) == home_dir:
+                        os.symlink(pandoc_binary, os.path.join(path, "pandoc"))
+                        break
