@@ -29,6 +29,6 @@ def run(cont, util, shell, argv=None):
             # writable by the current user and make a symbolic link
             # from the pandoc binary to.
             for path in os.environ.get("PATH", "").split(":"):
-                if (os.path.commonprefix(os.path.expanduser("~"),
-                                         path) == os.path.expanduser("~")):
+                if (os.path.commonprefix([os.path.expanduser("~"),
+                                          path]) == os.path.expanduser("~")):
                     os.symlink(pandoc_binary, os.path.join(path, "pandoc"))
