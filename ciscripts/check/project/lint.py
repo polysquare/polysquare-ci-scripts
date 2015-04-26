@@ -38,16 +38,11 @@ def run(cont,  # suppress(too-many-arguments)
     block_regexps = block_regexps or list()
 
     def lint(linter, *args):
-        """Return a function which applies linter to a file."""
-        def linter_function(file_to_lint):
-            """Apply linter to file_to_lint."""
-            util.execute(cont,
-                         util.output_on_fail,
-                         linter,
-                         file_to_lint,
-                         *args)
-
-        return linter_function
+        """Run linter with args."""
+        util.execute(cont,
+                     util.output_on_fail,
+                     linter,
+                     *args)
 
     with util.Task("""Linting files using polysquare style guide linter"""):
         for directory in [os.path.realpath(d) for d in directories]:
@@ -62,16 +57,17 @@ def run(cont,  # suppress(too-many-arguments)
                 r"\bsuppress\([^\s]*\)"
             ]
 
-            util.apply_to_files(lint("polysquare-generic-file-linter",
-                                     "--spellcheck-cache",
-                                     cache_dir,
-                                     "--log-technical-terms-to",
-                                     technical_terms_path,
-                                     "--block-regexps",
-                                     *block_regexps),
-                                directory,
-                                matching,
-                                not_matching)
+            lint("polysquare-generic-file-linter",
+                 *(util.apply_to_files(lambda x: x,
+                                       directory,
+                                       matching,
+                                       not_matching) +
+                   ["--spellcheck-cache",
+                    cache_dir,
+                    "--log-technical-terms-to",
+                    technical_terms_path,
+                    "--block-regexps"] +
+                   block_regexps))
 
     with util.Task("""Linting markdown documentation"""):
         for directory in [os.path.realpath(d) for d in directories]:
@@ -79,17 +75,18 @@ def run(cont,  # suppress(too-many-arguments)
             not_matching = ([e for e in exclusions] +
                             [os.path.join(cont.path(), "*")])
 
-            util.apply_to_files(lint("mdl"),
+            util.apply_to_files(lambda p: lint("mdl", p),
                                 directory,
                                 matching,
                                 not_matching)
 
             cache_dir = cont.named_cache_dir("markdown_spelling_cache")
-            util.apply_to_files(lint("spellcheck-linter",
-                                     "--spellcheck-cache",
-                                     cache_dir,
-                                     "--technical-terms",
-                                     technical_terms_path),
-                                directory,
-                                matching,
-                                not_matching)
+            lint("spellcheck-linter",
+                 *(util.apply_to_files(lambda x: x,
+                                       directory,
+                                       matching,
+                                       not_matching) +
+                   ["--spellcheck-cache",
+                    cache_dir,
+                    "--technical-terms",
+                    technical_terms_path]))
