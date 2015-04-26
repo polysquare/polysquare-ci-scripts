@@ -30,7 +30,8 @@ except ImportError:
 
 def print_message(message):
     """Print to stderr."""
-    sys.stderr.write(message.encode("utf-8"))
+    sys.stderr.write(message.encode(sys.getdefaultencoding(),
+                                    "replace").decode("utf-8"))
 
 
 def overwrite_environment_variable(parent, key, value):
