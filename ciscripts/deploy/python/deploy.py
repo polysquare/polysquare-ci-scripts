@@ -21,7 +21,7 @@ def run(cont, util, shell, argv=None):
                                                        shell,
                                                        hs_ver)
 
-        with hs_cont.activated():
+        with hs_cont.activated(util):
             pandoc_binary = util.which("pandoc")
 
         if os.environ.get("CI", None):
