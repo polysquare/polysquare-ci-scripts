@@ -50,9 +50,12 @@ def run(cont, util, shell, argv=None):
         excl = [
             os.path.join(os.getcwd(), ".eggs", "*"),
             os.path.join(os.getcwd(), "*.egg", "*"),
-            "*/build/*",
-            "*/dist/*",
-            "*.egg-info/*"
+            os.path.join(os.getcwd(), "*", "build", "*"),
+            os.path.join(os.getcwd(), "build", "*"),
+            os.path.join(os.getcwd(), "*", "dist", "*"),
+            os.path.join(os.getcwd(), "dist", "*"),
+            os.path.join(os.getcwd(), "*", "*.egg-info", "*"),
+            os.path.join(os.getcwd(), "*.egg-info", "*")
         ] + (result.lint_exclude or list())
 
         cont.fetch_and_import("check/project/lint.py").run(cont,

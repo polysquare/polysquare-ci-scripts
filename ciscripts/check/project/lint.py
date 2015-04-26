@@ -44,7 +44,11 @@ def run(cont,  # suppress(too-many-arguments)
                      linter,
                      *args)
 
-    with util.Task("""Linting files using polysquare style guide linter"""):
+    def run_linters_on_code_files(extensions,
+                                  exclusions,
+                                  directories,
+                                  block_regexps):
+        """Run polysquare-generic-file-linter on code files."""
         for directory in [os.path.realpath(d) for d in directories]:
             matching = ["*.{0}".format(e) for e in extensions]
             not_matching = ([e for e in exclusions] +
@@ -57,36 +61,51 @@ def run(cont,  # suppress(too-many-arguments)
                 r"\bsuppress\([^\s]*\)"
             ]
 
-            lint("polysquare-generic-file-linter",
-                 *(util.apply_to_files(lambda x: x,
-                                       directory,
-                                       matching,
-                                       not_matching) +
-                   ["--spellcheck-cache",
-                    cache_dir,
-                    "--log-technical-terms-to",
-                    technical_terms_path,
-                    "--block-regexps"] +
-                   block_regexps))
+            files_to_lint = util.apply_to_files(lambda x: x,
+                                                directory,
+                                                matching,
+                                                not_matching)
 
-    with util.Task("""Linting markdown documentation"""):
+            if len(files_to_lint):
+                lint("polysquare-generic-file-linter",
+                     *(files_to_lint +
+                       ["--spellcheck-cache",
+                        cache_dir,
+                        "--log-technical-terms-to",
+                        technical_terms_path,
+                        "--block-regexps"] +
+                       block_regexps))
+
+    def run_linters_on_markdown_files(exclusions,
+                                      directories):
+        """Run spellcheck-linter and markdownlint on markdown files."""
         for directory in [os.path.realpath(d) for d in directories]:
             matching = ["*.md"]
             not_matching = ([e for e in exclusions] +
                             [os.path.join(cont.path(), "*")])
 
-            util.apply_to_files(lambda p: lint("mdl", p),
-                                directory,
-                                matching,
-                                not_matching)
-
             cache_dir = cont.named_cache_dir("markdown_spelling_cache")
-            lint("spellcheck-linter",
-                 *(util.apply_to_files(lambda x: x,
-                                       directory,
-                                       matching,
-                                       not_matching) +
-                   ["--spellcheck-cache",
-                    cache_dir,
-                    "--technical-terms",
-                    technical_terms_path]))
+            files_to_lint = util.apply_to_files(lambda p: p,
+                                                directory,
+                                                matching,
+                                                not_matching)
+
+            if len(files_to_lint) > 0:
+                lint("spellcheck-linter",
+                     *(files_to_lint +
+                       ["--spellcheck-cache",
+                        cache_dir,
+                        "--technical-terms",
+                        technical_terms_path]))
+
+                for markdown_file in files_to_lint:
+                    lint("mdl", markdown_file)
+
+    with util.Task("""Linting files using polysquare style guide linter"""):
+        run_linters_on_code_files(extensions,
+                                  exclusions,
+                                  directories,
+                                  block_regexps)
+
+    with util.Task("""Linting markdown documentation"""):
+        run_linters_on_markdown_files(extensions, directories)
