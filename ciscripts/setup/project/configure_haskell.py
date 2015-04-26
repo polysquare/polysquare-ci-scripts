@@ -124,12 +124,12 @@ def get(container, util, shell, version, installer=_no_installer_available):
                         with open(installed_stamp, "w") as stamp:
                             stamp.write("done")
 
-                    with self.activated(util):
-                        util.execute(container,
-                                     util.long_running_suppressed_output(),
-                                     "cabal",
-                                     "install",
-                                     pkg_name)
+                    # Assumes that container is already active
+                    util.execute(container,
+                                 util.long_running_suppressed_output(),
+                                 "cabal",
+                                 "install",
+                                 pkg_name)
 
         def clean(self, util):
             """Clean out cruft in the container."""
