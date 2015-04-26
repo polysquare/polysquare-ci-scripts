@@ -11,7 +11,7 @@ def run(cont, util, shell, argv=None):
     """Activate haskell container in preparation for deployment."""
     del argv
 
-    with util.Task("Submitting coverage totals"):
+    with util.Task("Preparing for deployment to PyPI"):
         hs_ver = "7.8.4"
         cont.fetch_and_import("setup/project/configure_haskell.py").run(cont,
                                                                         util,
