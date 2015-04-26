@@ -97,13 +97,13 @@ def run(container, util, shell, version):
         """Create python build manager and return installer function."""
         if not os.path.exists(python_build_dir):
             with container.in_temp_cache_dir() as tmp:
-                with util.Task("Downloading pyenv"):
+                with util.Task("""Downloading pyenv"""):
                     remote = "git://github.com/yyuu/pyenv"
                     util.execute(container,
                                  util.output_on_fail,
                                  "git", "clone", remote, tmp,
                                  instant_fail=True)
-                with util.Task("Installing pyenv"):
+                with util.Task("""Installing pyenv"""):
                     util.execute(container,
                                  util.output_on_fail,
                                  "bash",
@@ -124,7 +124,7 @@ def run(container, util, shell, version):
             build_cache = container.named_cache_dir("python-build")
 
             if not os.path.exists(py_cont):
-                with util.Task("Installing python version " + version):
+                with util.Task("""Installing python version """ + version):
                     py_build = os.path.join(python_build_dir,
                                             "bin",
                                             "python-build")
@@ -145,9 +145,9 @@ def run(container, util, shell, version):
 
         return install
 
-    with util.Task("Configuring python"):
+    with util.Task("""Configuring python"""):
         python_container = python_installer()(version)
-        with util.Task("Activating python {0}".format(version)):
+        with util.Task("""Activating python {0}""".format(version)):
             python_container.activate(util)
 
         return python_container

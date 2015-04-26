@@ -366,15 +366,16 @@ class ContainerDir(ContainerBase):
             containers = [info(*(c.split("-"))) for c in f.read().splitlines()]
 
         for info in containers:
-            with util.Task("Cleaning {0} {1} container".format(info.language,
-                                                               info.version)):
+            with util.Task("""Cleaning {0} {1} """
+                           """container""".format(info.language,
+                                                  info.version)):
                 script = "setup/project/configure_{0}.py".format(info.language)
                 self.fetch_and_import(script).get(self,
                                                   util,
                                                   None,
                                                   info.version).clean(util)
 
-        with util.Task("Cleaning up downloaded scripts"):
+        with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
                 self._delete(self._scripts_dir)
 

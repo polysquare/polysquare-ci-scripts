@@ -15,7 +15,7 @@ def run(cont, util, shell, argv=None):
     """
     del argv
 
-    with util.Task("Setting up generic project"):
+    with util.Task("""Setting up generic project"""):
         rb_ver = "2.1.5"
         py_ver = "2.7"
 
@@ -32,7 +32,7 @@ def run(cont, util, shell, argv=None):
                                                            shell,
                                                            py_ver)
 
-        with util.Task("Installing markdownlint"):
+        with util.Task("""Installing markdownlint"""):
             util.where_unavailable("mdl",
                                    util.execute,
                                    cont,
@@ -46,7 +46,7 @@ def run(cont, util, shell, argv=None):
                                    instant_fail=True,
                                    path=rb_cont.executable_path())
 
-        with util.Task("Installing polysquare style guide linter"):
+        with util.Task("""Installing polysquare style guide linter"""):
             linter = "polysquare-generic-file-linter"
             util.where_unavailable(linter,
                                    py_util.pip_install,

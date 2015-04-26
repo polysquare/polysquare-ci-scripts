@@ -47,9 +47,10 @@ def get(container, util, shell, version):
 
             if (platform.system() == "Darwin" and
                     not os.path.exists("/etc/openssl/cert.pem")):
-                raise Exception("/System/Library/OpenSSL/cert.pem needs to be "
-                                "symlinked to /etc/openssl/cert.pem in order "
-                                "to work around broken rvm builds.")
+                raise Exception("""/System/Library/OpenSSL/cert.pem needs """
+                                """to be symlinked to /etc/openssl/cert.pem """
+                                """in order to work around broken rvm """
+                                """builds.""")
 
         def clean(self, _):
             """Clean out container."""
@@ -106,7 +107,7 @@ def run(container, util, shell, version):
     def ruby_installer():
         """Get ruby installer (rvm-download)."""
         if not os.path.exists(ruby_build_dir):
-            with util.Task("Downloading rvm-download"):
+            with util.Task("""Downloading rvm-download"""):
                 remote = "git://github.com/garnieretienne/rvm-download"
                 dest = ruby_build_dir
                 util.execute(container,
@@ -123,7 +124,7 @@ def run(container, util, shell, version):
 
             if not os.path.exists(ruby_version_container):
                 os.makedirs(ruby_version_container)
-                with util.Task("Installing ruby version {0}".format(version)):
+                with util.Task("""Installing ruby version """ + version):
                     rvm_download = os.path.join(ruby_build_dir,
                                                 "bin",
                                                 "rbenv-download")
@@ -139,9 +140,9 @@ def run(container, util, shell, version):
 
         return install
 
-    with util.Task("Configuring ruby"):
+    with util.Task("""Configuring ruby"""):
         ruby_container = ruby_installer()(version)
-        with util.Task("Activating ruby {0}".format(version)):
+        with util.Task("""Activating ruby """ + version):
             ruby_container.activate(util)
 
         return ruby_container

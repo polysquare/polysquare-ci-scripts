@@ -29,7 +29,8 @@ def _no_installer_available(installation, version):
     """Placeholder for an installer function, throws an error."""
     del installation
     del version
-    raise RuntimeError("Install haskell packages in the before_install stage")
+    raise RuntimeError("""Install haskell packages in the """
+                       """before_install stage""")
 
 
 def _force_makedirs(path):
@@ -313,7 +314,7 @@ def run(container, util, shell, version):
         ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
 
         if not os.path.exists(haskell_build_dir):
-            with util.Task("Downloading hsenv"):
+            with util.Task("""Downloading hsenv"""):
                 remote = "git://github.com/saturday06/hsenv.sh"
                 dest = haskell_build_dir
                 util.execute(container,
@@ -321,10 +322,10 @@ def run(container, util, shell, version):
                              "git", "clone", remote, dest,
                              instant_fail=True)
 
-            with util.Task("Installing libgmp"):
+            with util.Task("""Installing libgmp"""):
                 install_library_from_tar_pkg(container, gmp_url, "gmp-6.0.0")
 
-            with util.Task("Installing libffi"):
+            with util.Task("""Installing libffi"""):
                 install_library_from_tar_pkg(container,
                                              ffi_url,
                                              "libffi-3.2.1")
@@ -334,7 +335,7 @@ def run(container, util, shell, version):
             def deferred_installer(installation, version, activate):
                 """Closure which installs haskell on request."""
                 _force_makedirs(os.path.dirname(installation))
-                with util.Task("Installing haskell version " + version):
+                with util.Task("""Installing haskell version """ + version):
                     hsenv = os.path.join(haskell_build_dir,
                                          "bin",
                                          "hsenv")
@@ -372,16 +373,16 @@ def run(container, util, shell, version):
                                            "documentation: False\n"
                                            "tests: False\n")
 
-                with util.Task("Activating haskell {0}".format(version)):
+                with util.Task("""Activating haskell {0}""".format(version)):
                     activate(util)
 
             return get(container, util, shell, version, deferred_installer)
 
         return install
 
-    with util.Task("Configuring haskell"):
+    with util.Task("""Configuring haskell"""):
         haskell_container = haskell_installer()(version)
-        with util.Task("Activating haskell {0}".format(version)):
+        with util.Task("""Activating haskell {0}""".format(version)):
             haskell_container.activate(util)
 
         return haskell_container

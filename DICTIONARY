@@ -17,6 +17,7 @@ SCRIPTS_DIRECTORY
 activatable
 autotools
 bashlint
+before_install
 _cache
 ciscripts
 coverage
@@ -33,6 +34,8 @@ ghc
 haskell
 __import__
 _languages
+libgmp
+libffi
 linter
 linters
 LSs
@@ -47,6 +50,7 @@ prepend
 prepended
 prepends
 pychecker
+pyenv
 pyflakes
 pylint
 pypy
@@ -62,6 +66,7 @@ setuptools
 shellcheck
 subdirectories
 subdirectory
+symlinked
 symlinks
 todo
 utf

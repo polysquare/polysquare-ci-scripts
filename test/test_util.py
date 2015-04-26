@@ -298,8 +298,9 @@ class TestExecute(TestCase):
 
         self.assertThat(captured_output.stderr,
                         DocTestMatches(".../does-not-exist... "
-                                       "!!! Process python /does-not-exist "
-                                       "failed with ...",
+                                       "!!! Process python\n"
+                                       "!!!         /does-not-exist\n"
+                                       "!!! failed with ...",
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE |
                                        doctest.REPORT_NDIFF))

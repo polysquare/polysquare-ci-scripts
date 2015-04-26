@@ -372,8 +372,8 @@ def execute(container, output_strategy, *args, **kwargs):
                                    stderr=subprocess.PIPE,
                                    env=env)
     except OSError as error:
-        raise Exception(u"Failed to execute {0} - {1}".format(" ".join(args),
-                                                              str(error)))
+        raise Exception(u"""Failed to execute """
+                        u"""{0} - {1}""".format(" ".join(args), str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -381,9 +381,10 @@ def execute(container, output_strategy, *args, **kwargs):
         instant_fail = kwargs.get("instant_fail") or False
 
         if status != 0:
-            cmd = " ".join(args)
-            IndentedLogger.message(u"""!!! Process {0} failed """
-                                   u"""with {1}""".format(cmd, status))
+            IndentedLogger.message(u"""!!! Process {0}\n""".format(args[0]))
+            for arg in args[1:]:
+                IndentedLogger.message(u"""!!!         {0}\n""".format(arg))
+            IndentedLogger.message(u"""!!! failed with {0}\n""".format(status))
             container.note_failure(instant_fail)
 
         return status

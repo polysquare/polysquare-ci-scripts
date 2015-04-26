@@ -29,7 +29,7 @@ def run(cont, util, shell, argv=None):
 
     cont.fetch_and_import("setup/project/setup.py").run(cont, util, shell)
 
-    with util.Task("Setting up python project"):
+    with util.Task("""Setting up python project"""):
         py_ver = "2.7"
         hs_ver = "7.8.4"
         py_config_script = "setup/project/configure_python.py"
@@ -45,13 +45,13 @@ def run(cont, util, shell, argv=None):
                                                                    shell,
                                                                    hs_ver)
 
-        with util.Task("Installing pandoc"):
+        with util.Task("""Installing pandoc"""):
             util.where_unavailable("pandoc",
                                    hs_container.install_cabal_pkg,
                                    cont,
                                    "pandoc")
 
-        with util.Task("Installing python linters"):
+        with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
                                      util,
                                      "polysquarelint",
@@ -61,7 +61,7 @@ def run(cont, util, shell, argv=None):
                                      "--allow-unverified",
                                      "pychecker")
 
-        with util.Task("Installing python test runners"):
+        with util.Task("""Installing python test runners"""):
             # Install testing dependencies both inside and outside container.
             # They need to be installed in the container so that static
             # analysis tools can successfully import them.
