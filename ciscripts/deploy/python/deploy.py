@@ -8,10 +8,44 @@
 
 import os
 
+import shutil
+
 
 def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
     del argv
+
+    def copy_pandoc_out_of_container():
+        """Copy pandoc out of container.
+
+        This ensures that when the container is removed, we still have
+        access to pandoc for the deploy step, which is crucial to ensuring
+        that our documentation is uploaded.
+        """
+        # Find the first directory in PATH that is in /home, eg
+        # writable by the current user and make a symbolic link
+        # from the pandoc binary to.
+        if not util.which("pandoc"):
+            home_dir = os.path.expanduser("~")
+            languages = cont.language_dir("")
+            virtualenv = os.path.join(home_dir, "virtualenv")
+            # Filter out paths in the container as they won't
+            # be available during the deploy step.
+            for path in os.environ.get("PATH", "").split(":"):
+                in_home = (os.path.commonprefix([home_dir,
+                                                 path]) == home_dir)
+                in_container = (os.path.commonprefix([languages,
+                                                      path]) == languages)
+                in_venv = (os.path.commonprefix([virtualenv,
+                                                 path] == virtualenv))
+
+                if in_home and not in_container and not in_venv:
+                    destination = os.path.join(path, "pandoc")
+                    with util.Task("""Creating a symbolic link from """
+                                   """{0} to {1}.""".format(pandoc_binary,
+                                                            destination)):
+                        shutil.copy(pandoc_binary, destination)
+                        break
 
     with util.Task("""Preparing for deployment to PyPI"""):
         hs_ver = "7.8.4"
@@ -25,24 +59,4 @@ def run(cont, util, shell, argv=None):
             pandoc_binary = os.path.realpath(util.which("pandoc"))
 
         if os.environ.get("CI", None):
-            # Find the first directory in PATH that is in /home, eg
-            # writable by the current user and make a symbolic link
-            # from the pandoc binary to.
-            if not util.which("pandoc"):
-                home_dir = os.path.expanduser("~")
-                languages = cont.language_dir("")
-                # Filter out paths in the container as they won't
-                # be available during the deploy step.
-                for path in os.environ.get("PATH", "").split(":"):
-                    in_home = (os.path.commonprefix([home_dir,
-                                                     path]) == home_dir)
-                    in_container = (os.path.commonprefix([languages,
-                                                          path]) == languages)
-
-                    if in_home and not in_container:
-                        destination = os.path.join(path, "pandoc")
-                        with util.Task("""Creating a symbolic link from """
-                                       """{0} to {1}.""".format(pandoc_binary,
-                                                                destination)):
-                            os.symlink(pandoc_binary, destination)
-                            break
+            copy_pandoc_out_of_container()
