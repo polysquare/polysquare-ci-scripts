@@ -446,7 +446,13 @@ def url_opener():
     def _urlopen(*args, **kwargs):
         """Open url, but set the timeout to 30 and retry a few times."""
         kwargs["timeout"] = kwargs.get("timeout", None) or 30
-        retrycount = 100
+        
+        if kwargs.get("retrycount"):
+            retrycount = (kwargs["retrycount"] + 1)
+            del kwargs["retrycount"]
+        else:
+            retrycount = 100
+
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
