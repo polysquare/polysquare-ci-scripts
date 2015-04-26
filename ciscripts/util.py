@@ -30,7 +30,7 @@ except ImportError:
 
 def print_message(message):
     """Print to stderr."""
-    sys.stderr.write(message)
+    sys.stderr.write(message.encode("utf-8"))
 
 
 def overwrite_environment_variable(parent, key, value):
@@ -446,7 +446,7 @@ def url_opener():
     def _urlopen(*args, **kwargs):
         """Open url, but set the timeout to 30 and retry a few times."""
         kwargs["timeout"] = kwargs.get("timeout", None) or 30
-        
+
         if kwargs.get("retrycount"):
             retrycount = (kwargs["retrycount"] + 1)
             del kwargs["retrycount"]

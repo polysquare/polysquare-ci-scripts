@@ -102,7 +102,7 @@ def get(container, util, shell, version, installer=_no_installer_available):
             if not os.path.exists(local_file_path):
                 try:
                     _force_makedirs(os.path.dirname(local_file_path))
-                    
+
                     # We know this might fail, so only attempt to
                     # open the url a few times before giving up.
                     remote = util.url_opener()(url,
