@@ -30,8 +30,16 @@ def run(cont, util, shell, argv=None):
             # from the pandoc binary to.
             if not util.which("pandoc"):
                 home_dir = os.path.expanduser("~")
+                languages = cont.language_dir("")
+                # Filter out paths in the container as they won't
+                # be available during the deploy step.
                 for path in os.environ.get("PATH", "").split(":"):
-                    if os.path.commonprefix([home_dir, path]) == home_dir:
+                    in_home = (os.path.commonprefix([home_dir,
+                                                     path]) == home_dir)
+                    in_container = (os.path.commonprefix([languages,
+                                                          path]) == languages)
+
+                    if in_home and not in_container:
                         destination = os.path.join(path, "pandoc")
                         with util.Task("""Creating a symbolic link from """
                                        """{0} to {1}.""".format(pandoc_binary,
