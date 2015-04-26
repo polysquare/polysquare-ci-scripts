@@ -453,8 +453,8 @@ def url_opener():
             except url_error():
                 retrycount -= 1
 
-        raise Exception(u"""Failed to open URL {0}, """
-                        u"""exceeded max retries.""".format(args[0]))
+        raise url_error()(u"""Failed to open URL {0}, """
+                          u"""exceeded max retries.""".format(args[0]))
 
     return _urlopen
 
