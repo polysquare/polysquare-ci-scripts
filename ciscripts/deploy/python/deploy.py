@@ -13,7 +13,7 @@ def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
     del argv
 
-    with util.Task("Preparing for deployment to PyPI"):
+    with util.Task("""Preparing for deployment to PyPI"""):
         hs_ver = "7.8.4"
         hs_script = "setup/project/configure_haskell.py"
         hs_cont = cont.fetch_and_import(hs_script).get(cont,
@@ -22,7 +22,7 @@ def run(cont, util, shell, argv=None):
                                                        hs_ver)
 
         with hs_cont.activated(util):
-            pandoc_binary = util.which("pandoc")
+            pandoc_binary = os.path.realpath(util.which("pandoc"))
 
         if os.environ.get("CI", None):
             # Find the first directory in PATH that is in /home, eg
@@ -32,5 +32,9 @@ def run(cont, util, shell, argv=None):
                 home_dir = os.path.expanduser("~")
                 for path in os.environ.get("PATH", "").split(":"):
                     if os.path.commonprefix([home_dir, path]) == home_dir:
-                        os.symlink(pandoc_binary, os.path.join(path, "pandoc"))
-                        break
+                        destination = os.path.join(path, "pandoc")
+                        with util.Task("""Creating a symbolic link from """
+                                       """{0} to {1}.""".format(pandoc_binary,
+                                                                destination)):
+                            os.symlink(pandoc_binary, destination)
+                            break
