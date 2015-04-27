@@ -8,6 +8,7 @@ Distro
 EOF
 LanguageBase
 LanguageContainer
+PyPI
 PyPy
 REPOSITORIES
 _POLYSQUARE_ACTIVATED_LANGUAGE

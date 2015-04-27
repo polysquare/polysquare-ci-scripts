@@ -379,6 +379,10 @@ class ContainerDir(ContainerBase):
             if self._force_created_scripts_dir:
                 self._delete(self._scripts_dir)
 
+        with util.Task("""Cleaning linter cache files"""):
+            self._delete(self.named_cache_dir("tech_terms"))
+            self._delete(self.named_cache_dir("code_spelling_cache"))
+
     def script_path(self, relative_path):
         """Get absolute path to script specified at relative_path.
 

@@ -440,6 +440,8 @@ def url_error():
 
 def url_opener():
     """Return a function that opens urls as files, performing retries."""
+    from ssl import SSLError
+
     try:
         from urllib.request import urlopen
     except ImportError:
@@ -458,7 +460,7 @@ def url_opener():
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
-            except url_error():
+            except (url_error(), SSLError):
                 retrycount -= 1
 
         raise url_error()(u"""Failed to open URL {0}, """
