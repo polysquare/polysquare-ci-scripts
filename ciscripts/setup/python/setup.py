@@ -18,6 +18,25 @@ def _install_test_dependencies(cont, util, py_util):
                              "nose-parameterized")
 
 
+def _prepare_python_deployment(cont, util, shell, py_util):
+    """Install dependencies required to deploy python project."""
+    hs_ver = "7.8.4"
+    hs_config_script = "setup/project/configure_haskell.py"
+    hs_container = cont.fetch_and_import(hs_config_script).run(cont,
+                                                               util,
+                                                               shell,
+                                                               hs_ver)
+
+    with util.Task("""Installing pandoc"""):
+        util.where_unavailable("pandoc",
+                               hs_container.install_cabal_pkg,
+                               cont,
+                               "pandoc")
+
+    with util.Task("""Installing deploy dependencies"""):
+        py_util.pip_install_deps(cont, util, "upload")
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test and check a python project.
 
@@ -31,25 +50,18 @@ def run(cont, util, shell, argv=None):
 
     with util.Task("""Setting up python project"""):
         py_ver = "2.7"
-        hs_ver = "7.8.4"
         py_config_script = "setup/project/configure_python.py"
-        hs_config_script = "setup/project/configure_haskell.py"
         py_util = cont.fetch_and_import("python_util.py")
         py_cont = cont.fetch_and_import(py_config_script).run(cont,
                                                               util,
                                                               shell,
                                                               py_ver)
 
-        hs_container = cont.fetch_and_import(hs_config_script).run(cont,
-                                                                   util,
-                                                                   shell,
-                                                                   hs_ver)
-
-        with util.Task("""Installing pandoc"""):
-            util.where_unavailable("pandoc",
-                                   hs_container.install_cabal_pkg,
-                                   cont,
-                                   "pandoc")
+        util.prepare_deployment(_prepare_python_deployment,
+                                cont,
+                                util,
+                                shell,
+                                py_util)
 
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,

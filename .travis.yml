@@ -12,7 +12,7 @@ install:
  # As a special case for this project, we specify our ciscripts
  # directory as -r so that changes from the pull-request are
  # used during the build process.
- - eval "$(curl -LSs file://$(pwd)/ciscripts/bootstrap.py | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e)"
+ - eval "$(curl -LSs --connect-timeout 2 --retry 100 file://$(pwd)/ciscripts/bootstrap.py | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e)"
 script:
  - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" --lint-exclude "*/sample/*"
 after_success:

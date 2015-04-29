@@ -28,7 +28,6 @@ setup(name="polysquare-ci-scripts",
       license="MIT",
       keywords="development linters",
       packages=find_packages(exclude=["test"]),
-      setup_requires=["setuptools-markdown>=0.1"],
       extras_require={
           "green": [
               "nose",
@@ -38,7 +37,8 @@ setup(name="polysquare-ci-scripts",
               "six",
               "testtools"
           ],
-          "polysquarelint": ["polysquare-setuptools-lint"]
+          "polysquarelint": ["polysquare-setuptools-lint"],
+          "upload": ["setuptools-markdown>=0.1"]
       },
       dependency_links=[
           ("https://github.com/smspillaz/nose-parameterized/tarball/"
