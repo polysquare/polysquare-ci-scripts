@@ -79,6 +79,7 @@ def run(cont, util, shell, argv=None):
             # analysis tools can successfully import them.
             with py_cont.deactivated(util):
                 _install_test_dependencies(cont, util, py_util)
-                py_util.pip_install(cont, util, "coverage", "coveralls")
+                py_util.pip_install(cont, util, "coverage")
 
             _install_test_dependencies(cont, util, py_util)
+            py_util.pip_install(cont, util, "coverage", "coveralls")

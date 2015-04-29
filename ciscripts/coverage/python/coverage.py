@@ -26,4 +26,4 @@ def run(cont, util, shell, argv=None):
                 assert os.path.exists(tests_dir)
 
                 with util.in_dir(tests_dir):
-                    util.execute(cont, util.running_output, "coveralls")
+                    util.execute(cont, util.running_output, "coveralls",)
