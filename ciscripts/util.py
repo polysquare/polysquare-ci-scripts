@@ -428,6 +428,13 @@ def where_unavailable(executable, function, *args, **kwargs):
     return None
 
 
+def prepare_deployment(function, *args, **kwargs):
+    """Call function if this build is a build that will be deployed later."""
+    if (os.environ.get("TRAVIS_PULL_REQUEST", None) == "false" and
+            os.environ.get("TRAVIS_BRANCH", None) == "master"):
+        function(*args, **kwargs)
+
+
 def url_error():
     """Return class representing a failed urlopen."""
     try:
@@ -441,6 +448,7 @@ def url_error():
 def url_opener():
     """Return a function that opens urls as files, performing retries."""
     from ssl import SSLError
+    from socket import timeout
 
     try:
         from urllib.request import urlopen
@@ -460,7 +468,7 @@ def url_opener():
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
-            except (url_error(), SSLError):
+            except (url_error(), SSLError, timeout):
                 retrycount -= 1
 
         raise url_error()(u"""Failed to open URL {0}, """

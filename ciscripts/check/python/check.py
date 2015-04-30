@@ -9,7 +9,56 @@ import argparse
 
 import os
 
+import subprocess
+
 from setuptools import find_packages
+
+
+def _run_style_guide_lint(cont, util, lint_exclude):
+    """Run /ciscripts/check/project/lint.py on this python project."""
+    supps = [
+        r"\bpylint:disable=[^\s]*\b",
+        r"\bNOLINT:[^\s]*\b",
+        r"\bNOQA[^\s]*\b"
+    ]
+    excl = [
+        os.path.join(os.getcwd(), ".eggs", "*"),
+        os.path.join(os.getcwd(), "*.egg", "*"),
+        os.path.join(os.getcwd(), "*", "build", "*"),
+        os.path.join(os.getcwd(), "build", "*"),
+        os.path.join(os.getcwd(), "*", "dist", "*"),
+        os.path.join(os.getcwd(), "dist", "*"),
+        os.path.join(os.getcwd(), "*", "*.egg-info", "*"),
+        os.path.join(os.getcwd(), "*.egg-info", "*")
+    ] + lint_exclude
+
+    cont.fetch_and_import("check/project/lint.py").run(cont,
+                                                       util,
+                                                       extensions=["py"],
+                                                       exclusions=excl,
+                                                       block_regexps=supps)
+
+
+def _run_tests_and_coverage(cont, py_cont, util, coverage_exclude):
+    """Run /setup.py green on this python project."""
+    with py_cont.deactivated(util):
+        cwd = os.getcwd()
+        tests_dir = os.path.join(cwd, "test")
+        assert os.path.exists(tests_dir)
+
+        packages = find_packages(exclude=["test"], )
+
+        with util.in_dir(tests_dir):
+            util.execute(cont,
+                         util.running_output,
+                         "coverage",
+                         "run",
+                         "--source=" + ",".join(packages),
+                         "--omit=" + ",".join(coverage_exclude),
+                         os.path.join(cwd, "setup.py"),
+                         "green")
+
+            util.execute(cont, util.running_output, "coverage", "report")
 
 
 def run(cont, util, shell, argv=None):
@@ -42,27 +91,7 @@ def run(cont, util, shell, argv=None):
                                                        python_ver)
 
     with util.Task("""Checking python project style guide compliance"""):
-        supps = [
-            r"\bpylint:disable=[^\s]*\b",
-            r"\bNOLINT:[^\s]*\b",
-            r"\bNOQA[^\s]*\b"
-        ]
-        excl = [
-            os.path.join(os.getcwd(), ".eggs", "*"),
-            os.path.join(os.getcwd(), "*.egg", "*"),
-            os.path.join(os.getcwd(), "*", "build", "*"),
-            os.path.join(os.getcwd(), "build", "*"),
-            os.path.join(os.getcwd(), "*", "dist", "*"),
-            os.path.join(os.getcwd(), "dist", "*"),
-            os.path.join(os.getcwd(), "*", "*.egg-info", "*"),
-            os.path.join(os.getcwd(), "*.egg-info", "*")
-        ] + (result.lint_exclude or list())
-
-        cont.fetch_and_import("check/project/lint.py").run(cont,
-                                                           util,
-                                                           extensions=["py"],
-                                                           exclusions=excl,
-                                                           block_regexps=supps)
+        _run_style_guide_lint(cont, util, result.lint_exclude or list())
 
     with util.Task("""Creating development installation"""):
         util.execute(cont,
@@ -80,22 +109,13 @@ def run(cont, util, shell, argv=None):
                      "--suppress-codes=LongDescription,TestSuite")
 
     with util.Task("""Running python project tests"""):
-        with py_cont.deactivated(util):
-            cwd = os.getcwd()
-            tests_dir = os.path.join(cwd, "test")
-            assert os.path.exists(tests_dir)
+        _run_tests_and_coverage(cont,
+                                py_cont,
+                                util,
+                                result.coverage_exclude or list())
 
-            packages = find_packages(exclude=["test"], )
-            coverage_exclude = result.coverage_exclude or list()
-
-            with util.in_dir(tests_dir):
-                util.execute(cont,
-                             util.running_output,
-                             "coverage",
-                             "run",
-                             "--source=" + ",".join(packages),
-                             "--omit=" + ",".join(coverage_exclude),
-                             os.path.join(cwd, "setup.py"),
-                             "green")
-
-                util.execute(cont, util.running_output, "coverage", "report")
+    with util.Task("""Uninstalling development installation"""):
+        pkg, _ = subprocess.Popen(["python", "setup.py", "--name"],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE).communicate()
+        util.execute(cont, util.output_on_fail, "pip", "uninstall", "-y", pkg)
