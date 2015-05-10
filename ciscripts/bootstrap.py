@@ -95,29 +95,39 @@ class BashParentEnvironment(object):
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
         value = BashParentEnvironment._format_environment_value(value)
-        script = ("export {key}=$(python -c \"print(\\\":\\\".join(["
-                  "v for v in \\\"${key}\\\".split(\\\":\\\") "
-                  "if v not in \\\"{value}\\\".split(\\\":\\\")]))\")")
-        script = script.format(key=key, value=value)
-        self._printer(script.encode())
+        script = ("export {k}=$(python -c \"print(\\\":\\\".join(["
+                  "v for v in \\\"${k}\\\".split(\\\":\\\") "
+                  "if v not in \\\"{v}\\\".split(\\\":\\\")]))\")")
+        # There is something about the format() method on str which causes
+        # pychecker to trip over when passing keyword arguments. Just
+        # pass keyword arguments using the ** notation.
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = script.format(**script_keys)
+        self._printer(script)
 
     def prepend_environment_variable(self, key, value):
         """Generate and execute script to prepend value to key."""
         value = BashParentEnvironment._format_environment_value(value)
-        script = "export {key}=\"{value}:${key}\"".format(key=key,
-                                                          value=value)
-        self._printer(script.encode())
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = "export {k}=\"{v}:${k}\"".format(**script_keys)
+        self._printer(script)
 
     def define_command(self, name, command):
         """Define a function called name which runs command."""
         code = ("function %s {"
                 "    %s \"$@\"\n"
                 "}") % (name, command)
-        self._printer(code.encode())
+        self._printer(code)
 
     def exit(self, status):
         """Cause the shell to exit with status."""
-        self._printer("exit {0}".format(status).encode())
+        self._printer("exit {0}".format(status))
 
 
 class ContainerBase(object):

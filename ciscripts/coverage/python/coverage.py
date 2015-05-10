@@ -7,13 +7,15 @@
 
 import os
 
+from collections import defaultdict
+
 
 def run(cont, util, shell, argv=None):
     """Submit coverage total to coveralls."""
     del argv
 
     with util.Task("""Submitting coverage totals"""):
-        py_ver = "2.7"
+        py_ver = defaultdict(lambda: "2.7.9")
         cont.fetch_and_import("setup/project/configure_python.py").run(cont,
                                                                        util,
                                                                        shell,
