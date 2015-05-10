@@ -432,8 +432,9 @@ class TestExecutablePaths(TestCase):
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
-                self.assertEqual(temp_file.name,
-                                 util.which(os.path.basename(temp_file.name)))
+                which_result = util.which(os.path.basename(temp_file.name))
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
 
     def test_non_executable_file_not_found(self):
         """Don't find a non executable file in the current PATH."""
@@ -494,8 +495,9 @@ class TestExecutablePaths(TestCase):
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
-                self.assertEqual(temp_file.name,
-                                 util.which(os.path.basename(temp_file.name)))
+                which_result = util.which(os.path.basename(temp_file.name))
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
 
     # suppress(no-self-use)
     def test_execute_function_if_not_found_by_which(self):
