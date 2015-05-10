@@ -10,6 +10,8 @@ import errno
 import os
 import os.path
 
+import platform
+
 import shutil
 
 import stat
@@ -50,8 +52,9 @@ def _rmtree(path):
             os.unlink(path)
 
 
-def get(container, util, shell, version, installer=_no_installer_available):
+def get(container, util, shell, ver_info, installer=_no_installer_available):
     """Return a HaskellContainer for an installed haskell version."""
+    version = ver_info[platform.system()]
     container_path = os.path.join(container.language_dir("haskell"),
                                   "versions",
                                   version)
@@ -266,10 +269,13 @@ def get(container, util, shell, version, installer=_no_installer_available):
             return tuple_type(overwrite=env_to_overwrite,
                               prepend=env_to_prepend)
 
-    return HaskellContainer(version, container_path, shell, installer)
+    return HaskellContainer(ver_info[platform.system()],
+                            container_path,
+                            shell,
+                            installer)
 
 
-def run(container, util, shell, version):
+def run(container, util, shell, ver_info):
     """Install and activates a haskell installation.
 
     This function returns a HaskellContainer, which has a path
@@ -336,7 +342,7 @@ def run(container, util, shell, version):
                                                  ffi_url,
                                                  "libffi-3.2.1")
 
-        def install(version):
+        def install():
             """Install haskell version, returns a HaskellContainer."""
             def deferred_installer(installation, version, activate):
                 """Closure which installs haskell on request."""
@@ -384,12 +390,13 @@ def run(container, util, shell, version):
                 with util.Task("""Activating haskell {0}""".format(version)):
                     activate(util)
 
-            return get(container, util, shell, version, deferred_installer)
+            return get(container, util, shell, ver_info, deferred_installer)
 
         return install
 
     with util.Task("""Configuring haskell"""):
-        haskell_container = haskell_installer()(version)
+        version = ver_info[platform.system()]
+        haskell_container = haskell_installer()()
         with util.Task("""Activating haskell {0}""".format(version)):
             haskell_container.activate(util)
 

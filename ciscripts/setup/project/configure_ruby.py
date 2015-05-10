@@ -12,15 +12,16 @@ import os.path
 
 import platform
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 GemDirs = namedtuple("GemDirs", "system site home")
 
 
-def get(container, util, shell, version):
+def get(container, util, shell, ver_info):
     """Return a RubyContainer for an installed ruby version in container."""
     del util
 
+    version = ver_info[platform.system()]
     container_path = os.path.join(container.language_dir("ruby"),
                                   "versions",
                                   version)
@@ -129,7 +130,7 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                              },
                              instant_fail=True)
 
-        return get(container, util, shell, version)
+        return get(container, util, shell, defaultdict(lambda: version))
 
     return install
 
@@ -160,12 +161,12 @@ def windows_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                              "/verysilent",
                              "/dir={0}".format(ruby_version_container))
 
-        return get(container, util, shell, version)
+        return get(container, util, shell, defaultdict(lambda: version))
 
     return install
 
 
-def run(container, util, shell, version):
+def run(container, util, shell, ver_info):
     """Install and activates a ruby installation.
 
     This function returns a RubyContainer, which has a path
@@ -180,6 +181,7 @@ def run(container, util, shell, version):
         elif platform.system() == "Windows":
             ruby_installer = windows_ruby_installer
 
+        version = ver_info[platform.system()]
         ruby_container = ruby_installer(lang_dir,
                                         ruby_build_dir,
                                         container,

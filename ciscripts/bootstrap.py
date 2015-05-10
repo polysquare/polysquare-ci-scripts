@@ -27,7 +27,8 @@ import shutil
 
 import sys
 
-from collections import namedtuple
+from collections import (defaultdict,
+                         namedtuple)
 
 from contextlib import contextmanager
 
@@ -403,10 +404,11 @@ class ContainerDir(ContainerBase):
                            """container""".format(info.language,
                                                   info.version)):
                 script = "setup/project/configure_{0}.py".format(info.language)
+                ver_info = defaultdict(lambda: info.version)
                 self.fetch_and_import(script).get(self,
                                                   util,
                                                   None,
-                                                  info.version).clean(util)
+                                                  ver_info).clean(util)
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:

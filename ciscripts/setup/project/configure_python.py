@@ -16,10 +16,14 @@ import platform
 
 import shutil
 
+from collections import defaultdict
 
-def get(container, util, shell, version):
+
+def get(container, util, shell, ver_info):
     """Return a PythonContainer for an installed python in container."""
     del util
+
+    version = ver_info[platform.system()]
     container_path = os.path.join(container.language_dir("python"),
                                   version)
 
@@ -159,7 +163,7 @@ def posix_installer(lang_dir, python_build_dir, util, container, shell):
                              },
                              instant_fail=True)
 
-        return get(container, util, shell, version)
+        return get(container, util, shell, defaultdict(lambda: version))
 
     return install
 
@@ -194,12 +198,12 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
                              "TARGETDIR=" + python_version_container,
                              "ADDLOCAL=pip_feature")
 
-        return get(container, util, shell, version)
+        return get(container, util, shell, defaultdict(lambda: version))
 
     return install
 
 
-def run(container, util, shell, version):
+def run(container, util, shell, ver_info):
     """Install and activates a python installation.
 
     This function returns a PythonContainer, which has a path
@@ -214,6 +218,7 @@ def run(container, util, shell, version):
         installer = windows_installer
 
     with util.Task("""Configuring python"""):
+        version = ver_info[platform.system()]
         python_container = installer(lang_dir,
                                      python_build_dir,
                                      util,

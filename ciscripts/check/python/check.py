@@ -11,8 +11,9 @@ import os
 
 import subprocess
 
-from setuptools import find_packages
+from collections import defaultdict
 
+from setuptools import find_packages
 
 def _run_style_guide_lint(cont, util, lint_exclude):
     """Run /ciscripts/check/project/lint.py on this python project."""
@@ -84,7 +85,7 @@ def run(cont, util, shell, argv=None):
     result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
-    python_ver = os.environ["_POLYSQUARE_PYTHON_VERSION"]
+    python_ver = defaultdict(lambda: os.environ["_POLYSQUARE_PYTHON_VERSION"])
     py_cont = cont.fetch_and_import(config_python).get(cont,
                                                        util,
                                                        shell,
