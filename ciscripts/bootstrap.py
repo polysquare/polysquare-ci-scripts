@@ -583,16 +583,16 @@ def main(argv):
     parent_shell.overwrite_environment_variable("CONTAINER_DIR",
                                                 container.path())
     parent_shell.define_command("polysquare_run",
-                                "python {bootstrap} "
-                                "-d {container} "
-                                "-r {scripts} "
+                                "python \"{bootstrap}\" "
+                                "-d \"{container}\" "
+                                "-r \"{scripts}\" "
                                 "-s".format(bootstrap=bootstrap_script,
                                             container=container.path(),
                                             scripts=scripts_path))
     parent_shell.define_command("polysquare_cleanup",
-                                "python {bootstrap} "
-                                "-d {container} "
-                                "-r {scripts} "
+                                "python \"{bootstrap}\" "
+                                "-d \"{container}\" "
+                                "-r \"{scripts}\" "
                                 "-s"
                                 "clean.py".format(bootstrap=bootstrap_script,
                                                   container=container.path(),
