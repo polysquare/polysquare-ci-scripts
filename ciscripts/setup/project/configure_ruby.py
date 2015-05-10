@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """A script which configures and activates a ruby installation."""
 
+import errno
+
 import os
 import os.path
 
@@ -96,6 +98,73 @@ def get(container, util, shell, version):
     return RubyContainer(version, container_path, shell)
 
 
+def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
+    """Ruby installer for posix compatible operating systems."""
+    if not os.path.exists(ruby_build_dir):
+        with util.Task("""Downloading rvm-download"""):
+            remote = "git://github.com/garnieretienne/rvm-download"
+            dest = ruby_build_dir
+            util.execute(container,
+                         util.output_on_fail,
+                         "git", "clone", remote, dest,
+                         instant_fail=True)
+
+    def install(version):
+        """Install ruby version, returns a RubyContainer."""
+        ruby_version_container = os.path.join(lang_dir,
+                                              "versions",
+                                              version)
+
+        if not os.path.exists(ruby_version_container):
+            os.makedirs(ruby_version_container)
+            with util.Task("""Installing ruby version """ + version):
+                rvm_download = os.path.join(ruby_build_dir,
+                                            "bin",
+                                            "rbenv-download")
+                util.execute(container,
+                             util.long_running_suppressed_output(),
+                             "bash", rvm_download, version,
+                             env={
+                                 "RBENV_ROOT": lang_dir
+                             },
+                             instant_fail=True)
+
+        return get(container, util, shell, version)
+
+    return install
+
+
+def windows_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
+    """Ruby installer for Windows."""
+    try:
+        os.makedirs(ruby_build_dir)
+    except OSError as error:
+        if error.errno != errno.EEXIST:   # suppress(PYC90)
+            raise error
+
+    def install(version):
+        ruby_version_container = os.path.join(lang_dir, "versions", version)
+        if not os.path.exists(ruby_version_container):
+            url = ("http://dl.bintray.com/oneclick/rubyinstaller/"
+                   "rubyinstaller-{ver}.exe").format(ver=version)
+            with open(os.path.join(ruby_build_dir,
+                                   version + "-install.exe"),
+                      "wb") as installer:
+                with util.url_opener()(url) as remote:
+                    installer.write(remote.read())
+
+            with util.Task("""Installing ruby version """ + version):
+                util.execute(container,
+                             util.long_running_suppressed_output(),
+                             os.path.realpath(installer.name),
+                             "/verysilent",
+                             "/dir={0}".format(ruby_version_container))
+
+        return get(container, util, shell, version)
+
+    return install
+
+
 def run(container, util, shell, version):
     """Install and activates a ruby installation.
 
@@ -105,44 +174,17 @@ def run(container, util, shell, version):
     lang_dir = container.language_dir("ruby")
     ruby_build_dir = os.path.join(lang_dir, "build")
 
-    def ruby_installer():
-        """Get ruby installer (rvm-download)."""
-        if not os.path.exists(ruby_build_dir):
-            with util.Task("""Downloading rvm-download"""):
-                remote = "git://github.com/garnieretienne/rvm-download"
-                dest = ruby_build_dir
-                util.execute(container,
-                             util.output_on_fail,
-                             "git", "clone", remote, dest,
-                             instant_fail=True)
-
-        def install(version):
-            """Install ruby version, returns a RubyContainer."""
-            ruby_container_dir = container.language_dir("ruby")
-            ruby_version_container = os.path.join(ruby_container_dir,
-                                                  "versions",
-                                                  version)
-
-            if not os.path.exists(ruby_version_container):
-                os.makedirs(ruby_version_container)
-                with util.Task("""Installing ruby version """ + version):
-                    rvm_download = os.path.join(ruby_build_dir,
-                                                "bin",
-                                                "rbenv-download")
-                    util.execute(container,
-                                 util.long_running_suppressed_output(),
-                                 "bash", rvm_download, version,
-                                 env={
-                                     "RBENV_ROOT": ruby_container_dir
-                                 },
-                                 instant_fail=True)
-
-            return get(container, util, shell, version)
-
-        return install
-
     with util.Task("""Configuring ruby"""):
-        ruby_container = ruby_installer()(version)
+        if platform.system() in ("Linux", "Darwin"):
+            ruby_installer = posix_ruby_installer
+        elif platform.system() == "Windows":
+            ruby_installer = windows_ruby_installer
+
+        ruby_container = ruby_installer(lang_dir,
+                                        ruby_build_dir,
+                                        container,
+                                        util,
+                                        shell)(version)
         with util.Task("""Activating ruby """ + version):
             ruby_container.activate(util)
 
