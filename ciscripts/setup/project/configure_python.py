@@ -81,12 +81,21 @@ def get(container, util, shell, ver_info):
             return sep.join([os.path.normpath(os.path.join(installation,
                                                            c)) for c in comp])
 
-        def clean(self, util_mod):  # suppress(unused-function)
+        # suppress(super-on-old-class)
+        def clean(self, util_mod):
             """Clean out cruft in the container."""
-            py_path = PythonContainer._get_py_path_from(self._installation)
+            super(PythonContainer, self).clean(util_mod)
+
+            py_path = self._installation
+
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.a"])
 
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
             util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.chm"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.html"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(os.unlink, py_path, matching=["*.whl"])
             util_mod.apply_to_files(os.unlink,
                                     py_path,
                                     matching=["*.egg-link"])
@@ -94,8 +103,13 @@ def get(container, util, shell, ver_info):
             util_mod.apply_to_directories(shutil.rmtree,
                                           py_path,
                                           matching=["*/test/*"])
+            util_mod.apply_to_directories(shutil.rmtree,
+                                          py_path,
+                                          matching=["*/tcl/*"])
 
-            os.utime(os.path.join(py_path, "site-packages", "site.py"), (1, 1))
+            os.utime(os.path.join(PythonContainer._get_py_path_from(py_path),
+                                  "site-packages",
+                                  "site.py"), (1, 1))
 
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""
@@ -189,14 +203,16 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
                     installer.write(remote.read())
 
             with util.Task("""Installing python version """ + version):
+                installer = os.path.realpath(installer.name)
                 util.execute(container,
                              util.long_running_suppressed_output(),
                              "msiexec",
                              "/i",
-                             os.path.realpath(installer.name),
+                             installer,
                              "/qn",
                              "TARGETDIR=" + python_version_container,
                              "ADDLOCAL=pip_feature")
+                os.unlink(installer)
 
         return get(container, util, shell, defaultdict(lambda: version))
 

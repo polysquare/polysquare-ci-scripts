@@ -134,8 +134,11 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
                                  "install",
                                  pkg_name)
 
+        # suppress(super-on-old-class)
         def clean(self, util):
             """Clean out cruft in the container."""
+            super(HaskellContainer, self).clean(util)
+
             # Source code
             _rmtree(os.path.join(self._internal_container, "src"))
             _rmtree(os.path.join(self._internal_container, "tmp"))

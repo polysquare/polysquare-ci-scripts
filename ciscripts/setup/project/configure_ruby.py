@@ -55,9 +55,24 @@ def get(container, util, shell, ver_info):
                                 """in order to work around broken rvm """
                                 """builds.""")
 
-        def clean(self, _):
+        # suppress(super-on-old-class)
+        def clean(self, util_mod):
             """Clean out container."""
-            pass
+            super(RubyContainer, self).clean(util_mod)
+
+            rb_path = self._installation
+
+            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.a"])
+            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.chm"])
+            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.pdf"])
+            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.html"])
+
+            util_mod.apply_to_files(os.unlink,
+                                    rb_path,
+                                    matching=["*unins000.exe"])
+            util_mod.apply_to_files(os.unlink,
+                                    rb_path,
+                                    matching=["*unins000.dat"])
 
         @staticmethod
         def _get_gem_dirs(installation, version):
@@ -155,11 +170,13 @@ def windows_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                     installer.write(remote.read())
 
             with util.Task("""Installing ruby version """ + version):
+                installer = os.path.realpath(installer.name)
                 util.execute(container,
                              util.long_running_suppressed_output(),
-                             os.path.realpath(installer.name),
+                             installer,
                              "/verysilent",
                              "/dir={0}".format(ruby_version_container))
+                os.unlink(installer)
 
         return get(container, util, shell, defaultdict(lambda: version))
 

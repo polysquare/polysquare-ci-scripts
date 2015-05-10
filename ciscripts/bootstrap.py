@@ -165,6 +165,10 @@ class ContainerBase(object):
         self._container_dir = os.path.realpath(directory)
         self._cache_dir = force_mkdir(os.path.join(self._container_dir,
                                                    "_cache"))
+        self._ephemeral_caches = os.path.join(self._cache_dir, "emphemeral")
+
+        with open(self._ephemeral_caches, "w+"):
+            pass
 
     @staticmethod
     def _delete(node):
@@ -180,13 +184,27 @@ class ContainerBase(object):
 
     @abc.abstractmethod
     def clean(self, util):
-        """Clean out this ContainerBase."""
-        return
+        """Clean out this ContainerBase.
 
-    def named_cache_dir(self, name):
-        """Return a dir called name in the cache dir, even if it exists."""
+        Remove all named caches marked as ephemeral.
+        """
+        with util.Task("""Cleaning ephemeral caches"""):
+            with open(self._ephemeral_caches, "r") as ephemeral_caches_file:
+                for ephemeral_cache in ephemeral_caches_file.readlines():
+                    shutil.rmtree(os.path.join(self._cache_dir,
+                                               ephemeral_cache))
+
+    def named_cache_dir(self, name, ephemeral=True):
+        """Return a dir called name in the cache dir, even if it exists.
+
+        If ephemeral is True, then wipe out this cache directory once
+        the clean method is called on the container.
+        """
         path = os.path.join(self._cache_dir, name)
         force_mkdir(path)
+
+        if ephemeral:
+            _update_set_like_file(self._ephemeral_caches, name)
 
         return path
 
@@ -414,6 +432,8 @@ class ContainerDir(ContainerBase):
 
     def clean(self, util):
         """Clean this container and all sub-containers."""
+        super(ContainerDir, self).clean(util)
+
         info = namedtuple("Info", "language version")
 
         # Having everything on one line is nice
