@@ -11,8 +11,6 @@ import os
 
 import platform
 
-import select
-
 import stat
 
 import subprocess
@@ -25,9 +23,10 @@ import threading
 from contextlib import contextmanager
 
 try:
-    from Queue import Queue
+    from Queue import Queue, Empty
 except ImportError:
-    from queue import Queue  # suppress(F811,E301,E101,F401,unused-import)
+    # suppress(F811,E301,E101,F401,import-error,unused-import)
+    from queue import Queue, Empty
 
 
 def print_message(message):
@@ -258,28 +257,26 @@ def long_running_suppressed_output(dot_timeout=10):
     """Print dots in a separate thread until our process is done."""
     def strategy(process, outputs):
         """Partially applied strategy to be passed to execute."""
-        def print_dots(status_pipe):
+        def print_dots(status_queue):
             """Print a dot every dot_timeout seconds."""
             while True:
                 # Exit when something gets written to the pipe
-                read, _, _ = select.select([status_pipe], [], [], dot_timeout)
-
-                if len(read) > 0:
+                try:
+                    status_queue.get(True, dot_timeout)
                     return
-                else:
+                except Empty:
                     IndentedLogger.dot()
 
-        read, write = os.pipe()
-        dots_thread = threading.Thread(target=print_dots, args=(read, ))
+        status_queue = Queue()
+        dots_thread = threading.Thread(target=print_dots,
+                                       args=(status_queue, ))
         dots_thread.start()
 
         try:
             status = output_on_fail(process, outputs)
         finally:
-            os.write(write, "done".encode("utf-8"))
+            status_queue.put("done")
             dots_thread.join()
-            os.close(read)
-            os.close(write)
 
         return status
 
