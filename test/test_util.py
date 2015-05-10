@@ -362,11 +362,12 @@ class TestExecute(TestCase):
                          "python",
                          "-c",
                          "import sys; "
-                         "sys.stdout.write(\"a\\nb\"); "
-                         "sys.stderr.write(\"c\"); "
-                         "sys.stdout.write(\"d\\n\")")
+                         "sys.stdout.write('a\\nb'); "
+                         "sys.stderr.write('c'); "
+                         "sys.stdout.write('d\\n')")
 
-        self.assertEqual(captured_output.stderr, "\na\nbd\nc\n")
+        self.assertEqual(captured_output.stderr.replace("\r\n", "\n"),
+                         "\na\nbd\nc\n")
 
     def test_running_output_no_double_leading_slash_n(self):
         """Using running_output does not allow double-leading slash-n."""
