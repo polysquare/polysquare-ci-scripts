@@ -438,6 +438,9 @@ class TestExecutablePaths(TestCase):
 
     def test_non_executable_file_not_found(self):
         """Don't find a non executable file in the current PATH."""
+        if platform.system() == "Windows":
+            self.skipTest("no such thing as execute permission on Windows")
+
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             os.environ["PATH"] = (temp_dir + os.pathsep)
 
