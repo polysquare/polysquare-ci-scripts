@@ -131,6 +131,29 @@ class BashParentEnvironment(object):
         self._printer("exit {0}".format(status))
 
 
+def _update_set_like_file(path, key):
+    """For the file containing unique lines at :path:, add :key:.
+
+    This function assumes that the file at :path: is a set-like file -
+    it should contain one line per unique entry. :key: will be added
+    if the file does not contain it already.
+    """
+    added_key = False
+    with open(path, "r") as set_like_file:
+        records = set(set_like_file.read().splitlines())
+        if key not in records:
+            records |= set([key])
+            added_key = True
+
+    # Only modify the file if we added a new language record, otherwise
+    # this file will cause the cache to be constantly marked as
+    # invalid.
+    if added_key:
+        with open(path, "w") as set_like_file:
+            set_like_file.truncate(0)
+            set_like_file.write("\n".join(list(records)))
+
+
 class ContainerBase(object):
 
     """Base class for all language and top-level containers."""
@@ -525,20 +548,7 @@ class ContainerDir(ContainerBase):
         requested a new container for.
         """
         key = "{language}-{version}".format(language=language, version=version)
-        added_key = False
-        with open(self._languages_record_path, "r") as languages_record:
-            records = set(languages_record.read().splitlines())
-            if key not in records:
-                records |= set([key])
-                added_key = True
-
-        # Only modify the file if we added a new language record, otherwise
-        # this file will cause the cache to be constantly marked as
-        # invalid.
-        if added_key:
-            with open(self._languages_record_path, "w") as languages_record:
-                languages_record.truncate(0)
-                languages_record.write("\n".join(list(records)))
+        _update_set_like_file(self._languages_record_path, key)
 
         return LanguageBase
 
