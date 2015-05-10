@@ -465,14 +465,21 @@ def url_opener():
         else:
             retrycount = 100
 
+        errors = list()
+
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
-            except (url_error(), SSLError, timeout):
+            except (url_error(), SSLError, timeout) as error:
+                errors.append(error)
                 retrycount -= 1
 
+        errors_string = "    \n".join([repr(e) for e in errors])
         raise url_error()(u"""Failed to open URL {0}, """
-                          u"""exceeded max retries.""".format(args[0]))
+                          u"""exceeded max retries {1}. """
+                          u""" Errors [{2}]\n""".format(args[0],
+                                                        retrycount,
+                                                        errors_string))
 
     return _urlopen
 
