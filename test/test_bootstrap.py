@@ -101,6 +101,11 @@ class TrackedLoadedModulesTestCase(TestCase):
         super(TrackedLoadedModulesTestCase, self).__init__(*args, **kwargs)
         self._loaded_modules = []
 
+    def setUp(self):  # suppress(N802)
+        """Ensure that bootstrap.__file__ is absolute."""
+        super(TrackedLoadedModulesTestCase, self).setUp()
+        self.patch(bootstrap, "__file__", os.path.abspath(bootstrap.__file__))
+
     def tearDown(self):  # suppress(N802)
         """Ensure that any loaded modules are removed."""
         for module in self._loaded_modules:
