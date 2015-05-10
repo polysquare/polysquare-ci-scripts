@@ -23,6 +23,8 @@ import sys
 
 import tempfile
 
+from collections import defaultdict
+
 from test import testutil
 
 from ciscripts.bootstrap import (BashParentEnvironment,
@@ -669,10 +671,21 @@ class TestGetSystemIdentifier(TestCase):
 
     def test_system_identifier_has_architecture(self):
         """Determined system identifier has architecture."""
+        is_64bits = sys.maxsize > 2**32
+
+        if (is_64bits and "64" not in platform.machine() or
+                not is_64bits and "64" in platform.machine()):
+            self.skipTest("can't reliably get machine ID on mixed binary")
+
         self.assertThat(util.get_system_identifier(self.container),
                         Contains(platform.machine()))
 
     def test_system_identifier_has_system_name(self):
         """Determined system identifier has OS name."""
+        system_identifier_map = defaultdict(lambda: lambda s: s,
+                                            windows=lambda s: "mingw")
+
+        sys_id = platform.system().lower()
+        sys_id = system_identifier_map[sys_id](sys_id)
         self.assertThat(util.get_system_identifier(self.container),
-                        Contains(platform.system().lower()))
+                        Contains(sys_id))
