@@ -273,7 +273,7 @@ class TestBashParentEnvironment(TestCase):
 
         environment = bootstrap.BashParentEnvironment(printer)
         environment.exit(status)
-        process = subprocess.Popen(["bash", "/dev/stdin"],
+        process = subprocess.Popen(["bash", "-"],
                                    stdin=subprocess.PIPE)
         process.communicate(input=bytes(evaluate_script))
         process.stdin.close()
