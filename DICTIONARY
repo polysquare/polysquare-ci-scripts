@@ -8,6 +8,7 @@ Distro
 EOF
 LanguageBase
 LanguageContainer
+PATHEXT
 PyPI
 PyPy
 REPOSITORIES

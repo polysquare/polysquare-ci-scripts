@@ -360,6 +360,40 @@ def in_dir(path):
         os.chdir(cwd)
 
 
+def _process_shebang(args):
+    """Process any shebangs.
+
+    This needs to be done by us, because it is not done automatically
+    on some operating systems, like Windows.
+    """
+    # If the first argument's extension is in PATHEXT then we can just
+    # execute it directly - the operating system will know what to do.
+    for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
+        if os.path.splitext(args[0])[1] == ext:
+            return args
+
+    path_to_exec = which(args[0])
+
+    if path_to_exec is None:
+        msg = """Can't find binary {0} in PATH""".format(args[0])
+        raise RuntimeError(msg)
+
+    try:
+        with open(path_to_exec, "rt") as exec_file:
+            if exec_file.read(2) == "#!":
+                shebang = exec_file.readline().strip().replace("\n", "")
+                shebang_args = shebang.split(" ")
+                shebang_args = ([os.path.basename(shebang_args[0])] +
+                                shebang_args[1:])
+                return shebang_args + [path_to_exec] + list(args[1:])
+    # If we couldn't decode the file, it is probably a binary file, so
+    # just execute it directly.
+    except UnicodeDecodeError:  # suppress(pointless-except)
+        pass
+
+    return args
+
+
 def execute(container, output_strategy, *args, **kwargs):
     """A thin wrapper around subprocess.Popen.
 
@@ -374,13 +408,15 @@ def execute(container, output_strategy, *args, **kwargs):
         env.update(kwargs["env"])
 
     try:
-        process = subprocess.Popen(args,
+        cmd = _process_shebang(args)
+
+        process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    env=env)
     except OSError as error:
         raise Exception(u"""Failed to execute """
-                        u"""{0} - {1}""".format(" ".join(args), str(error)))
+                        u"""{0} - {1}""".format(" ".join(cmd), str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -413,15 +449,20 @@ def which(executable):
         """Get executable path list."""
         return (os.environ.get("PATH") or os.defpath).split(os.pathsep)
 
+    def pathext_list():
+        """Get list of extensions to automatically search."""
+        return (os.environ.get("PATHEXT") or "").split(os.pathsep)
+
     seen = set()
 
     for path in [normalize(p) for p in path_list()]:
         if path not in seen:
-            full_path = os.path.join(path, executable)
-            if is_executable(full_path):
-                return full_path
-            else:
-                seen.add(path)
+            for ext in [""] + pathext_list():
+                full_path = os.path.join(path, executable) + ext
+                if is_executable(full_path):
+                    return full_path
+
+            seen.add(path)
 
     return None
 
