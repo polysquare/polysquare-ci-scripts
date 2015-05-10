@@ -450,14 +450,18 @@ class TestExecutablePaths(TestCase):
 
     def test_file_not_in_path_not_found(self):
         """Check that executables not in PATH are not found."""
-        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(mode="wt",
-                                             dir=temp_dir) as temp_file:
-                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
-                os.chmod(temp_file.name, 755)
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
 
-                self.assertEqual(None,
-                                 util.which(os.path.basename(temp_file.name)))
+            os.environ["PATH"] = ""
+
+            self.assertEqual(None,
+                             util.which(os.path.basename(temp_file.name)))
 
     def test_symlinks_in_path_get_resolved(self):
         """Returned executable path has symlinks resolved."""
@@ -502,18 +506,20 @@ class TestExecutablePaths(TestCase):
     # suppress(no-self-use)
     def test_execute_function_if_not_found_by_which(self):
         """Execute function with where_unavailable if executable not found."""
-        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(mode="wt",
-                                             dir=temp_dir) as temp_file:
-                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
-                os.chmod(temp_file.name, 755)
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
 
-                mock = Mock()
-                util.where_unavailable(os.path.basename(temp_file.name),
-                                       mock,
-                                       "arg")
+            mock = Mock()
+            util.where_unavailable(os.path.basename(temp_file.name),
+                                   mock,
+                                   "arg")
 
-                mock.assert_called_with("arg")
+            mock.assert_called_with("arg")
 
     # suppress(no-self-use)
     def test_no_execute_function_if_found_by_which(self):
