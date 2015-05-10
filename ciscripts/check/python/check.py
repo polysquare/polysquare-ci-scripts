@@ -15,6 +15,7 @@ from collections import defaultdict
 
 from setuptools import find_packages
 
+
 def _run_style_guide_lint(cont, util, lint_exclude):
     """Run /ciscripts/check/project/lint.py on this python project."""
     supps = [
