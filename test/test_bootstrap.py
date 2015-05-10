@@ -486,7 +486,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         }
 
         with self.activated_local_envion("language", prepend=prepend) as env:
-            self.assertThat(env["PATH"].split(":"),
+            self.assertThat(env["PATH"].split(os.pathsep),
                             Contains("VALUE"))
 
     def test_activated_container_prepends_env_vars_parent(self):
@@ -543,7 +543,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
             with language_container.activated(self._util):
                 pass
 
-        self.assertThat(os.environ["PATH"].split(":"),
+        self.assertThat(os.environ["PATH"].split(os.pathsep),
                         Not(Contains("VALUE")))
 
     def test_prepended_env_vars_removed_on_deactivate_in_parent(self):
@@ -559,7 +559,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                 pass
 
         self.assertThat(_parent_env(captured_output.stdout,
-                                    "PATH").split(":"),
+                                    "PATH").split(os.pathsep),
                         Not(Contains("VALUE")))
 
 

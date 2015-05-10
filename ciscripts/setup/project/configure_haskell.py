@@ -217,8 +217,10 @@ def get(container, util, shell, version, installer=_no_installer_available):
             path_prependix = self._path_prependix()
             ghc_package_path_var = self._ghc_package_path()
 
-            pp_replacement = ":" + ghc_package_path_var
-            pp_replacement = pp_replacement.replace("::", ":").strip()
+            pp_replacement = os.pathsep + ghc_package_path_var
+            pp_replacement = pp_replacement.replace("{s}{s}"
+                                                    "".format(s=os.pathsep),
+                                                    os.pathsep).strip()
             while len(pp_replacement) and pp_replacement[-1] == ":":
                 pp_replacement = pp_replacement[:-1]
 
@@ -227,23 +229,23 @@ def get(container, util, shell, version, installer=_no_installer_available):
             else:
                 db_suffix = "db"
 
-            package_db_for_cabal = pp_replacement.replace(":",
+            package_db_for_cabal = pp_replacement.replace(os.pathsep,
                                                           " --package-db=")
             package_db_for_ghc_pkg = (" --no-user-package-" +
                                       db_suffix +
                                       " " +
-                                      pp_replacement.replace(":",
+                                      pp_replacement.replace(os.pathsep,
                                                              " --package-" +
                                                              db_suffix +
                                                              "="))
             package_db_for_ghc = (" -no-user-package-" + db_suffix +
-                                  " " + pp_replacement.replace(":",
+                                  " " + pp_replacement.replace(os.pathsep,
                                                                " -package-" +
                                                                db_suffix +
                                                                "="))
             package_db_for_ghc_mod = (" -g -no-user-package-" + db_suffix +
                                       " " +
-                                      pp_replacement.replace(":",
+                                      pp_replacement.replace(os.pathsep,
                                                              " -g -package-" +
                                                              db_suffix + "="))
 

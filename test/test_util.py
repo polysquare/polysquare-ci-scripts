@@ -117,7 +117,7 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
                                               "VAR",
                                               "SECOND_VALUE")
 
-        self.assertThat(os.environ["VAR"].split(":"),
+        self.assertThat(os.environ["VAR"].split(os.pathsep),
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
 
@@ -162,7 +162,7 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
                                               "SECOND_VALUE")
             util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
 
-        self.assertThat(os.environ["VAR"].split(":"),
+        self.assertThat(os.environ["VAR"].split(os.pathsep),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
 
@@ -422,7 +422,7 @@ class TestExecutablePaths(TestCase):
         """Find an executable file in the current PATH."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             os.environ["PATH"] = (temp_dir +
-                                  ":" +
+                                  os.pathsep +
                                   (os.environ.get("PATH") or ""))
 
             with tempfile.NamedTemporaryFile(mode="wt",
@@ -436,9 +436,7 @@ class TestExecutablePaths(TestCase):
     def test_non_executable_file_not_found(self):
         """Don't find a non executable file in the current PATH."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            os.environ["PATH"] = (temp_dir +
-                                  ":" +
-                                  (os.environ.get("PATH") or ""))
+            os.environ["PATH"] = (temp_dir + os.pathsep)
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:
@@ -469,7 +467,7 @@ class TestExecutablePaths(TestCase):
 
             path_var = (os.environ.get("PATH") or "")
 
-            os.environ["PATH"] = link + ":" + path_var
+            os.environ["PATH"] = link + os.pathsep + path_var
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=linked) as temp_file:
@@ -484,9 +482,10 @@ class TestExecutablePaths(TestCase):
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             path_var = (os.environ.get("PATH") or "")
             base = os.path.basename(temp_dir)
-            os.environ["PATH"] = "{0}/../{1}:{2}".format(temp_dir,
-                                                         base,
-                                                         path_var)
+            os.environ["PATH"] = "{0}/../{1}{2}{3}".format(temp_dir,
+                                                           base,
+                                                           os.pathsep,
+                                                           path_var)
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:

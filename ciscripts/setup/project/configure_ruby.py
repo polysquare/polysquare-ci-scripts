@@ -80,9 +80,10 @@ def get(container, util, shell, version):
             gem_dirs = RubyContainer._get_gem_dirs(self._installation,
                                                    self._version)
             env_to_overwrite = {
-                "GEM_PATH": "{0}:{1}:{2}".format(gem_dirs.home,
-                                                 gem_dirs.site,
-                                                 gem_dirs.system),
+                "GEM_PATH": "{0}{s}{1}{s}{2}".format(gem_dirs.home,
+                                                     gem_dirs.site,
+                                                     gem_dirs.system,
+                                                     s=os.pathsep),
                 "GEM_HOME": gem_dirs.home
             }
             env_to_prepend = {

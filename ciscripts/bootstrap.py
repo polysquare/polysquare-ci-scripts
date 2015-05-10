@@ -19,6 +19,8 @@ import importlib
 
 import os
 
+import platform
+
 import re
 
 import shutil
@@ -58,6 +60,24 @@ class BashParentEnvironment(object):
 
     """A parent environment in a bash shell."""
 
+    @staticmethod
+    def _format_environment_value(value):
+        """Format an environment variable value for this shell."""
+        value = str(value)
+        if platform.system() == "Windows":
+            # Split on semicolons first
+            components = value.split(os.pathsep)
+
+            # On each component, replace anything that looks like
+            # a drive letter with a unix-like drive path.
+            components = [re.sub(r"^([A-Za-z]):\\",
+                                 r"\\\1\\",
+                                 c) for c in components]
+
+            return ":".join(components).replace("\\", "/")
+
+        return value
+
     def __init__(self, printer):
         """Initialize this parent environment with printer."""
         super(BashParentEnvironment, self).__init__()
@@ -66,6 +86,7 @@ class BashParentEnvironment(object):
     def overwrite_environment_variable(self, key, value):
         """Generate and execute script to overwrite variable key."""
         if value is not None:
+            value = BashParentEnvironment._format_environment_value(value)
             self._printer("export {0}=\"{1}\"".format(key, value).encode())
         else:
             self._printer("unset {0}".format(key).encode())
@@ -73,16 +94,18 @@ class BashParentEnvironment(object):
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
-        # See http://stackoverflow.com/questions/370047/
-        for part in value.split(":"):
-            script = ("export " + key + "=$(echo -n \"${" + key + "}\" | "
-                      "awk -v RS=: -v ORS=: '$0 != \"'" + part + "'\"' | "
-                      "sed 's/:$//')")
-            self._printer(script.encode())
+        value = BashParentEnvironment._format_environment_value(value)
+        script = ("export {key}=$(python -c \"print(\\\":\\\".join(["
+                  "v for v in \\\"${key}\\\".split(\\\":\\\") "
+                  "if v not in \\\"{value}\\\".split(\\\":\\\")]))\")")
+        script = script.format(key=key, value=value)
+        self._printer(script.encode())
 
     def prepend_environment_variable(self, key, value):
         """Generate and execute script to prepend value to key."""
-        script = "export " + key + "=\"" + value + "\":\"${" + key + "}\""
+        value = BashParentEnvironment._format_environment_value(value)
+        script = "export {key}=\"{value}:${key}\"".format(key=key,
+                                                          value=value)
         self._printer(script.encode())
 
     def define_command(self, name, command):
@@ -511,7 +534,7 @@ class ContainerDir(ContainerBase):
 def escaped_printer(text):
     """Print text in a format suitable for consumption by a shell."""
     # suppress(anomalous-backslash-in-string)
-    to_write = text.decode().replace(";", "\;").replace("\n", ";\n") + ";\n"
+    to_write = text.decode().replace("';'", "\;").replace("\n", ";\n") + ";\n"
     sys.stdout.write(to_write)
 
 
