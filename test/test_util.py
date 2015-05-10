@@ -465,6 +465,9 @@ class TestExecutablePaths(TestCase):
 
     def test_symlinks_in_path_get_resolved(self):
         """Returned executable path has symlinks resolved."""
+        if platform.system() == "Windows":
+            self.skipTest("symlinks not supported on Windows")
+
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             link = os.path.join(temp_dir, "link")
             linked = os.path.join(temp_dir, "linked")
