@@ -160,26 +160,27 @@ def write_valid_header(f):
     """Write a valid header to file."""
     file_path = os.path.abspath(f.name)
     common_prefix = os.path.commonprefix([file_path, os.getcwd()])
+    header_path = file_path[len(common_prefix):].replace("\\", "/")
     f.write("#!/bin/bash\n"
             "# {path}\n"
             "#\n"
             "# Description\n"
             "#\n"
-            "# {licence}\n\n".format(path=file_path[len(common_prefix):],
+            "# {licence}\n\n".format(path=header_path,
                                      licence=LICENCE_STRING))
-    f.flush()
 
 
 def write_invalid_header(f):
     """Write a invalid header to file."""
     file_path = os.path.abspath(f.name)
     common_prefix = os.path.commonprefix([file_path, os.getcwd()])
+    header_path = file_path[len(common_prefix):].replace("\\", "/")
     f.write("#!/bin/bash\n"
             "# error-{path}\n"
             "#\n"
             "# Description\n"
             "#\n"
-            "# {licence}\n".format(path=file_path[len(common_prefix):],
+            "# {licence}\n".format(path=header_path,
                                    licence=LICENCE_STRING))
     f.flush()
 
