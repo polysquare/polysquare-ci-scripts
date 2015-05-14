@@ -366,17 +366,17 @@ def _process_shebang(args):
     This needs to be done by us, because it is not done automatically
     on some operating systems, like Windows.
     """
-    # If the first argument's extension is in PATHEXT then we can just
-    # execute it directly - the operating system will know what to do.
-    for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
-        if os.path.splitext(args[0])[1] == ext:
-            return args
-
     path_to_exec = which(args[0])
 
     if path_to_exec is None:
         msg = """Can't find binary {0} in PATH""".format(args[0])
         raise RuntimeError(msg)
+
+    # If the first argument's extension is in PATHEXT then we can just
+    # execute it directly - the operating system will know what to do.
+    for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
+        if os.path.splitext(args[0])[1] == ext:
+            return args
 
     try:
         with open(path_to_exec, "rt") as exec_file:
@@ -447,7 +447,7 @@ def which(executable):
 
     def path_list():
         """Get executable path list."""
-        return (os.environ.get("PATH") or os.defpath).split(os.pathsep)
+        return (os.environ.get("PATH", None) or os.defpath).split(os.pathsep)
 
     def pathext_list():
         """Get list of extensions to automatically search."""

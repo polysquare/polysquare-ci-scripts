@@ -5,8 +5,6 @@
 # See /LICENCE.md for Copyright information
 """Test cases for the util script."""
 
-import copy
-
 import doctest
 
 import errno
@@ -33,7 +31,7 @@ import ciscripts.util as util
 
 from mock import Mock
 
-from testtools import TestCase
+from testtools import ExpectedException, TestCase
 from testtools.matchers import (Contains,
                                 DocTestMatches,
                                 Equals,
@@ -68,11 +66,11 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
     def setUp(self):  # suppress(N802)
         """Set up this test case by saving the current environment."""
         super(OverwrittenEnvironmentVarsTestCase, self).setUp()
-        self._saved_environ = copy.deepcopy(os.environ)
+        self._saved_environ = os.environ.copy()
 
     def tearDown(self):  # suppress(N802)
         """Tear down this test case by restoring the saved environment."""
-        os.environ = copy.deepcopy(self._saved_environ)
+        os.environ = self._saved_environ
         super(OverwrittenEnvironmentVarsTestCase, self).tearDown()
 
 
@@ -411,17 +409,33 @@ class TestExecutablePaths(TestCase):
     def __init__(self, *args, **kwargs):
         """Initialize this test case and its instance variables."""
         super(TestExecutablePaths, self).__init__(*args, **kwargs)
-        self._saved_path = None
+        self._saved_environ = None
 
     def setUp(self):  # suppress(N802)
         """Keep a copy of os.environ["PATH"]."""
         super(TestExecutablePaths, self).setUp()
-        self._saved_path = copy.deepcopy(os.environ.get("PATH"))
+        self._saved_environ = os.environ.copy()
 
     def tearDown(self):  # suppress(N802)
         """Restore os.environ["PATH"]."""
-        os.environ["PATH"] = copy.deepcopy(self._saved_path)
+        os.environ = self._saved_environ
         super(TestExecutablePaths, self).tearDown()
+
+    def test_raise_executable_not_in_path(self):
+        """Raise RuntimeError when executable is not in PATH."""
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
+
+            with ExpectedException(RuntimeError):
+                os.environ["PATH"] = "/does_not_exist"
+                util.execute(Mock(),
+                             util.long_running_suppressed_output(),
+                             os.path.basename(temp_file.name))
 
     def test_find_executable_file_in_path(self):
         """Find an executable file in the current PATH."""
