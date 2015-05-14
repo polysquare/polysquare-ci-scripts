@@ -170,9 +170,18 @@ class PowershellParentEnvironment(object):
         self._printer(script)
 
     def define_command(self, name, command):
-        """Define a function called name which runs command."""
+        """Define a function called name which runs command.
+
+        The function will check that command's exit status and exit
+        the entire script with a failure exit code if
+        the subcommand failed.
+        """
         code = ("function %s {"
-                "    %s \"$@\"\n"
+                "    %s $args\n"
+                "    $status = $?\n"
+                "    If ($status -eq 0) {\n"
+                "        exit 1\n"
+                "    }\n"
                 "}") % (name, command)
         self._printer(code)
 
