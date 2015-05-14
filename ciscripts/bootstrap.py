@@ -443,7 +443,7 @@ def _fetch_script(info,
     """Download a script if it doesn't exist."""
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
-            remote = os.path.join(domain, script_path)
+            remote = "%s/%s" % (domain, script_path)
             retrycount = 100
             while retrycount != 0:
                 try:

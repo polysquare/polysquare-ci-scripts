@@ -659,12 +659,12 @@ class TestMain(TrackedLoadedModulesTestCase):
     def test_create_dir_and_pass_control_to_downloaded_script(self):
         """Test creating container and passing control to a fetched script."""
         with testutil.server_in_tempdir(os.getcwd(), "server") as server:
-            util_script = "{0}/util.py".format(server[0])
+            util_script = os.path.join(server[0], "util.py")
             with bootstrap.open_and_force_mkdir(util_script, "w") as f:
                 f.write("")
                 f.flush()
 
-            setup_script = "{0}/setup/test/setup.py".format(server[0])
+            setup_script = os.path.join(server[0], "setup/test/setup.py")
             with bootstrap.open_and_force_mkdir(setup_script, "w") as f:
                 # Write a simple script to our setup file
                 f.write("def run(cont, util, sh, argv):\n"
@@ -676,12 +676,13 @@ class TestMain(TrackedLoadedModulesTestCase):
                 }
 
             with testutil.overridden_dns(dns_overrides):
-                captured_output = testutil.CapturedOutput()
+                with testutil.in_tempdir(os.getcwd(), "container"):
+                    captured_output = testutil.CapturedOutput()
 
-                with captured_output:
-                    bootstrap.main(["-d",
-                                    self._container_dir,
-                                    "-s",
-                                    "setup/test/setup.py"])
+                    with captured_output:
+                        bootstrap.main(["-d",
+                                        self._container_dir,
+                                        "-s",
+                                        "setup/test/setup.py"])
 
-                self.assertEqual(captured_output.stdout, "Hello\n")
+                    self.assertEqual(captured_output.stdout, "Hello\n")
