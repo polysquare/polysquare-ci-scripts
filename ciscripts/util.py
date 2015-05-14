@@ -360,7 +360,7 @@ def in_dir(path):
         os.chdir(cwd)
 
 
-def _process_shebang(args):
+def process_shebang(args):
     """Process any shebangs.
 
     This needs to be done by us, because it is not done automatically
@@ -374,9 +374,14 @@ def _process_shebang(args):
 
     # If the first argument's extension is in PATHEXT then we can just
     # execute it directly - the operating system will know what to do.
-    for ext in os.environ.get("PATHEXT", "").split(os.pathsep):
-        if os.path.splitext(args[0])[1] == ext:
-            return args
+    #
+    # Note that we can't use the default "" value, since nothing in
+    # PATHEXT indicates that the variable was not set and the operating
+    # system doesn't have default associations for certain extensions.
+    if os.environ.get("PATHEXT", None):
+        for ext in os.environ["PATHEXT"].split(os.pathsep):
+            if os.path.splitext(args[0])[1] == ext:
+                return args
 
     try:
         with open(path_to_exec, "rt") as exec_file:
@@ -408,7 +413,7 @@ def execute(container, output_strategy, *args, **kwargs):
         env.update(kwargs["env"])
 
     try:
-        cmd = _process_shebang(args)
+        cmd = process_shebang(args)
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,

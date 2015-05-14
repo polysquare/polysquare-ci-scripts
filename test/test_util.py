@@ -15,6 +15,8 @@ import platform
 
 import shutil
 
+import stat
+
 import subprocess
 
 import sys
@@ -447,11 +449,65 @@ class TestExecutablePaths(TestCase):
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
-                os.chmod(temp_file.name, 755)
+                os.chmod(temp_file.name,
+                         os.stat(temp_file.name).st_mode | stat.S_IRWXU)
 
                 which_result = util.which(os.path.basename(temp_file.name))
                 self.assertEqual(temp_file.name.lower(),
                                  which_result.lower())
+
+    def test_find_executable_file_using_pathext(self):
+        """Find an executable file using PATHEXT."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+            os.environ["PATHEXT"] = ".exe"
+
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir,
+                                             suffix=".exe") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+                os.chmod(temp_file.name, 755)
+
+                name = os.path.splitext(os.path.basename(temp_file.name))[0]
+
+                which_result = util.which(name)
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
+
+    def test_process_shebang(self):
+        """Explicitly specify interpreter when file has shebang."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+
+            with open(os.path.join(temp_dir, "script"), "wt") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+
+            os.chmod(temp_file.name,
+                     os.stat(temp_file.name).st_mode | stat.S_IRWXU)
+
+            cmdline = util.process_shebang([temp_file.name])
+            self.assertEqual(cmdline,
+                             ["env", "python", temp_file.name])
+
+    def test_ignore_shebang_when_in_pathext(self):
+        """Ignore shebang when extension is in PATHEXT."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+            os.environ["PATHEXT"] = ".py"
+
+            with open(os.path.join(temp_dir, "script.py"), "wt") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+
+            os.chmod(temp_file.name, 755)
+
+            cmdline = util.process_shebang([temp_file.name])
+            self.assertEqual(cmdline, [temp_file.name])
 
     def test_non_executable_file_not_found(self):
         """Don't find a non executable file in the current PATH."""
