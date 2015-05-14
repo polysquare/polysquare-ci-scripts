@@ -23,15 +23,18 @@ import sys
 
 import tempfile
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from test import testutil
 
 from ciscripts.bootstrap import (BashParentEnvironment,
+                                 PowershellParentEnvironment,
                                  escaped_printer_with_character)
 import ciscripts.util as util
 
 from mock import Mock
+
+from nose_parameterized import param, parameterized
 
 from testtools import ExpectedException, TestCase
 from testtools.matchers import (Contains,
@@ -76,14 +79,34 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
         super(OverwrittenEnvironmentVarsTestCase, self).tearDown()
 
 
-def _get_parent_env_value(env_script, var):
-    """Evaluate env_script and return value of variable in a shell."""
-    script = (env_script + (" echo \"${%s}\"" % var)).encode()
-    stdout = subprocess.Popen(["bash", "-"],
+def _get_parent_env_value(config, env_script, var):
+    """Evaluate env_script in config.shell and return value of variable."""
+    script = (env_script + (" echo \"${%s%s}\"" % (config.var, var))).encode()
+    stdout = subprocess.Popen([config.shell, "-"],
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate(script)[0]
     return stdout.strip().decode()
+
+
+def bash_parent_environment():
+    r"""Construct a new BashParentEnvironment printing with \."""
+    return BashParentEnvironment(escaped_printer_with_character("\\"))
+
+
+def powershell_parent_environment():
+    r"""Construct a new PowershellParentEnvironment printing with \."""
+    return PowershellParentEnvironment(escaped_printer_with_character("`"))
+
+
+class ParentEnvConfig(namedtuple("ParentEnvConfig",
+                                 "parent sep shell env var")):
+
+    """Configuration for testing parent environments."""
+
+    def __repr__(self):
+        """Represent as string."""
+        return self.shell
 
 
 class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
@@ -94,30 +117,49 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
         """Initialize instance variables, including parent environment."""
         super(TestOverwriteEnvironmentVariables, self).__init__(*args,
                                                                 **kwargs)
-        printer = escaped_printer_with_character("\\")
-        self._parent = BashParentEnvironment(printer)
+
+    PARENT_ENVIRONMENTS = [
+        param(ParentEnvConfig(bash_parent_environment(),
+                              ":",
+                              "bash",
+                              lambda k, v: "export %s=\"%s\";\n" % (k, v),
+                              "")),
+        param(ParentEnvConfig(powershell_parent_environment(),
+                              ";",
+                              "powershell",
+                              lambda k, v: "$env:%s = \"%s\";\n" % (k, v),
+                              "env:"))
+    ]
+
+    def _require(self, req):
+        """Skip test if req is not available."""
+        if util.which(req) is None:
+            self.skipTest("""{0} is required to run this test.""".format(req))
 
     def test_overwritten_environment_variables_in_os_environ(self):
         """Test that overwritten environment variables are in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
 
         self.assertThat(os.environ, Contains("VAR"))
         self.assertEqual(os.environ["VAR"], "VALUE")
 
-    def test_overwritten_environment_variables_evaluated(self):
-        """Test that overwritten environment variables are in os.environ."""
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_overwritten_environment_variables_evaluated(self, config):
+        """Test that overwritten environment variables are in shell output."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
 
-        self.assertEqual(captured_output.stdout, "export VAR=\"VALUE\";\n")
+        # config.env specifies what we expect the exported variable to
+        # look like
+        self.assertEqual(captured_output.stdout, config.env("VAR", "VALUE"))
 
     def test_prepended_environment_variables_in_os_environ_list(self):
         """Prepended environment variables appear in the semicolon list."""
         with testutil.CapturedOutput():
-            util.prepend_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.prepend_environment_variable(Mock(), "VAR", "VALUE")
+            util.prepend_environment_variable(Mock(),
                                               "VAR",
                                               "SECOND_VALUE")
 
@@ -125,63 +167,80 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
 
-    def test_prepended_environment_variables_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_prepended_environment_variables_in_parent(self, config):
         """Prepended variables appear in parent shell environment."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.prepend_environment_variable(config.parent,
                                               "VAR",
                                               "SECOND_VALUE")
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
-        self.assertThat(parent_env_value.split(":"),
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
+        self.assertThat(parent_env_value.split(config.sep),
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
 
     def test_unset_environment_variable_in_os_environ(self):
         """Environment overwritten with None unset in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.overwrite_environment_variable(self._parent, "VAR", None)
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
+            util.overwrite_environment_variable(Mock(), "VAR", None)
 
         self.assertThat(os.environ, Not(Contains("VAR")))
 
-    def test_unset_environment_variable_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_unset_environment_variable_in_parent(self, config):
         """Environment overwritten with None unset in parent."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.overwrite_environment_variable(self._parent, "VAR", None)
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(config.parent, "VAR", None)
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
         self.assertEqual(parent_env_value.strip(), "")
 
     def test_remove_value_from_environment_variable_in_os_environ(self):
         """Remove a value from a colon separated value list in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
+            util.prepend_environment_variable(Mock(),
                                               "VAR",
                                               "SECOND_VALUE")
-            util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
+            util.remove_from_environment_variable(Mock(), "VAR", "VALUE")
 
         self.assertThat(os.environ["VAR"].split(os.pathsep),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
 
-    def test_remove_value_from_environment_variable_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_remove_value_from_environment_variable_in_parent(self, config):
         """Remove a value from a colon separated value list in parent shell."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.prepend_environment_variable(config.parent,
                                               "VAR",
                                               "SECOND_VALUE")
-            util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
+            util.remove_from_environment_variable(config.parent,
+                                                  "VAR",
+                                                  "VALUE")
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
-        self.assertThat(parent_env_value.split(":"),
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
+        self.assertThat(parent_env_value.split(config.sep),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
 
