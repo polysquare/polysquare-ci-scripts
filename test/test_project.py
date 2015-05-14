@@ -230,14 +230,23 @@ class TestProjectContainerSetup(TestCase):
         setup_script = "setup/project/setup.py"
         cls.setup_container_output = testutil.CapturedOutput()
 
+        extra_args = list()
+
+        # Don't install mdl on AppVeyor - installing any gem is far
+        # too slow and will cause the job to time out.
+        if os.environ.get("APPVEYOR", None):
+            extra_args.append("--no-mdl")
+
         with cls.setup_container_output:
-            shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+            printer = bootstrap.escaped_printer_with_character("\\")
+            shell = bootstrap.BashParentEnvironment(printer)
             cls.container = bootstrap.ContainerDir(shell,
                                                    cls.container_temp_dir)
             cls.util = cls.container.fetch_and_import("util.py")
             cls.container.fetch_and_import(setup_script).run(cls.container,
                                                              util,
-                                                             shell)
+                                                             shell,
+                                                             extra_args)
 
         assert cls.container.return_code() == 0
 
@@ -271,7 +280,10 @@ class TestProjectContainerSetup(TestCase):
 
         super(TestProjectContainerSetup, self).tearDown()
 
-    _PROGRAMS = ["polysquare-generic-file-linter", "mdl"]
+    _PROGRAMS = ["polysquare-generic-file-linter"]
+
+    if not os.environ.get("APPVEYOR", None):
+        _PROGRAMS.append("mdl")
 
     @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
     def test_program_is_available_in_python_script(self, program):
@@ -295,7 +307,8 @@ class TestProjectContainerSetup(TestCase):
                         CIScriptExitsWith(0,
                                           self.__class__.container,
                                           self.__class__.util,
-                                          extensions=["sh"]))
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_lint_with_style_guide_linter_failure(self):
         """Failure code if one file doesn't satisfy style guide linter."""
@@ -307,7 +320,8 @@ class TestProjectContainerSetup(TestCase):
                         CIScriptExitsWith(1,
                                           self.__class__.container,
                                           self.__class__.util,
-                                          extensions=["sh"]))
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_lint_files_in_multiple_subdirectories(self):
         """Style guide linter runs over multiple subdirectories."""
@@ -328,7 +342,8 @@ class TestProjectContainerSetup(TestCase):
                                           self.__class__.util,
                                           extensions=["sh"],
                                           directories=[success_dir,
-                                                       failure_dir]))
+                                                       failure_dir],
+                                          no_mdl=True))
 
     def test_lint_files_with_multiple_extensions(self):
         """Style guide linter runs over multiple extensions."""
@@ -344,7 +359,8 @@ class TestProjectContainerSetup(TestCase):
                         CIScriptExitsWith(1,
                                           self.__class__.container,
                                           self.__class__.util,
-                                          extensions=["sh"]))
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_files_can_be_excluded_from_linting(self):
         """Exclude certain files from style guide linter."""
@@ -363,7 +379,8 @@ class TestProjectContainerSetup(TestCase):
                                           self.__class__.container,
                                           self.__class__.util,
                                           extensions=["sh"],
-                                          exclusions=[fail_path]))
+                                          exclusions=[fail_path],
+                                          no_mdl=True))
 
     def test_many_files_can_be_excluded_from_linting(self):
         """Exclude many files from style guide linting."""
@@ -390,10 +407,14 @@ class TestProjectContainerSetup(TestCase):
                                           exclusions=[
                                               fail_path,
                                               second_fail_path
-                                          ]))
+                                          ],
+                                          no_mdl=True))
 
     def test_linting_of_markdown_documentation_with_success(self):
         """Lint markdown documentation with success exit code."""
+        if os.environ.get("APPVEYOR", None):
+            self.skipTest("""installation of mdl is too slow on appveyor""")
+
         with open(os.path.join(os.getcwd(), "documentation.md"), "wt"):
             self.assertThat("check/project/lint.py",
                             CIScriptExitsWith(0,
@@ -403,6 +424,9 @@ class TestProjectContainerSetup(TestCase):
 
     def test_linting_of_markdown_documentation_with_failure(self):
         """Lint markdown documentation with success exit code."""
+        if os.environ.get("APPVEYOR", None):
+            self.skipTest("""installation of mdl is too slow on appveyor""")
+
         with open(os.path.join(os.getcwd(), "documentation.md"),
                   "wt") as markdown_file:
             markdown_file.write("Level One\n==\n\n## Level Two ##\n")

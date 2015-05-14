@@ -46,9 +46,10 @@ def run(cont, util, shell, argv=None):
     for the linter checks, however those runtimes won't be active at the
     time that tests are run.
     """
-    del argv
-
-    cont.fetch_and_import("setup/project/setup.py").run(cont, util, shell)
+    cont.fetch_and_import("setup/project/setup.py").run(cont,
+                                                        util,
+                                                        shell,
+                                                        argv)
 
     with util.Task("""Setting up python project"""):
         py_ver = defaultdict(lambda: "2.7.9")

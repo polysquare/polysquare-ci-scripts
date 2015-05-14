@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a generic project."""
 
+import argparse
+
 from collections import defaultdict
 
 
@@ -15,9 +17,12 @@ def run(cont, util, shell, argv=None):
     markdownlint and polysquare-generic-file-linter. It provides actions
     to check every file in a directory for the polysquare style guide.
     """
-    del argv
-
     with util.Task("""Setting up generic project"""):
+        parser = argparse.ArgumentParser(description="""Set up project""")
+        parser.add_argument("--no-mdl",
+                            help="""Do not install markdownlint""",
+                            action="store_true")
+        parse_result = parser.parse_args(argv or list())
         rb_ver = defaultdict(lambda: "2.1.5",
                              Windows="2.1.6")
         py_ver = defaultdict(lambda: "2.7.9")
@@ -35,19 +40,20 @@ def run(cont, util, shell, argv=None):
                                                            shell,
                                                            py_ver)
 
-        with util.Task("""Installing markdownlint"""):
-            util.where_unavailable("mdl",
-                                   util.execute,
-                                   cont,
-                                   util.long_running_suppressed_output(),
-                                   "gem",
-                                   "install",
-                                   "--conservative",
-                                   "--no-ri",
-                                   "--no-rdoc",
-                                   "mdl",
-                                   instant_fail=True,
-                                   path=rb_cont.executable_path())
+        if not parse_result.no_mdl:
+            with util.Task("""Installing markdownlint"""):
+                util.where_unavailable("mdl",
+                                       util.execute,
+                                       cont,
+                                       util.long_running_suppressed_output(),
+                                       "gem",
+                                       "install",
+                                       "--conservative",
+                                       "--no-ri",
+                                       "--no-rdoc",
+                                       "mdl",
+                                       instant_fail=True,
+                                       path=rb_cont.executable_path())
 
         with util.Task("""Installing polysquare style guide linter"""):
             linter = "polysquare-generic-file-linter"
