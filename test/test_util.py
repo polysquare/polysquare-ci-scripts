@@ -78,7 +78,7 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
 
 def _get_parent_env_value(env_script, var):
     """Evaluate env_script and return value of variable in a shell."""
-    script = env_script + (" echo \"${%s}\"" % var)
+    script = (env_script + (" echo \"${%s}\"" % var)).encode()
     stdout = subprocess.Popen(["bash", "-"],
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE,

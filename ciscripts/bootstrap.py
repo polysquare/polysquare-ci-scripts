@@ -88,9 +88,9 @@ class BashParentEnvironment(object):
         """Generate and execute script to overwrite variable key."""
         if value is not None:
             value = BashParentEnvironment._format_environment_value(value)
-            self._printer("export {0}=\"{1}\"".format(key, value).encode())
+            self._printer("export {0}=\"{1}\"".format(key, value))
         else:
-            self._printer("unset {0}".format(key).encode())
+            self._printer("unset {0}".format(key))
 
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
@@ -167,18 +167,18 @@ class PowershellParentEnvironment(object):
             "v": value
         }
         script = "$env:{k} = \"{v};$env:{k}\"".format(**script_keys)
-        self._printer(script.encode())
+        self._printer(script)
 
     def define_command(self, name, command):
         """Define a function called name which runs command."""
         code = ("function %s {"
                 "    %s \"$@\"\n"
                 "}") % (name, command)
-        self._printer(code.encode())
+        self._printer(code)
 
     def exit(self, status):
         """Cause the shell to exit with status."""
-        self._printer("exit {0}".format(status).encode())
+        self._printer("exit {0}".format(status))
 
 
 def _update_set_like_file(path, key):

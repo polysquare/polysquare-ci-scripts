@@ -274,7 +274,7 @@ class TestBashParentEnvironment(TestCase):
 
         def printer(script):
             """Add script to evaluate_script."""
-            evaluate_script.extend(script + b";\n")
+            evaluate_script.extend(script.encode() + b";\n")
 
         environment = bootstrap.BashParentEnvironment(printer)
         environment.exit(status)
