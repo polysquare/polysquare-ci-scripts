@@ -211,7 +211,7 @@ class TestTask(TestCase):
                          "\n    ... Secondary Description\n",
                          captured_output.stderr)
 
-    def test_nest_to_thrid_level(self):
+    def test_nest_to_third_level(self):
         """Nest to third level with dots."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
