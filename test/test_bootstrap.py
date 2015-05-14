@@ -82,7 +82,8 @@ def write_bootstrap_script_into_container(directory_name):
 def removable_container_dir(directory_name):
     """A contextmanager which deletes a container when the test is complete."""
     current_cwd = os.getcwd()
-    shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+    printer = bootstrap.escaped_printer_with_character("\\")
+    shell = bootstrap.BashParentEnvironment(printer)
     try:
         # Put a /bootstrap.py script in the container directory
         # so that we don't keep on trying to fetch it all the time
@@ -100,6 +101,11 @@ class TrackedLoadedModulesTestCase(TestCase):
         """Initialize this test case and set internal variables."""
         super(TrackedLoadedModulesTestCase, self).__init__(*args, **kwargs)
         self._loaded_modules = []
+
+    def setUp(self):  # suppress(N802)
+        """Ensure that bootstrap.__file__ is absolute."""
+        super(TrackedLoadedModulesTestCase, self).setUp()
+        self.patch(bootstrap, "__file__", os.path.abspath(bootstrap.__file__))
 
     def tearDown(self):  # suppress(N802)
         """Ensure that any loaded modules are removed."""
@@ -269,11 +275,11 @@ class TestBashParentEnvironment(TestCase):
 
         def printer(script):
             """Add script to evaluate_script."""
-            evaluate_script.extend(script + b";\n")
+            evaluate_script.extend(script.encode() + b";\n")
 
         environment = bootstrap.BashParentEnvironment(printer)
         environment.exit(status)
-        process = subprocess.Popen(["bash", "/dev/stdin"],
+        process = subprocess.Popen(["bash", "-"],
                                    stdin=subprocess.PIPE)
         process.communicate(input=bytes(evaluate_script))
         process.stdin.close()
@@ -316,7 +322,8 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                                      "_scripts",
                                      "ciscripts"))
 
-        shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+        printer = bootstrap.escaped_printer_with_character("\\")
+        shell = bootstrap.BashParentEnvironment(printer)
         self._container = bootstrap.ContainerDir(shell,
                                                  directory=self._container_dir)
         self._util = self._container.fetch_and_import("util.py")
@@ -340,7 +347,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
             def __init__(self):
                 """Initialize this EmptyLanguageContainer with language."""
                 installation = container.language_dir(language)
-                printer = bootstrap.escaped_printer
+                printer = bootstrap.escaped_printer_with_character("\\")
                 shell = bootstrap.BashParentEnvironment(printer)
                 super(EmptyLanguageContainer, self).__init__(installation,
                                                              language,
@@ -486,7 +493,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         }
 
         with self.activated_local_envion("language", prepend=prepend) as env:
-            self.assertThat(env["PATH"].split(":"),
+            self.assertThat(env["PATH"].split(os.pathsep),
                             Contains("VALUE"))
 
     def test_activated_container_prepends_env_vars_parent(self):
@@ -543,7 +550,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
             with language_container.activated(self._util):
                 pass
 
-        self.assertThat(os.environ["PATH"].split(":"),
+        self.assertThat(os.environ["PATH"].split(os.pathsep),
                         Not(Contains("VALUE")))
 
     def test_prepended_env_vars_removed_on_deactivate_in_parent(self):
@@ -559,7 +566,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                 pass
 
         self.assertThat(_parent_env(captured_output.stdout,
-                                    "PATH").split(":"),
+                                    "PATH").split(os.pathsep),
                         Not(Contains("VALUE")))
 
 
@@ -652,12 +659,12 @@ class TestMain(TrackedLoadedModulesTestCase):
     def test_create_dir_and_pass_control_to_downloaded_script(self):
         """Test creating container and passing control to a fetched script."""
         with testutil.server_in_tempdir(os.getcwd(), "server") as server:
-            util_script = "{0}/util.py".format(server[0])
+            util_script = os.path.join(server[0], "util.py")
             with bootstrap.open_and_force_mkdir(util_script, "w") as f:
                 f.write("")
                 f.flush()
 
-            setup_script = "{0}/setup/test/setup.py".format(server[0])
+            setup_script = os.path.join(server[0], "setup/test/setup.py")
             with bootstrap.open_and_force_mkdir(setup_script, "w") as f:
                 # Write a simple script to our setup file
                 f.write("def run(cont, util, sh, argv):\n"
@@ -669,12 +676,13 @@ class TestMain(TrackedLoadedModulesTestCase):
                 }
 
             with testutil.overridden_dns(dns_overrides):
-                captured_output = testutil.CapturedOutput()
+                with testutil.in_tempdir(os.getcwd(), "container"):
+                    captured_output = testutil.CapturedOutput()
 
-                with captured_output:
-                    bootstrap.main(["-d",
-                                    self._container_dir,
-                                    "-s",
-                                    "setup/test/setup.py"])
+                    with captured_output:
+                        bootstrap.main(["-d",
+                                        self._container_dir,
+                                        "-s",
+                                        "setup/test/setup.py"])
 
-                self.assertEqual(captured_output.stdout, "Hello\n")
+                    self.assertEqual(captured_output.stdout, "Hello\n")

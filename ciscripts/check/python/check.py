@@ -11,10 +11,12 @@ import os
 
 import subprocess
 
+from collections import defaultdict
+
 from setuptools import find_packages
 
 
-def _run_style_guide_lint(cont, util, lint_exclude):
+def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
     """Run /ciscripts/check/project/lint.py on this python project."""
     supps = [
         r"\bpylint:disable=[^\s]*\b",
@@ -34,6 +36,7 @@ def _run_style_guide_lint(cont, util, lint_exclude):
 
     cont.fetch_and_import("check/project/lint.py").run(cont,
                                                        util,
+                                                       no_mdl,
                                                        extensions=["py"],
                                                        exclusions=excl,
                                                        block_regexps=supps)
@@ -72,26 +75,32 @@ def run(cont, util, shell, argv=None):
     setuptools-prospector-pychecker installed and listed as a dependency
     in its setup_requires.
     """
-    parser = argparse.ArgumentParser(description="Run python checks")
+    parser = argparse.ArgumentParser(description="""Run python checks""")
     parser.add_argument("--coverage-exclude",
                         nargs="*",
                         type=str,
-                        help="Patterns of files to exclude from coverage")
+                        help="""Patterns of files to exclude from coverage""")
     parser.add_argument("--lint-exclude",
                         nargs="*",
                         type=str,
-                        help="Patterns of files to exclude from linting")
+                        help="""Patterns of files to exclude from linting""")
+    parser.add_argument("--no-mdl",
+                        help="""Don't run markdownlint""",
+                        action="store_true")
     result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
-    python_ver = os.environ["_POLYSQUARE_PYTHON_VERSION"]
+    python_ver = defaultdict(lambda: os.environ["_POLYSQUARE_PYTHON_VERSION"])
     py_cont = cont.fetch_and_import(config_python).get(cont,
                                                        util,
                                                        shell,
                                                        python_ver)
 
     with util.Task("""Checking python project style guide compliance"""):
-        _run_style_guide_lint(cont, util, result.lint_exclude or list())
+        _run_style_guide_lint(cont,
+                              util,
+                              result.lint_exclude or list(),
+                              result.no_mdl)
 
     with util.Task("""Creating development installation"""):
         util.execute(cont,

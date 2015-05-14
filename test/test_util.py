@@ -5,8 +5,6 @@
 # See /LICENCE.md for Copyright information
 """Test cases for the util script."""
 
-import copy
-
 import doctest
 
 import errno
@@ -17,21 +15,28 @@ import platform
 
 import shutil
 
+import stat
+
 import subprocess
 
 import sys
 
 import tempfile
 
+from collections import defaultdict, namedtuple
+
 from test import testutil
 
 from ciscripts.bootstrap import (BashParentEnvironment,
-                                 escaped_printer)
+                                 PowershellParentEnvironment,
+                                 escaped_printer_with_character)
 import ciscripts.util as util
 
 from mock import Mock
 
-from testtools import TestCase
+from nose_parameterized import param, parameterized
+
+from testtools import ExpectedException, TestCase
 from testtools.matchers import (Contains,
                                 DocTestMatches,
                                 Equals,
@@ -66,21 +71,42 @@ class OverwrittenEnvironmentVarsTestCase(TestCase):
     def setUp(self):  # suppress(N802)
         """Set up this test case by saving the current environment."""
         super(OverwrittenEnvironmentVarsTestCase, self).setUp()
-        self._saved_environ = copy.deepcopy(os.environ)
+        self._saved_environ = os.environ.copy()
 
     def tearDown(self):  # suppress(N802)
         """Tear down this test case by restoring the saved environment."""
-        os.environ = copy.deepcopy(self._saved_environ)
+        os.environ = self._saved_environ
         super(OverwrittenEnvironmentVarsTestCase, self).tearDown()
 
 
-def _get_parent_env_value(env_script, var):
-    """Evaluate env_script and return value of variable in a shell."""
-    result = subprocess.check_output(["bash",
-                                      "-c",
-                                      (env_script +
-                                       (" echo \"${%s}\"" % var))]).strip()
-    return result.decode()
+def _get_parent_env_value(config, env_script, var):
+    """Evaluate env_script in config.shell and return value of variable."""
+    script = (env_script + (" echo \"${%s%s}\"" % (config.var, var))).encode()
+    stdout = subprocess.Popen([config.shell, "-"],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE).communicate(script)[0]
+    return stdout.strip().decode()
+
+
+def bash_parent_environment():
+    r"""Construct a new BashParentEnvironment printing with \."""
+    return BashParentEnvironment(escaped_printer_with_character("\\"))
+
+
+def powershell_parent_environment():
+    r"""Construct a new PowershellParentEnvironment printing with \."""
+    return PowershellParentEnvironment(escaped_printer_with_character("`"))
+
+
+class ParentEnvConfig(namedtuple("ParentEnvConfig",
+                                 "parent sep shell env var")):
+
+    """Configuration for testing parent environments."""
+
+    def __repr__(self):
+        """Represent as string."""
+        return self.shell
 
 
 class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
@@ -91,93 +117,130 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
         """Initialize instance variables, including parent environment."""
         super(TestOverwriteEnvironmentVariables, self).__init__(*args,
                                                                 **kwargs)
-        self._parent = BashParentEnvironment(escaped_printer)
+
+    PARENT_ENVIRONMENTS = [
+        param(ParentEnvConfig(bash_parent_environment(),
+                              ":",
+                              "bash",
+                              lambda k, v: "export %s=\"%s\";\n" % (k, v),
+                              "")),
+        param(ParentEnvConfig(powershell_parent_environment(),
+                              ";",
+                              "powershell",
+                              lambda k, v: "$env:%s = \"%s\";\n" % (k, v),
+                              "env:"))
+    ]
+
+    def _require(self, req):
+        """Skip test if req is not available."""
+        if util.which(req) is None:
+            self.skipTest("""{0} is required to run this test.""".format(req))
 
     def test_overwritten_environment_variables_in_os_environ(self):
         """Test that overwritten environment variables are in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
 
         self.assertThat(os.environ, Contains("VAR"))
         self.assertEqual(os.environ["VAR"], "VALUE")
 
-    def test_overwritten_environment_variables_evaluated(self):
-        """Test that overwritten environment variables are in os.environ."""
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_overwritten_environment_variables_evaluated(self, config):
+        """Test that overwritten environment variables are in shell output."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
 
-        self.assertEqual(captured_output.stdout, "export VAR=\"VALUE\";\n")
+        # config.env specifies what we expect the exported variable to
+        # look like
+        self.assertEqual(captured_output.stdout, config.env("VAR", "VALUE"))
 
     def test_prepended_environment_variables_in_os_environ_list(self):
         """Prepended environment variables appear in the semicolon list."""
         with testutil.CapturedOutput():
-            util.prepend_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.prepend_environment_variable(Mock(), "VAR", "VALUE")
+            util.prepend_environment_variable(Mock(),
                                               "VAR",
                                               "SECOND_VALUE")
 
-        self.assertThat(os.environ["VAR"].split(":"),
+        self.assertThat(os.environ["VAR"].split(os.pathsep),
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
 
-    def test_prepended_environment_variables_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_prepended_environment_variables_in_parent(self, config):
         """Prepended variables appear in parent shell environment."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.prepend_environment_variable(config.parent,
                                               "VAR",
                                               "SECOND_VALUE")
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
-        self.assertThat(parent_env_value.split(":"),
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
+        self.assertThat(parent_env_value.split(config.sep),
                         MatchesAll(Contains("VALUE"),
                                    Contains("SECOND_VALUE")))
 
     def test_unset_environment_variable_in_os_environ(self):
         """Environment overwritten with None unset in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.overwrite_environment_variable(self._parent, "VAR", None)
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
+            util.overwrite_environment_variable(Mock(), "VAR", None)
 
         self.assertThat(os.environ, Not(Contains("VAR")))
 
-    def test_unset_environment_variable_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_unset_environment_variable_in_parent(self, config):
         """Environment overwritten with None unset in parent."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.overwrite_environment_variable(self._parent, "VAR", None)
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.overwrite_environment_variable(config.parent, "VAR", None)
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
         self.assertEqual(parent_env_value.strip(), "")
 
     def test_remove_value_from_environment_variable_in_os_environ(self):
         """Remove a value from a colon separated value list in os.environ."""
         with testutil.CapturedOutput():
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(Mock(), "VAR", "VALUE")
+            util.prepend_environment_variable(Mock(),
                                               "VAR",
                                               "SECOND_VALUE")
-            util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
+            util.remove_from_environment_variable(Mock(), "VAR", "VALUE")
 
-        self.assertThat(os.environ["VAR"].split(":"),
+        self.assertThat(os.environ["VAR"].split(os.pathsep),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
 
-    def test_remove_value_from_environment_variable_in_parent(self):
+    @parameterized.expand(PARENT_ENVIRONMENTS)
+    def test_remove_value_from_environment_variable_in_parent(self, config):
         """Remove a value from a colon separated value list in parent shell."""
+        self._require(config.shell)
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            util.overwrite_environment_variable(self._parent, "VAR", "VALUE")
-            util.prepend_environment_variable(self._parent,
+            util.overwrite_environment_variable(config.parent, "VAR", "VALUE")
+            util.prepend_environment_variable(config.parent,
                                               "VAR",
                                               "SECOND_VALUE")
-            util.remove_from_environment_variable(self._parent, "VAR", "VALUE")
+            util.remove_from_environment_variable(config.parent,
+                                                  "VAR",
+                                                  "VALUE")
 
-        parent_env_value = _get_parent_env_value(captured_output.stdout, "VAR")
-        self.assertThat(parent_env_value.split(":"),
+        parent_env_value = _get_parent_env_value(config,
+                                                 captured_output.stdout,
+                                                 "VAR")
+        self.assertThat(parent_env_value.split(config.sep),
                         MatchesAll(Not(Contains("VALUE")),
                                    Contains("SECOND_VALUE")))
 
@@ -207,7 +270,7 @@ class TestTask(TestCase):
                          "\n    ... Secondary Description\n",
                          captured_output.stderr)
 
-    def test_nest_to_thrid_level(self):
+    def test_nest_to_third_level(self):
         """Nest to third level with dots."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
@@ -361,11 +424,12 @@ class TestExecute(TestCase):
                          "python",
                          "-c",
                          "import sys; "
-                         "sys.stdout.write(\"a\\nb\"); "
-                         "sys.stderr.write(\"c\"); "
-                         "sys.stdout.write(\"d\\n\")")
+                         "sys.stdout.write('a\\nb'); "
+                         "sys.stderr.write('c'); "
+                         "sys.stdout.write('d\\n')")
 
-        self.assertEqual(captured_output.stderr, "\na\nbd\nc\n")
+        self.assertEqual(captured_output.stderr.replace("\r\n", "\n"),
+                         "\na\nbd\nc\n")
 
     def test_running_output_no_double_leading_slash_n(self):
         """Using running_output does not allow double-leading slash-n."""
@@ -406,39 +470,111 @@ class TestExecutablePaths(TestCase):
     def __init__(self, *args, **kwargs):
         """Initialize this test case and its instance variables."""
         super(TestExecutablePaths, self).__init__(*args, **kwargs)
-        self._saved_path = None
+        self._saved_environ = None
 
     def setUp(self):  # suppress(N802)
         """Keep a copy of os.environ["PATH"]."""
         super(TestExecutablePaths, self).setUp()
-        self._saved_path = copy.deepcopy(os.environ.get("PATH"))
+        self._saved_environ = os.environ.copy()
 
     def tearDown(self):  # suppress(N802)
         """Restore os.environ["PATH"]."""
-        os.environ["PATH"] = copy.deepcopy(self._saved_path)
+        os.environ = self._saved_environ
         super(TestExecutablePaths, self).tearDown()
+
+    def test_raise_executable_not_in_path(self):
+        """Raise RuntimeError when executable is not in PATH."""
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
+
+            with ExpectedException(RuntimeError):
+                os.environ["PATH"] = "/does_not_exist"
+                util.execute(Mock(),
+                             util.long_running_suppressed_output(),
+                             os.path.basename(temp_file.name))
 
     def test_find_executable_file_in_path(self):
         """Find an executable file in the current PATH."""
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             os.environ["PATH"] = (temp_dir +
-                                  ":" +
+                                  os.pathsep +
                                   (os.environ.get("PATH") or ""))
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+                os.chmod(temp_file.name,
+                         os.stat(temp_file.name).st_mode | stat.S_IRWXU)
+
+                which_result = util.which(os.path.basename(temp_file.name))
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
+
+    def test_find_executable_file_using_pathext(self):
+        """Find an executable file using PATHEXT."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+            os.environ["PATHEXT"] = ".exe"
+
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir,
+                                             suffix=".exe") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
-                self.assertEqual(temp_file.name,
-                                 util.which(os.path.basename(temp_file.name)))
+                name = os.path.splitext(os.path.basename(temp_file.name))[0]
+
+                which_result = util.which(name)
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
+
+    def test_process_shebang(self):
+        """Explicitly specify interpreter when file has shebang."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+
+            with open(os.path.join(temp_dir, "script"), "wt") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+
+            os.chmod(temp_file.name,
+                     os.stat(temp_file.name).st_mode | stat.S_IRWXU)
+
+            cmdline = util.process_shebang([temp_file.name])
+            self.assertEqual(cmdline,
+                             ["env", "python", temp_file.name])
+
+    def test_ignore_shebang_when_in_pathext(self):
+        """Ignore shebang when extension is in PATHEXT."""
+        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
+            os.environ["PATH"] = (temp_dir +
+                                  os.pathsep +
+                                  (os.environ.get("PATH") or ""))
+            os.environ["PATHEXT"] = ".py"
+
+            with open(os.path.join(temp_dir, "script.py"), "wt") as temp_file:
+                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+
+            os.chmod(temp_file.name, 755)
+
+            cmdline = util.process_shebang([temp_file.name])
+            self.assertEqual(cmdline, [temp_file.name])
 
     def test_non_executable_file_not_found(self):
         """Don't find a non executable file in the current PATH."""
+        if platform.system() == "Windows":
+            self.skipTest("no such thing as execute permission on Windows")
+
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            os.environ["PATH"] = (temp_dir +
-                                  ":" +
-                                  (os.environ.get("PATH") or ""))
+            os.environ["PATH"] = (temp_dir + os.pathsep)
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:
@@ -449,17 +585,24 @@ class TestExecutablePaths(TestCase):
 
     def test_file_not_in_path_not_found(self):
         """Check that executables not in PATH are not found."""
-        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(mode="wt",
-                                             dir=temp_dir) as temp_file:
-                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
-                os.chmod(temp_file.name, 755)
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
 
-                self.assertEqual(None,
-                                 util.which(os.path.basename(temp_file.name)))
+            os.environ["PATH"] = ""
+
+            self.assertEqual(None,
+                             util.which(os.path.basename(temp_file.name)))
 
     def test_symlinks_in_path_get_resolved(self):
         """Returned executable path has symlinks resolved."""
+        if platform.system() == "Windows":
+            self.skipTest("symlinks not supported on Windows")
+
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             link = os.path.join(temp_dir, "link")
             linked = os.path.join(temp_dir, "linked")
@@ -469,7 +612,7 @@ class TestExecutablePaths(TestCase):
 
             path_var = (os.environ.get("PATH") or "")
 
-            os.environ["PATH"] = link + ":" + path_var
+            os.environ["PATH"] = link + os.pathsep + path_var
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=linked) as temp_file:
@@ -484,33 +627,37 @@ class TestExecutablePaths(TestCase):
         with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
             path_var = (os.environ.get("PATH") or "")
             base = os.path.basename(temp_dir)
-            os.environ["PATH"] = "{0}/../{1}:{2}".format(temp_dir,
-                                                         base,
-                                                         path_var)
+            os.environ["PATH"] = "{0}/../{1}{2}{3}".format(temp_dir,
+                                                           base,
+                                                           os.pathsep,
+                                                           path_var)
 
             with tempfile.NamedTemporaryFile(mode="wt",
                                              dir=temp_dir) as temp_file:
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
-                self.assertEqual(temp_file.name,
-                                 util.which(os.path.basename(temp_file.name)))
+                which_result = util.which(os.path.basename(temp_file.name))
+                self.assertEqual(temp_file.name.lower(),
+                                 which_result.lower())
 
     # suppress(no-self-use)
     def test_execute_function_if_not_found_by_which(self):
         """Execute function with where_unavailable if executable not found."""
-        with testutil.in_tempdir(os.getcwd(), "executable_path") as temp_dir:
-            with tempfile.NamedTemporaryFile(mode="wt",
-                                             dir=temp_dir) as temp_file:
-                temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
-                os.chmod(temp_file.name, 755)
+        temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                        "executable_path"))
+        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        with tempfile.NamedTemporaryFile(mode="wt",
+                                         dir=temp_dir) as temp_file:
+            temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
+            os.chmod(temp_file.name, 755)
 
-                mock = Mock()
-                util.where_unavailable(os.path.basename(temp_file.name),
-                                       mock,
-                                       "arg")
+            mock = Mock()
+            util.where_unavailable(os.path.basename(temp_file.name),
+                                   mock,
+                                   "arg")
 
-                mock.assert_called_with("arg")
+            mock.assert_called_with("arg")
 
     # suppress(no-self-use)
     def test_no_execute_function_if_found_by_which(self):
@@ -654,10 +801,21 @@ class TestGetSystemIdentifier(TestCase):
 
     def test_system_identifier_has_architecture(self):
         """Determined system identifier has architecture."""
+        is_64bits = sys.maxsize > 2**32
+
+        if (is_64bits and "64" not in platform.machine() or
+                not is_64bits and "64" in platform.machine()):
+            self.skipTest("can't reliably get machine ID on mixed binary")
+
         self.assertThat(util.get_system_identifier(self.container),
                         Contains(platform.machine()))
 
     def test_system_identifier_has_system_name(self):
         """Determined system identifier has OS name."""
+        system_identifier_map = defaultdict(lambda: lambda s: s,
+                                            windows=lambda s: "mingw")
+
+        sys_id = platform.system().lower()
+        sys_id = system_identifier_map[sys_id](sys_id)
         self.assertThat(util.get_system_identifier(self.container),
-                        Contains(platform.system().lower()))
+                        Contains(sys_id))

@@ -19,15 +19,18 @@ import importlib
 
 import os
 
+import platform
+
 import re
 
 import shutil
 
 import sys
 
-from collections import namedtuple
+from collections import (defaultdict,
+                         namedtuple)
 
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 
 try:
     from urllib.request import urlopen
@@ -58,6 +61,24 @@ class BashParentEnvironment(object):
 
     """A parent environment in a bash shell."""
 
+    @staticmethod
+    def _format_environment_value(value):
+        """Format an environment variable value for this shell."""
+        value = str(value)
+        if platform.system() == "Windows":
+            # Split on semicolons first
+            components = value.split(os.pathsep)
+
+            # On each component, replace anything that looks like
+            # a drive letter with a unix-like drive path.
+            components = [re.sub(r"^([A-Za-z]):\\",
+                                 r"\\\1\\",
+                                 c) for c in components]
+
+            return ":".join(components).replace("\\", "/")
+
+        return value
+
     def __init__(self, printer):
         """Initialize this parent environment with printer."""
         super(BashParentEnvironment, self).__init__()
@@ -66,35 +87,130 @@ class BashParentEnvironment(object):
     def overwrite_environment_variable(self, key, value):
         """Generate and execute script to overwrite variable key."""
         if value is not None:
-            self._printer("export {0}=\"{1}\"".format(key, value).encode())
+            value = BashParentEnvironment._format_environment_value(value)
+            self._printer("export {0}=\"{1}\"".format(key, value))
         else:
-            self._printer("unset {0}".format(key).encode())
+            self._printer("unset {0}".format(key))
 
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
-        # See http://stackoverflow.com/questions/370047/
-        for part in value.split(":"):
-            script = ("export " + key + "=$(echo -n \"${" + key + "}\" | "
-                      "awk -v RS=: -v ORS=: '$0 != \"'" + part + "'\"' | "
-                      "sed 's/:$//')")
-            self._printer(script.encode())
+        value = BashParentEnvironment._format_environment_value(value)
+        script = ("export {k}=$(python -c \"print(\\\":\\\".join(["
+                  "v for v in \\\"${k}\\\".split(\\\":\\\") "
+                  "if v not in \\\"{v}\\\".split(\\\":\\\")]))\")")
+        # There is something about the format() method on str which causes
+        # pychecker to trip over when passing keyword arguments. Just
+        # pass keyword arguments using the ** notation.
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = script.format(**script_keys)
+        self._printer(script)
 
     def prepend_environment_variable(self, key, value):
         """Generate and execute script to prepend value to key."""
-        script = "export " + key + "=\"" + value + "\":\"${" + key + "}\""
-        self._printer(script.encode())
+        value = BashParentEnvironment._format_environment_value(value)
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = "export {k}=\"{v}:${k}\"".format(**script_keys)
+        self._printer(script)
 
     def define_command(self, name, command):
         """Define a function called name which runs command."""
         code = ("function %s {"
                 "    %s \"$@\"\n"
                 "}") % (name, command)
-        self._printer(code.encode())
+        self._printer(code)
 
     def exit(self, status):
         """Cause the shell to exit with status."""
-        self._printer("exit {0}".format(status).encode())
+        self._printer("exit {0}".format(status))
+
+
+class PowershellParentEnvironment(object):
+
+    """A parent environment in a bash shell."""
+
+    def __init__(self, printer):
+        """Initialize this parent environment with printer."""
+        super(PowershellParentEnvironment, self).__init__()
+        self._printer = printer
+
+    def overwrite_environment_variable(self, key, value):
+        """Generate and execute script to overwrite variable key."""
+        if value is not None:
+            self._printer("$env:{0} = \"{1}\"".format(key, value))
+        else:
+            self._printer("$env:{0} = \"\"".format(key))
+
+    # suppress(invalid-name)
+    def remove_from_environment_variable(self, key, value):
+        """Generate and execute script to remove value from key."""
+        script = ("$env:{k} = python -c \"print(';'.join(["
+                  "v for v in r'$env:{k}'.split(';') "
+                  "if v not in r'{v}'.split(';')]))\"")
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = script.format(**script_keys)
+        self._printer(script)
+
+    def prepend_environment_variable(self, key, value):
+        """Generate and execute script to prepend value to key."""
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = "$env:{k} = \"{v};$env:{k}\"".format(**script_keys)
+        self._printer(script)
+
+    def define_command(self, name, command):
+        """Define a function called name which runs command.
+
+        The function will check that command's exit status and exit
+        the entire script with a failure exit code if
+        the subcommand failed.
+        """
+        code = ("function %s {"
+                "    %s $args\n"
+                "    $status = $?\n"
+                "    If ($status -eq 0) {\n"
+                "        exit 1\n"
+                "    }\n"
+                "}") % (name, command)
+        self._printer(code)
+
+    def exit(self, status):
+        """Cause the shell to exit with status."""
+        self._printer("exit {0}".format(status))
+
+
+def _update_set_like_file(path, key):
+    """For the file containing unique lines at :path:, add :key:.
+
+    This function assumes that the file at :path: is a set-like file -
+    it should contain one line per unique entry. :key: will be added
+    if the file does not contain it already.
+    """
+    added_key = False
+    with open(path, "r") as set_like_file:
+        records = set(set_like_file.read().splitlines())
+        if key not in records:
+            records |= set([key])
+            added_key = True
+
+    # Only modify the file if we added a new language record, otherwise
+    # this file will cause the cache to be constantly marked as
+    # invalid.
+    if added_key:
+        with open(path, "w") as set_like_file:
+            set_like_file.truncate(0)
+            set_like_file.write("\n".join(list(records)))
 
 
 class ContainerBase(object):
@@ -108,6 +224,10 @@ class ContainerBase(object):
         self._container_dir = os.path.realpath(directory)
         self._cache_dir = force_mkdir(os.path.join(self._container_dir,
                                                    "_cache"))
+        self._ephemeral_caches = os.path.join(self._cache_dir, "emphemeral")
+
+        with open(self._ephemeral_caches, "w+"):
+            pass
 
     @staticmethod
     def _delete(node):
@@ -123,13 +243,27 @@ class ContainerBase(object):
 
     @abc.abstractmethod
     def clean(self, util):
-        """Clean out this ContainerBase."""
-        return
+        """Clean out this ContainerBase.
 
-    def named_cache_dir(self, name):
-        """Return a dir called name in the cache dir, even if it exists."""
+        Remove all named caches marked as ephemeral.
+        """
+        with util.Task("""Cleaning ephemeral caches"""):
+            with open(self._ephemeral_caches, "r") as ephemeral_caches_file:
+                for ephemeral_cache in ephemeral_caches_file.readlines():
+                    shutil.rmtree(os.path.join(self._cache_dir,
+                                               ephemeral_cache))
+
+    def named_cache_dir(self, name, ephemeral=True):
+        """Return a dir called name in the cache dir, even if it exists.
+
+        If ephemeral is True, then wipe out this cache directory once
+        the clean method is called on the container.
+        """
         path = os.path.join(self._cache_dir, name)
         force_mkdir(path)
+
+        if ephemeral:
+            _update_set_like_file(self._ephemeral_caches, name)
 
         return path
 
@@ -249,7 +383,7 @@ class LanguageBase(ContainerBase):
             backup = activation_keys.deactivate.format(key=key)
             util.overwrite_environment_variable(self._parent_shell,
                                                 key,
-                                                os.environ[backup])
+                                                os.environ.get(backup, ""))
             util.overwrite_environment_variable(self._parent_shell,
                                                 backup,
                                                 None)
@@ -309,7 +443,7 @@ def _fetch_script(info,
     """Download a script if it doesn't exist."""
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
-            remote = os.path.join(domain, script_path)
+            remote = "%s/%s" % (domain, script_path)
             retrycount = 100
             while retrycount != 0:
                 try:
@@ -357,6 +491,8 @@ class ContainerDir(ContainerBase):
 
     def clean(self, util):
         """Clean this container and all sub-containers."""
+        super(ContainerDir, self).clean(util)
+
         info = namedtuple("Info", "language version")
 
         # Having everything on one line is nice
@@ -370,10 +506,11 @@ class ContainerDir(ContainerBase):
                            """container""".format(info.language,
                                                   info.version)):
                 script = "setup/project/configure_{0}.py".format(info.language)
+                ver_info = defaultdict(lambda: info.version)
                 self.fetch_and_import(script).get(self,
                                                   util,
                                                   None,
-                                                  info.version).clean(util)
+                                                  ver_info).clean(util)
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
@@ -490,29 +627,45 @@ class ContainerDir(ContainerBase):
         requested a new container for.
         """
         key = "{language}-{version}".format(language=language, version=version)
-        added_key = False
-        with open(self._languages_record_path, "r") as languages_record:
-            records = set(languages_record.read().splitlines())
-            if key not in records:
-                records |= set([key])
-                added_key = True
-
-        # Only modify the file if we added a new language record, otherwise
-        # this file will cause the cache to be constantly marked as
-        # invalid.
-        if added_key:
-            with open(self._languages_record_path, "w") as languages_record:
-                languages_record.truncate(0)
-                languages_record.write("\n".join(list(records)))
+        _update_set_like_file(self._languages_record_path, key)
 
         return LanguageBase
 
 
-def escaped_printer(text):
-    """Print text in a format suitable for consumption by a shell."""
-    # suppress(anomalous-backslash-in-string)
-    to_write = text.decode().replace(";", "\;").replace("\n", ";\n") + ";\n"
-    sys.stdout.write(to_write)
+def escaped_printer_with_character(char, file_object=None):
+    """Return a function that escapes special characters with :char:."""
+    def escaped_printer(to_write):
+        """Print text in a format suitable for consumption by a shell."""
+        # suppress(anomalous-backslash-in-string)
+        to_write = to_write.replace(";", "{c};".format(c=char))
+        to_write = to_write.replace("\n", ";\n") + ";\n"
+
+        if file_object:
+            file_object.write(to_write)
+        else:
+            sys.stdout.write(to_write)
+
+    return escaped_printer
+
+
+def _construct_parent_shell(eval_output_with, print_script_to):
+    """Construct a class emitting scripts compatible with eval_output_with."""
+    if eval_output_with:
+        environment_ctor = {
+            "bash": BashParentEnvironment,
+            "powershell": PowershellParentEnvironment
+        }
+
+        printers = {
+            "bash": escaped_printer_with_character("\\", print_script_to),
+            "powershell": escaped_printer_with_character("`",
+                                                         print_script_to)
+        }
+
+        printer = printers[eval_output_with]
+        return environment_ctor[eval_output_with](printer)
+    else:
+        return BashParentEnvironment(lambda _: None)
 
 
 def main(argv):
@@ -540,48 +693,71 @@ def main(argv):
                         type=str,
                         help="Script to pass control to")
     parser.add_argument("-e", "--eval-output",
-                        action="store_true",
-                        help="Evaluate output")
+                        type=str,
+                        choices=[
+                            "bash",
+                            "powershell"
+                        ],
+                        help="Evaluate output in shell")
+    parser.add_argument("-p", "--print-to",
+                        type=str,
+                        help="Where to print output script to")
     parser.add_argument("-r", "--scripts-directory",
                         type=str,
                         help="Directory where scripts are already stored in")
     args, remainder = parser.parse_known_args(argv)
 
-    if args.eval_output:
-        parent_shell = BashParentEnvironment(escaped_printer)
+    if args.print_to:
+        print_script_to = open(args.print_to, "wt")
+        if args.print_to == "/dev/stdout":
+            print_messages_to = sys.stderr
+        else:
+            print_messages_to = sys.stdout
     else:
-        parent_shell = BashParentEnvironment(lambda _: None)
+        try:
+            from io import StringIO
+        except ImportError:
+            from cStringIO import StringIO
 
-    container = ContainerDir(parent_shell, **(vars(args)))
-    util = container.fetch_and_import("util.py")
-    bootstrap_script = container.script_path("bootstrap.py").fs_path
-    scripts_path = os.path.sep.join(bootstrap_script.split(os.path.sep)[:-2])
+        print_script_to = StringIO()
+        print_messages_to = sys.stdout
 
-    parent_shell.overwrite_environment_variable("CONTAINER_DIR",
-                                                container.path())
-    parent_shell.define_command("polysquare_run",
-                                "python {bootstrap} "
-                                "-d {container} "
-                                "-r {scripts} "
-                                "-s".format(bootstrap=bootstrap_script,
-                                            container=container.path(),
-                                            scripts=scripts_path))
-    parent_shell.define_command("polysquare_cleanup",
-                                "python {bootstrap} "
-                                "-d {container} "
-                                "-r {scripts} "
-                                "-s"
-                                "clean.py".format(bootstrap=bootstrap_script,
-                                                  container=container.path(),
-                                                  scripts=scripts_path))
+    with closing(print_script_to):
+        parent_shell = _construct_parent_shell(args.eval_output,
+                                               print_script_to)
+        container = ContainerDir(parent_shell, **(vars(args)))
+        util = container.fetch_and_import("util.py")
+        # suppress(unused-attribute)
+        util.PRINT_MESSAGES_TO = print_messages_to
+        bootstrap_script = container.script_path("bootstrap.py").fs_path
+        bootstrap_script_components = bootstrap_script.split(os.path.sep)
+        scripts_path = os.path.sep.join(bootstrap_script_components[:-2])
 
-    # Done, pass control to the script we're to run
-    container.fetch_and_import(args.script).run(container,
-                                                util,
-                                                parent_shell,
-                                                argv=remainder)
+        parent_shell.overwrite_environment_variable("CONTAINER_DIR",
+                                                    container.path())
+        parent_shell.define_command("polysquare_run",
+                                    "python \"{bootstrap}\" "
+                                    "-d \"{container}\" "
+                                    "-r \"{scripts}\" "
+                                    "-s".format(bootstrap=bootstrap_script,
+                                                container=container.path(),
+                                                scripts=scripts_path))
+        parent_shell.define_command("polysquare_cleanup",
+                                    "python \"{bootstrap}\" "
+                                    "-d \"{container}\" "
+                                    "-r \"{scripts}\" "
+                                    "-s clean.py"
+                                    "".format(bootstrap=bootstrap_script,
+                                              container=container.path(),
+                                              scripts=scripts_path))
 
-    return container.return_code()
+        # Done, pass control to the script we're to run
+        container.fetch_and_import(args.script).run(container,
+                                                    util,
+                                                    parent_shell,
+                                                    argv=remainder)
+
+        return container.return_code()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

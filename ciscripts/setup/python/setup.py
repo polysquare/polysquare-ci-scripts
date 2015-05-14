@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a python project."""
 
+from collections import defaultdict
+
 
 def _install_test_dependencies(cont, util, py_util):
     """Install testing dependencies for python project."""
@@ -20,7 +22,7 @@ def _install_test_dependencies(cont, util, py_util):
 
 def _prepare_python_deployment(cont, util, shell, py_util):
     """Install dependencies required to deploy python project."""
-    hs_ver = "7.8.4"
+    hs_ver = defaultdict(lambda: "7.8.4")
     hs_config_script = "setup/project/configure_haskell.py"
     hs_container = cont.fetch_and_import(hs_config_script).run(cont,
                                                                util,
@@ -44,12 +46,13 @@ def run(cont, util, shell, argv=None):
     for the linter checks, however those runtimes won't be active at the
     time that tests are run.
     """
-    del argv
-
-    cont.fetch_and_import("setup/project/setup.py").run(cont, util, shell)
+    cont.fetch_and_import("setup/project/setup.py").run(cont,
+                                                        util,
+                                                        shell,
+                                                        argv)
 
     with util.Task("""Setting up python project"""):
-        py_ver = "2.7"
+        py_ver = defaultdict(lambda: "2.7.9")
         py_config_script = "setup/project/configure_python.py"
         py_util = cont.fetch_and_import("python_util.py")
         py_cont = cont.fetch_and_import(py_config_script).run(cont,

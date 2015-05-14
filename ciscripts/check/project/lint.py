@@ -10,6 +10,7 @@ import os
 
 def run(cont,  # suppress(too-many-arguments)
         util,
+        no_mdl=False,
         extensions=None,
         directories=None,
         exclusions=None,
@@ -77,7 +78,8 @@ def run(cont,  # suppress(too-many-arguments)
                        block_regexps))
 
     def run_linters_on_markdown_files(exclusions,
-                                      directories):
+                                      directories,
+                                      no_mdl):
         """Run spellcheck-linter and markdownlint on markdown files."""
         for directory in [os.path.realpath(d) for d in directories]:
             matching = ["*.md"]
@@ -98,8 +100,9 @@ def run(cont,  # suppress(too-many-arguments)
                         "--technical-terms",
                         technical_terms_path]))
 
-                for markdown_file in files_to_lint:
-                    lint("mdl", markdown_file)
+                if not no_mdl:
+                    for markdown_file in files_to_lint:
+                        lint("mdl", markdown_file)
 
     with util.Task("""Linting files using polysquare style guide linter"""):
         run_linters_on_code_files(extensions,
@@ -108,4 +111,4 @@ def run(cont,  # suppress(too-many-arguments)
                                   block_regexps)
 
     with util.Task("""Linting markdown documentation"""):
-        run_linters_on_markdown_files(extensions, directories)
+        run_linters_on_markdown_files(extensions, directories, no_mdl)

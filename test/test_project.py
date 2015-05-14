@@ -43,8 +43,8 @@ class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
     def match(self, candidate):
         """Return Mismatch if candidate is not in a subdirectory of path."""
         path = self._path
-        if os.path.commonprefix([os.path.realpath(path),
-                                 os.path.realpath(candidate)]):
+        if os.path.commonprefix([os.path.realpath(path).lower(),
+                                 os.path.realpath(candidate).lower()]):
             return None
         else:
             return Mismatch("{0} is not in a subdir of {1}".format(candidate,
@@ -160,26 +160,27 @@ def write_valid_header(f):
     """Write a valid header to file."""
     file_path = os.path.abspath(f.name)
     common_prefix = os.path.commonprefix([file_path, os.getcwd()])
+    header_path = file_path[len(common_prefix):].replace("\\", "/")
     f.write("#!/bin/bash\n"
             "# {path}\n"
             "#\n"
             "# Description\n"
             "#\n"
-            "# {licence}\n\n".format(path=file_path[len(common_prefix):],
+            "# {licence}\n\n".format(path=header_path,
                                      licence=LICENCE_STRING))
-    f.flush()
 
 
 def write_invalid_header(f):
     """Write a invalid header to file."""
     file_path = os.path.abspath(f.name)
     common_prefix = os.path.commonprefix([file_path, os.getcwd()])
+    header_path = file_path[len(common_prefix):].replace("\\", "/")
     f.write("#!/bin/bash\n"
             "# error-{path}\n"
             "#\n"
             "# Description\n"
             "#\n"
-            "# {licence}\n".format(path=file_path[len(common_prefix):],
+            "# {licence}\n".format(path=header_path,
                                    licence=LICENCE_STRING))
     f.flush()
 
@@ -229,14 +230,23 @@ class TestProjectContainerSetup(TestCase):
         setup_script = "setup/project/setup.py"
         cls.setup_container_output = testutil.CapturedOutput()
 
+        extra_args = list()
+
+        # Don't install mdl on AppVeyor - installing any gem is far
+        # too slow and will cause the job to time out.
+        if os.environ.get("APPVEYOR", None):
+            extra_args.append("--no-mdl")
+
         with cls.setup_container_output:
-            shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+            printer = bootstrap.escaped_printer_with_character("\\")
+            shell = bootstrap.BashParentEnvironment(printer)
             cls.container = bootstrap.ContainerDir(shell,
                                                    cls.container_temp_dir)
             cls.util = cls.container.fetch_and_import("util.py")
             cls.container.fetch_and_import(setup_script).run(cls.container,
                                                              util,
-                                                             shell)
+                                                             shell,
+                                                             extra_args)
 
         assert cls.container.return_code() == 0
 
@@ -270,7 +280,10 @@ class TestProjectContainerSetup(TestCase):
 
         super(TestProjectContainerSetup, self).tearDown()
 
-    _PROGRAMS = ["polysquare-generic-file-linter", "mdl"]
+    _PROGRAMS = ["polysquare-generic-file-linter"]
+
+    if not os.environ.get("APPVEYOR", None):
+        _PROGRAMS.append("mdl")
 
     @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
     def test_program_is_available_in_python_script(self, program):
@@ -286,45 +299,42 @@ class TestProjectContainerSetup(TestCase):
 
     def test_lint_with_style_guide_linter_success(self):
         """Success code if all files satisfy style guide linter."""
-        with tempfile.NamedTemporaryFile(mode="wt",
-                                         dir=os.getcwd(),
-                                         suffix=".sh") as f:
-            write_valid_header(f)
+        with open(os.path.join(os.getcwd(), "success.sh"),
+                  "wt") as success_file:
+            write_valid_header(success_file)
 
-            self.assertThat("check/project/lint.py",
-                            CIScriptExitsWith(0,
-                                              self.__class__.container,
-                                              self.__class__.util,
-                                              extensions=["sh"]))
+        self.assertThat("check/project/lint.py",
+                        CIScriptExitsWith(0,
+                                          self.__class__.container,
+                                          self.__class__.util,
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_lint_with_style_guide_linter_failure(self):
         """Failure code if one file doesn't satisfy style guide linter."""
-        with tempfile.NamedTemporaryFile(mode="wt",
-                                         dir=os.getcwd(),
-                                         suffix=".sh") as f:
-            write_invalid_header(f)
-            container = self.__class__.container
+        with open(os.path.join(os.getcwd(), "failure.sh"),
+                  "wt") as failure_file:
+            write_invalid_header(failure_file)
 
-            self.assertThat("check/project/lint.py",
-                            CIScriptExitsWith(1,
-                                              container,
-                                              self.__class__.util,
-                                              extensions=["sh"]))
+        self.assertThat("check/project/lint.py",
+                        CIScriptExitsWith(1,
+                                          self.__class__.container,
+                                          self.__class__.util,
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_lint_files_in_multiple_subdirectories(self):
         """Style guide linter runs over multiple subdirectories."""
         success_dir = tempfile.mkdtemp(dir=os.getcwd())
-        success_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=success_dir,
-                                                   suffix=".sh")
-
         failure_dir = tempfile.mkdtemp(dir=os.getcwd())
-        failure_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=failure_dir,
-                                                   suffix=".sh")
 
-        write_valid_header(success_file)
-        write_invalid_header(failure_file)
+        with open(os.path.join(success_dir, "success.sh"),
+                  "wt") as success_file:
+            write_valid_header(success_file)
+
+        with open(os.path.join(failure_dir, "failure.sh"),
+                  "wt") as failure_file:
+            write_invalid_header(failure_file)
 
         self.assertThat("check/project/lint.py",
                         CIScriptExitsWith(1,
@@ -332,39 +342,35 @@ class TestProjectContainerSetup(TestCase):
                                           self.__class__.util,
                                           extensions=["sh"],
                                           directories=[success_dir,
-                                                       failure_dir]))
+                                                       failure_dir],
+                                          no_mdl=True))
 
     def test_lint_files_with_multiple_extensions(self):
         """Style guide linter runs over multiple extensions."""
-        cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".zh")
-        failure_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".sh")
+        with open(os.path.join(os.getcwd(), "success.zh"),
+                  "wt") as success_file:
+            write_valid_header(success_file)
 
-        write_valid_header(success_file)
-        write_invalid_header(failure_file)
+        with open(os.path.join(os.getcwd(), "failure.sh"),
+                  "wt") as failure_file:
+            write_invalid_header(failure_file)
 
         self.assertThat("check/project/lint.py",
                         CIScriptExitsWith(1,
                                           self.__class__.container,
                                           self.__class__.util,
-                                          extensions=["sh"]))
+                                          extensions=["sh"],
+                                          no_mdl=True))
 
     def test_files_can_be_excluded_from_linting(self):
         """Exclude certain files from style guide linter."""
-        cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".sh")
-        failure_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".zh")
+        with open(os.path.join(os.getcwd(), "success.zh"),
+                  "wt") as success_file:
+            write_valid_header(success_file)
 
-        write_valid_header(success_file)
-        write_invalid_header(failure_file)
+        with open(os.path.join(os.getcwd(), "failure.sh"),
+                  "wt") as failure_file:
+            write_invalid_header(failure_file)
 
         fail_path = os.path.realpath(failure_file.name)
 
@@ -373,24 +379,22 @@ class TestProjectContainerSetup(TestCase):
                                           self.__class__.container,
                                           self.__class__.util,
                                           extensions=["sh"],
-                                          exclusions=[fail_path]))
+                                          exclusions=[fail_path],
+                                          no_mdl=True))
 
     def test_many_files_can_be_excluded_from_linting(self):
         """Exclude many files from style guide linting."""
-        cwd = os.getcwd()
-        success_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".sh")
-        failure_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                   dir=cwd,
-                                                   suffix=".zh")
-        second_failure_file = tempfile.NamedTemporaryFile(mode="wt",
-                                                          dir=cwd,
-                                                          suffix=".zh")
+        with open(os.path.join(os.getcwd(), "success.sh"),
+                  "wt") as success_file:
+            write_valid_header(success_file)
 
-        write_valid_header(success_file)
-        write_invalid_header(failure_file)
-        write_invalid_header(second_failure_file)
+        with open(os.path.join(os.getcwd(), "failure.zh"),
+                  "wt") as failure_file:
+            write_invalid_header(failure_file)
+
+        with open(os.path.join(os.getcwd(), "2failure.zh"),
+                  "wt") as second_failure_file:
+            write_invalid_header(second_failure_file)
 
         fail_path = os.path.realpath(failure_file.name)
         second_fail_path = os.path.realpath(second_failure_file.name)
@@ -403,11 +407,15 @@ class TestProjectContainerSetup(TestCase):
                                           exclusions=[
                                               fail_path,
                                               second_fail_path
-                                          ]))
+                                          ],
+                                          no_mdl=True))
 
     def test_linting_of_markdown_documentation_with_success(self):
         """Lint markdown documentation with success exit code."""
-        with tempfile.NamedTemporaryFile(dir=os.getcwd(), suffix=".md"):
+        if os.environ.get("APPVEYOR", None):
+            self.skipTest("""installation of mdl is too slow on appveyor""")
+
+        with open(os.path.join(os.getcwd(), "documentation.md"), "wt"):
             self.assertThat("check/project/lint.py",
                             CIScriptExitsWith(0,
                                               self.__class__.container,
@@ -416,14 +424,16 @@ class TestProjectContainerSetup(TestCase):
 
     def test_linting_of_markdown_documentation_with_failure(self):
         """Lint markdown documentation with success exit code."""
-        with tempfile.NamedTemporaryFile(mode="wt",
-                                         dir=os.getcwd(),
-                                         suffix=".md") as f:
-            f.write("Level One\n==\n\n## Level Two ##\n")
-            f.flush()
+        if os.environ.get("APPVEYOR", None):
+            self.skipTest("""installation of mdl is too slow on appveyor""")
 
-            self.assertThat("check/project/lint.py",
-                            CIScriptExitsWith(1,
-                                              self.__class__.container,
-                                              self.__class__.util,
-                                              extensions=["other"]))
+        with open(os.path.join(os.getcwd(), "documentation.md"),
+                  "wt") as markdown_file:
+            markdown_file.write("Level One\n==\n\n## Level Two ##\n")
+            markdown_file.flush()
+
+        self.assertThat("check/project/lint.py",
+                        CIScriptExitsWith(1,
+                                          self.__class__.container,
+                                          self.__class__.util,
+                                          extensions=["other"]))

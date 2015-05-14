@@ -10,6 +10,8 @@ import errno
 import os
 import os.path
 
+import platform
+
 import shutil
 
 import stat
@@ -50,8 +52,9 @@ def _rmtree(path):
             os.unlink(path)
 
 
-def get(container, util, shell, version, installer=_no_installer_available):
+def get(container, util, shell, ver_info, installer=_no_installer_available):
     """Return a HaskellContainer for an installed haskell version."""
+    version = ver_info[platform.system()]
     container_path = os.path.join(container.language_dir("haskell"),
                                   "versions",
                                   version)
@@ -131,8 +134,11 @@ def get(container, util, shell, version, installer=_no_installer_available):
                                  "install",
                                  pkg_name)
 
+        # suppress(super-on-old-class)
         def clean(self, util):
             """Clean out cruft in the container."""
+            super(HaskellContainer, self).clean(util)
+
             # Source code
             _rmtree(os.path.join(self._internal_container, "src"))
             _rmtree(os.path.join(self._internal_container, "tmp"))
@@ -217,8 +223,10 @@ def get(container, util, shell, version, installer=_no_installer_available):
             path_prependix = self._path_prependix()
             ghc_package_path_var = self._ghc_package_path()
 
-            pp_replacement = ":" + ghc_package_path_var
-            pp_replacement = pp_replacement.replace("::", ":").strip()
+            pp_replacement = os.pathsep + ghc_package_path_var
+            pp_replacement = pp_replacement.replace("{s}{s}"
+                                                    "".format(s=os.pathsep),
+                                                    os.pathsep).strip()
             while len(pp_replacement) and pp_replacement[-1] == ":":
                 pp_replacement = pp_replacement[:-1]
 
@@ -227,23 +235,23 @@ def get(container, util, shell, version, installer=_no_installer_available):
             else:
                 db_suffix = "db"
 
-            package_db_for_cabal = pp_replacement.replace(":",
+            package_db_for_cabal = pp_replacement.replace(os.pathsep,
                                                           " --package-db=")
             package_db_for_ghc_pkg = (" --no-user-package-" +
                                       db_suffix +
                                       " " +
-                                      pp_replacement.replace(":",
+                                      pp_replacement.replace(os.pathsep,
                                                              " --package-" +
                                                              db_suffix +
                                                              "="))
             package_db_for_ghc = (" -no-user-package-" + db_suffix +
-                                  " " + pp_replacement.replace(":",
+                                  " " + pp_replacement.replace(os.pathsep,
                                                                " -package-" +
                                                                db_suffix +
                                                                "="))
             package_db_for_ghc_mod = (" -g -no-user-package-" + db_suffix +
                                       " " +
-                                      pp_replacement.replace(":",
+                                      pp_replacement.replace(os.pathsep,
                                                              " -g -package-" +
                                                              db_suffix + "="))
 
@@ -264,10 +272,13 @@ def get(container, util, shell, version, installer=_no_installer_available):
             return tuple_type(overwrite=env_to_overwrite,
                               prepend=env_to_prepend)
 
-    return HaskellContainer(version, container_path, shell, installer)
+    return HaskellContainer(ver_info[platform.system()],
+                            container_path,
+                            shell,
+                            installer)
 
 
-def run(container, util, shell, version):
+def run(container, util, shell, ver_info):
     """Install and activates a haskell installation.
 
     This function returns a HaskellContainer, which has a path
@@ -298,6 +309,7 @@ def run(container, util, shell, version):
                     build_dir = haskell_build_dir
                     util.execute(container,
                                  util.long_running_suppressed_output(5),
+                                 "sh",
                                  os.path.join(os.getcwd(), "configure"),
                                  "--prefix={0}/usr".format(build_dir),
                                  instant_fail=True)
@@ -309,30 +321,36 @@ def run(container, util, shell, version):
 
     def haskell_installer():
         """Install build manager."""
-        gmp_url = "https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2"
-        ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
+        def install_haskell_dependencies():
+            """Install libgmp and libffi."""
+            gmp_url = "https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2"
+            ffi_url = "ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz"
 
-        if not os.path.exists(haskell_build_dir):
-            with util.Task("""Downloading hsenv"""):
-                remote = "git://github.com/saturday06/hsenv.sh"
-                dest = haskell_build_dir
-                util.execute(container,
-                             util.output_on_fail,
-                             "git", "clone", remote, dest,
-                             instant_fail=True)
+            if not os.path.exists(haskell_build_dir):
+                with util.Task("""Downloading hsenv"""):
+                    remote = "git://github.com/saturday06/hsenv.sh"
+                    dest = haskell_build_dir
+                    util.execute(container,
+                                 util.output_on_fail,
+                                 "git", "clone", remote, dest,
+                                 instant_fail=True)
 
-            with util.Task("""Installing libgmp"""):
-                install_library_from_tar_pkg(container, gmp_url, "gmp-6.0.0")
+                with util.Task("""Installing libgmp"""):
+                    install_library_from_tar_pkg(container,
+                                                 gmp_url,
+                                                 "gmp-6.0.0")
 
-            with util.Task("""Installing libffi"""):
-                install_library_from_tar_pkg(container,
-                                             ffi_url,
-                                             "libffi-3.2.1")
+                with util.Task("""Installing libffi"""):
+                    install_library_from_tar_pkg(container,
+                                                 ffi_url,
+                                                 "libffi-3.2.1")
 
-        def install(version):
+        def install():
             """Install haskell version, returns a HaskellContainer."""
             def deferred_installer(installation, version, activate):
                 """Closure which installs haskell on request."""
+                install_haskell_dependencies()
+
                 _force_makedirs(os.path.dirname(installation))
                 with util.Task("""Installing haskell version """ + version):
                     hsenv = os.path.join(haskell_build_dir,
@@ -375,12 +393,13 @@ def run(container, util, shell, version):
                 with util.Task("""Activating haskell {0}""".format(version)):
                     activate(util)
 
-            return get(container, util, shell, version, deferred_installer)
+            return get(container, util, shell, ver_info, deferred_installer)
 
         return install
 
     with util.Task("""Configuring haskell"""):
-        haskell_container = haskell_installer()(version)
+        version = ver_info[platform.system()]
+        haskell_container = haskell_installer()()
         with util.Task("""Activating haskell {0}""".format(version)):
             haskell_container.activate(util)
 

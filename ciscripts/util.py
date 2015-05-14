@@ -9,7 +9,7 @@ import fnmatch
 
 import os
 
-import select
+import platform
 
 import stat
 
@@ -23,22 +23,31 @@ import threading
 from contextlib import contextmanager
 
 try:
-    from Queue import Queue
+    from Queue import Queue, Empty
 except ImportError:
-    from queue import Queue  # suppress(F811,E301,E101,F401,unused-import)
+    # suppress(F811,E301,E101,F401,import-error,unused-import)
+    from queue import Queue, Empty
+
+
+PRINT_MESSAGES_TO = None
 
 
 def print_message(message):
-    """Print to stderr."""
-    sys.stderr.write(message.encode(sys.getdefaultencoding(),
-                                    "replace").decode("utf-8"))
+    """Print to PRINT_MESSAGES_TO."""
+    message = message.encode(sys.getdefaultencoding(),
+                             "replace").decode("utf-8")
+    if PRINT_MESSAGES_TO:
+        PRINT_MESSAGES_TO.write(message)
+        PRINT_MESSAGES_TO.flush()
+    else:
+        sys.stderr.write(message)
 
 
 def overwrite_environment_variable(parent, key, value):
     """Overwrite environment variables in current and parent context."""
     if value is not None:
         os.environ[key] = str(value)
-    else:
+    elif os.environ.get(key, None):
         del os.environ[key]
 
     parent.overwrite_environment_variable(key, value)
@@ -46,7 +55,10 @@ def overwrite_environment_variable(parent, key, value):
 
 def prepend_environment_variable(parent, key, value):
     """Prepend value to the environment variable list in key."""
-    os.environ[key] = "{0}:{1}".format(str(value), os.environ.get(key) or "")
+    env_sep = ";" if platform.system() == "Windows" else ":"
+    os.environ[key] = "{0}{1}{2}".format(str(value),
+                                         env_sep,
+                                         os.environ.get(key) or "")
     parent.prepend_environment_variable(key, value)
 
 
@@ -56,16 +68,12 @@ def prepend_environment_variable(parent, key, value):
 # suppress(invalid-name)
 def remove_from_environment_variable(parent, key, value):
     """Remove value from an environment variable list in key."""
-    environ_list = maybe_environ(key).split(":")
-    os.environ[key] = ":".join([i for i in environ_list if i != value])
+    env_sep = ";" if platform.system() == "Windows" else ":"
+    environ_list = maybe_environ(key).split(env_sep)
+    os.environ[key] = env_sep.join([i for i in environ_list if i != value])
 
     # See http://stackoverflow.com/questions/370047/
     parent.remove_from_environment_variable(key, value)
-
-
-def define_command(parent, name, command):
-    """Define a function called name which runs command in the parent scope."""
-    parent.define_command(name, command)
 
 
 def maybe_environ(key):
@@ -163,7 +171,7 @@ class IndentedLogger(object):
 
         if (IndentedLogger._indent_level == 0 and
                 IndentedLogger._printed_on_secondary_indents):
-            sys.stderr.write("\n")
+            print_message("\n")
             IndentedLogger._printed_on_secondary_indents = False
 
     @staticmethod
@@ -180,7 +188,7 @@ class IndentedLogger(object):
     @staticmethod
     def dot():
         """Print a dot, just for status."""
-        sys.stderr.write(".")
+        print_message(".")
 
 
 # This is intended to be used as a context manager, so it doesn't
@@ -252,28 +260,26 @@ def long_running_suppressed_output(dot_timeout=10):
     """Print dots in a separate thread until our process is done."""
     def strategy(process, outputs):
         """Partially applied strategy to be passed to execute."""
-        def print_dots(status_pipe):
+        def print_dots(status_queue):
             """Print a dot every dot_timeout seconds."""
             while True:
                 # Exit when something gets written to the pipe
-                read, _, _ = select.select([status_pipe], [], [], dot_timeout)
-
-                if len(read) > 0:
+                try:
+                    status_queue.get(True, dot_timeout)
                     return
-                else:
+                except Empty:
                     IndentedLogger.dot()
 
-        read, write = os.pipe()
-        dots_thread = threading.Thread(target=print_dots, args=(read, ))
+        status_queue = Queue()
+        dots_thread = threading.Thread(target=print_dots,
+                                       args=(status_queue, ))
         dots_thread.start()
 
         try:
             status = output_on_fail(process, outputs)
         finally:
-            os.write(write, "done".encode("utf-8"))
+            status_queue.put("done")
             dots_thread.join()
-            os.close(read)
-            os.close(write)
 
         return status
 
@@ -327,7 +333,7 @@ def running_output(process, outputs):
         state.printed_message = True
 
     if state.printed_message:
-        sys.stderr.write("\n")
+        print_message("\n")
 
     return status
 
@@ -354,6 +360,45 @@ def in_dir(path):
         os.chdir(cwd)
 
 
+def process_shebang(args):
+    """Process any shebangs.
+
+    This needs to be done by us, because it is not done automatically
+    on some operating systems, like Windows.
+    """
+    path_to_exec = which(args[0])
+
+    if path_to_exec is None:
+        msg = """Can't find binary {0} in PATH""".format(args[0])
+        raise RuntimeError(msg)
+
+    # If the first argument's extension is in PATHEXT then we can just
+    # execute it directly - the operating system will know what to do.
+    #
+    # Note that we can't use the default "" value, since nothing in
+    # PATHEXT indicates that the variable was not set and the operating
+    # system doesn't have default associations for certain extensions.
+    if os.environ.get("PATHEXT", None):
+        for ext in os.environ["PATHEXT"].split(os.pathsep):
+            if os.path.splitext(args[0])[1] == ext:
+                return args
+
+    try:
+        with open(path_to_exec, "rt") as exec_file:
+            if exec_file.read(2) == "#!":
+                shebang = exec_file.readline().strip().replace("\n", "")
+                shebang_args = shebang.split(" ")
+                shebang_args = ([os.path.basename(shebang_args[0])] +
+                                shebang_args[1:])
+                return shebang_args + [path_to_exec] + list(args[1:])
+    # If we couldn't decode the file, it is probably a binary file, so
+    # just execute it directly.
+    except UnicodeDecodeError:  # suppress(pointless-except)
+        pass
+
+    return args
+
+
 def execute(container, output_strategy, *args, **kwargs):
     """A thin wrapper around subprocess.Popen.
 
@@ -368,13 +413,15 @@ def execute(container, output_strategy, *args, **kwargs):
         env.update(kwargs["env"])
 
     try:
-        process = subprocess.Popen(args,
+        cmd = process_shebang(args)
+
+        process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    env=env)
     except OSError as error:
         raise Exception(u"""Failed to execute """
-                        u"""{0} - {1}""".format(" ".join(args), str(error)))
+                        u"""{0} - {1}""".format(" ".join(cmd), str(error)))
 
     with close_file_pair((process.stdout, process.stderr)) as outputs:
         status = output_strategy(process, outputs)
@@ -405,17 +452,22 @@ def which(executable):
 
     def path_list():
         """Get executable path list."""
-        return (os.environ.get("PATH") or os.defpath).split(os.pathsep)
+        return (os.environ.get("PATH", None) or os.defpath).split(os.pathsep)
+
+    def pathext_list():
+        """Get list of extensions to automatically search."""
+        return (os.environ.get("PATHEXT") or "").split(os.pathsep)
 
     seen = set()
 
     for path in [normalize(p) for p in path_list()]:
         if path not in seen:
-            full_path = os.path.join(path, executable)
-            if is_executable(full_path):
-                return full_path
-            else:
-                seen.add(path)
+            for ext in [""] + pathext_list():
+                full_path = os.path.join(path, executable) + ext
+                if is_executable(full_path):
+                    return full_path
+
+            seen.add(path)
 
     return None
 
@@ -465,14 +517,21 @@ def url_opener():
         else:
             retrycount = 100
 
+        errors = list()
+
         while retrycount != 0:
             try:
                 return urlopen(*args, **kwargs)
-            except (url_error(), SSLError, timeout):
+            except (url_error(), SSLError, timeout) as error:
+                errors.append(error)
                 retrycount -= 1
 
+        errors_string = "    \n".join([repr(e) for e in errors])
         raise url_error()(u"""Failed to open URL {0}, """
-                          u"""exceeded max retries.""".format(args[0]))
+                          u"""exceeded max retries {1}. """
+                          u""" Errors [{2}]\n""".format(args[0],
+                                                        retrycount,
+                                                        errors_string))
 
     return _urlopen
 

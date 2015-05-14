@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """Some utility functions which make testing easier."""
 
+import os  # suppress(PYC50)
+
 import socket
 
 import sys
@@ -57,13 +59,8 @@ class CapturedOutput(object):  # suppress(too-few-public-methods)
 
 
 @contextmanager
-def in_tempdir(parent, prefix):
-    """Create a temporary directory as a context manager."""
-    import os
-    import shutil
-    import tempfile
-
-    directory = tempfile.mkdtemp(prefix, dir=parent)
+def in_dir(directory):
+    """Execute in the context of directory."""
     last_cwd = os.getcwd()
     os.chdir(directory)
 
@@ -71,6 +68,20 @@ def in_tempdir(parent, prefix):
         yield directory
     finally:
         os.chdir(last_cwd)
+
+
+@contextmanager
+def in_tempdir(parent, prefix):
+    """Create a temporary directory as a context manager."""
+    import shutil
+    import tempfile
+
+    directory = tempfile.mkdtemp(prefix, dir=parent)
+
+    try:
+        with in_dir(directory):
+            yield directory
+    finally:
         shutil.rmtree(directory)
 
 
@@ -83,10 +94,30 @@ def server_in_tempdir(parent, prefix):
     from six.moves import SimpleHTTPServer  # suppress(import-error)
 
     with in_tempdir(parent, prefix) as temp_dir:
-        handler = type("QuietHTTPHandler",
-                       (SimpleHTTPServer.SimpleHTTPRequestHandler, object),
-                       {"log_message": lambda s, m, *args: None})
-        server = socketserver.TCPServer(("localhost", 0), handler)
+        class QuietHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler,
+                               object):
+
+            """Custom SimpleHTTPRequestHandler, does not log messages."""
+
+            def log_message(self, message, *args):
+                """Ignore message."""
+                pass
+
+            def do_GET(self):  # suppress(N802)
+                """Change into temp_dir and then chain up.
+
+                The reason why we need to do this is that the
+                underlying SimpleHTTPRequestHandler object queries the
+                directory that we are currently in, as opposed to the
+                directory that the server was created in. If the user
+                changes their active directory (as is done in the tests)
+                then requests will be resolved relative to that directory,
+                which is an error.
+                """
+                with in_dir(temp_dir):
+                    return super(QuietHTTPHandler, self).do_GET()
+
+        server = socketserver.TCPServer(("localhost", 0), QuietHTTPHandler)
         thread = threading.Thread(target=server.serve_forever)
         thread.start()
 
@@ -106,7 +137,7 @@ def _build_http_connection(superclass, resolver):
 
         def __init__(self, *args, **kwargs):
             """Initialize this connection object."""
-            super(superclass, self).__init__(*args, **kwargs)
+            superclass.__init__(self, *args, **kwargs)
             self.sock = None
 
         def connect(self):
