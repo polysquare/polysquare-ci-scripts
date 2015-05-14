@@ -76,11 +76,6 @@ def remove_from_environment_variable(parent, key, value):
     parent.remove_from_environment_variable(key, value)
 
 
-def define_command(parent, name, command):
-    """Define a function called name which runs command in the parent scope."""
-    parent.define_command(name, command)
-
-
 def maybe_environ(key):
     """Return environment variable for key, or an empty string."""
     try:
