@@ -43,8 +43,8 @@ class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
     def match(self, candidate):
         """Return Mismatch if candidate is not in a subdirectory of path."""
         path = self._path
-        if os.path.commonprefix([os.path.realpath(path),
-                                 os.path.realpath(candidate)]):
+        if os.path.commonprefix([os.path.realpath(path).lower(),
+                                 os.path.realpath(candidate).lower()]):
             return None
         else:
             return Mismatch("{0} is not in a subdir of {1}".format(candidate,
