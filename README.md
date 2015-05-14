@@ -201,9 +201,9 @@ use `Task` as a context manager, for example:
 
     with util.Task("Performing some action"):
         with util.Task("Performing sub-action one"):
-            action()
+            pass
         with util.Task("Performing sub-action two"):
-            action()
+            pass
 
 ### Executing commands ###
 
