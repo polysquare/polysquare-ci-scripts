@@ -22,9 +22,13 @@ def get(container, util, shell, ver_info):
     del util
 
     version = ver_info[platform.system()]
-    container_path = os.path.join(container.language_dir("ruby"),
-                                  "versions",
-                                  version)
+
+    if os.environ.get("POLYSQUARE_PREINSTALLED_RUBY", None):
+        container_path = os.environ["POLYSQUARE_PREINSTALLED_RUBY"]
+    else:
+        container_path = os.path.join(container.language_dir("ruby"),
+                                      "versions",
+                                      version)
 
     # This class is intended to be used through LanguageBase, so
     # most of its methods are private
@@ -183,6 +187,19 @@ def windows_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
     return install
 
 
+def pre_existing_ruby(lang_dir, ruby_build_dir, container, util, shell):
+    """Use pre-installed ruby."""
+    del ruby_build_dir
+    del lang_dir
+
+    def install(version):
+        """Use system installation directory."""
+        with util.Task("Using system installation"):
+            return get(container, util, shell, defaultdict(lambda: version))
+
+    return install
+
+
 def run(container, util, shell, ver_info):
     """Install and activates a ruby installation.
 
@@ -193,7 +210,10 @@ def run(container, util, shell, ver_info):
     ruby_build_dir = os.path.join(lang_dir, "build")
 
     with util.Task("""Configuring ruby"""):
-        if platform.system() in ("Linux", "Darwin"):
+        if (os.environ.get("POLYSQUARE_PREINSTALLED_RUBY", None) and
+                os.path.exists(os.environ["POLYSQUARE_PREINSTALLED_RUBY"])):
+            ruby_installer = pre_existing_ruby
+        elif platform.system() in ("Linux", "Darwin"):
             ruby_installer = posix_ruby_installer
         elif platform.system() == "Windows":
             ruby_installer = windows_ruby_installer

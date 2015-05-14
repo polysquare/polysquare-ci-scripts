@@ -24,8 +24,11 @@ def get(container, util, shell, ver_info):
     del util
 
     version = ver_info[platform.system()]
-    container_path = os.path.join(container.language_dir("python"),
-                                  version)
+    if os.environ.get("POLYSQUARE_PREINSTALLED_PYTHON", None):
+        container_path = os.environ["POLYSQUARE_PREINSTALLED_PYTHON"]
+    else:
+        container_path = os.path.join(container.language_dir("python"),
+                                      version)
 
     # This class is intended to be used through LanguageBase, so
     # most of its methods are private
@@ -219,6 +222,19 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
     return install
 
 
+def pre_existing_python(lang_dir, python_build_dir, util, container, shell):
+    """Use pre-installed python."""
+    del python_build_dir
+    del lang_dir
+
+    def install(version):
+        """Use system installation directory."""
+        with util.Task("Using system installation"):
+            return get(container, util, shell, defaultdict(lambda: version))
+
+    return install
+
+
 def run(container, util, shell, ver_info):
     """Install and activates a python installation.
 
@@ -228,7 +244,10 @@ def run(container, util, shell, ver_info):
     lang_dir = container.language_dir("python")
     python_build_dir = os.path.join(lang_dir, "build")
 
-    if platform.system() in ("Linux", "Darwin"):
+    if (os.environ.get("POLYSQUARE_PREINSTALLED_PYTHON", None) and
+            os.path.exists(os.environ["POLYSQUARE_PREINSTALLED_PYTHON"])):
+        installer = pre_existing_python
+    elif platform.system() in ("Linux", "Darwin"):
         installer = posix_installer
     elif platform.system() == "Windows":
         installer = windows_installer
