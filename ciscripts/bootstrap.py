@@ -30,7 +30,7 @@ import sys
 from collections import (defaultdict,
                          namedtuple)
 
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 
 try:
     from urllib.request import urlopen
@@ -632,11 +632,40 @@ class ContainerDir(ContainerBase):
         return LanguageBase
 
 
-def escaped_printer(text):
-    """Print text in a format suitable for consumption by a shell."""
-    # suppress(anomalous-backslash-in-string)
-    to_write = text.decode().replace("';'", "\;").replace("\n", ";\n") + ";\n"
-    sys.stdout.write(to_write)
+def escaped_printer_with_character(char, file_object=None):
+    """Return a function that escapes special characters with :char:."""
+    def escaped_printer(to_write):
+        """Print text in a format suitable for consumption by a shell."""
+        # suppress(anomalous-backslash-in-string)
+        to_write = to_write.replace(";", "{c};".format(c=char))
+        to_write = to_write.replace("\n", ";\n") + ";\n"
+
+        if file_object:
+            file_object.write(to_write)
+        else:
+            sys.stdout.write(to_write)
+
+    return escaped_printer
+
+
+def _construct_parent_shell(eval_output_with, print_script_to):
+    """Construct a class emitting scripts compatible with eval_output_with."""
+    if eval_output_with:
+        environment_ctor = {
+            "bash": BashParentEnvironment,
+            "powershell": PowershellParentEnvironment
+        }
+
+        printers = {
+            "bash": escaped_printer_with_character("\\", print_script_to),
+            "powershell": escaped_printer_with_character("`",
+                                                         print_script_to)
+        }
+
+        printer = printers[eval_output_with]
+        return environment_ctor[eval_output_with](printer)
+    else:
+        return BashParentEnvironment(lambda _: None)
 
 
 def main(argv):
@@ -664,48 +693,71 @@ def main(argv):
                         type=str,
                         help="Script to pass control to")
     parser.add_argument("-e", "--eval-output",
-                        action="store_true",
-                        help="Evaluate output")
+                        type=str,
+                        choices=[
+                            "bash",
+                            "powershell"
+                        ],
+                        help="Evaluate output in shell")
+    parser.add_argument("-p", "--print-to",
+                        type=str,
+                        help="Where to print output script to")
     parser.add_argument("-r", "--scripts-directory",
                         type=str,
                         help="Directory where scripts are already stored in")
     args, remainder = parser.parse_known_args(argv)
 
-    if args.eval_output:
-        parent_shell = BashParentEnvironment(escaped_printer)
+    if args.print_to:
+        print_script_to = open(args.print_to, "wt")
+        if args.print_to == "/dev/stdout":
+            print_messages_to = sys.stderr
+        else:
+            print_messages_to = sys.stdout
     else:
-        parent_shell = BashParentEnvironment(lambda _: None)
+        try:
+            from io import StringIO
+        except ImportError:
+            from cStringIO import StringIO
 
-    container = ContainerDir(parent_shell, **(vars(args)))
-    util = container.fetch_and_import("util.py")
-    bootstrap_script = container.script_path("bootstrap.py").fs_path
-    scripts_path = os.path.sep.join(bootstrap_script.split(os.path.sep)[:-2])
+        print_script_to = StringIO()
+        print_messages_to = sys.stdout
 
-    parent_shell.overwrite_environment_variable("CONTAINER_DIR",
-                                                container.path())
-    parent_shell.define_command("polysquare_run",
-                                "python \"{bootstrap}\" "
-                                "-d \"{container}\" "
-                                "-r \"{scripts}\" "
-                                "-s".format(bootstrap=bootstrap_script,
-                                            container=container.path(),
-                                            scripts=scripts_path))
-    parent_shell.define_command("polysquare_cleanup",
-                                "python \"{bootstrap}\" "
-                                "-d \"{container}\" "
-                                "-r \"{scripts}\" "
-                                "-s"
-                                "clean.py".format(bootstrap=bootstrap_script,
-                                                  container=container.path(),
-                                                  scripts=scripts_path))
+    with closing(print_script_to):
+        parent_shell = _construct_parent_shell(args.eval_output,
+                                               print_script_to)
+        container = ContainerDir(parent_shell, **(vars(args)))
+        util = container.fetch_and_import("util.py")
+        # suppress(unused-attribute)
+        util.PRINT_MESSAGES_TO = print_messages_to
+        bootstrap_script = container.script_path("bootstrap.py").fs_path
+        bootstrap_script_components = bootstrap_script.split(os.path.sep)
+        scripts_path = os.path.sep.join(bootstrap_script_components[:-2])
 
-    # Done, pass control to the script we're to run
-    container.fetch_and_import(args.script).run(container,
-                                                util,
-                                                parent_shell,
-                                                argv=remainder)
+        parent_shell.overwrite_environment_variable("CONTAINER_DIR",
+                                                    container.path())
+        parent_shell.define_command("polysquare_run",
+                                    "python \"{bootstrap}\" "
+                                    "-d \"{container}\" "
+                                    "-r \"{scripts}\" "
+                                    "-s".format(bootstrap=bootstrap_script,
+                                                container=container.path(),
+                                                scripts=scripts_path))
+        parent_shell.define_command("polysquare_cleanup",
+                                    "python \"{bootstrap}\" "
+                                    "-d \"{container}\" "
+                                    "-r \"{scripts}\" "
+                                    "-s clean.py"
+                                    "".format(bootstrap=bootstrap_script,
+                                              container=container.path(),
+                                              scripts=scripts_path))
 
-    return container.return_code()
+        # Done, pass control to the script we're to run
+        container.fetch_and_import(args.script).run(container,
+                                                    util,
+                                                    parent_shell,
+                                                    argv=remainder)
+
+        return container.return_code()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

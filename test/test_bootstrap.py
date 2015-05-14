@@ -82,7 +82,8 @@ def write_bootstrap_script_into_container(directory_name):
 def removable_container_dir(directory_name):
     """A contextmanager which deletes a container when the test is complete."""
     current_cwd = os.getcwd()
-    shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+    printer = bootstrap.escaped_printer_with_character("\\")
+    shell = bootstrap.BashParentEnvironment(printer)
     try:
         # Put a /bootstrap.py script in the container directory
         # so that we don't keep on trying to fetch it all the time
@@ -321,7 +322,8 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                                      "_scripts",
                                      "ciscripts"))
 
-        shell = bootstrap.BashParentEnvironment(bootstrap.escaped_printer)
+        printer = bootstrap.escaped_printer_with_character("\\")
+        shell = bootstrap.BashParentEnvironment(printer)
         self._container = bootstrap.ContainerDir(shell,
                                                  directory=self._container_dir)
         self._util = self._container.fetch_and_import("util.py")
@@ -345,7 +347,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
             def __init__(self):
                 """Initialize this EmptyLanguageContainer with language."""
                 installation = container.language_dir(language)
-                printer = bootstrap.escaped_printer
+                printer = bootstrap.escaped_printer_with_character("\\")
                 shell = bootstrap.BashParentEnvironment(printer)
                 super(EmptyLanguageContainer, self).__init__(installation,
                                                              language,

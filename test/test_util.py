@@ -28,7 +28,7 @@ from collections import defaultdict
 from test import testutil
 
 from ciscripts.bootstrap import (BashParentEnvironment,
-                                 escaped_printer)
+                                 escaped_printer_with_character)
 import ciscripts.util as util
 
 from mock import Mock
@@ -94,7 +94,8 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
         """Initialize instance variables, including parent environment."""
         super(TestOverwriteEnvironmentVariables, self).__init__(*args,
                                                                 **kwargs)
-        self._parent = BashParentEnvironment(escaped_printer)
+        printer = escaped_printer_with_character("\\")
+        self._parent = BashParentEnvironment(printer)
 
     def test_overwritten_environment_variables_in_os_environ(self):
         """Test that overwritten environment variables are in os.environ."""
