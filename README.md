@@ -11,9 +11,9 @@ a python interpreter.
 
 ## Status ##
 
-| Travis CI (Ubuntu) |
-|--------------------|
-|[![Travis](https://travis-ci.org/polysquare/polysquare-ci-scripts.svg?branch=master)](https://travis-ci.org/polysquare/polysquare-ci-scripts)
+| Travis CI | AppVeyor | Coverage |
+|-----------|----------|----------|
+|[![Travis](https://travis-ci.org/polysquare/polysquare-ci-scripts.svg?branch=master)](https://travis-ci.org/polysquare/polysquare-ci-scripts)|[![AppVeyor](https://ci.appveyor.com/api/projects/status/fink8q0jbv20xdca/branch/master?svg=true)](https://ci.appveyor.com/project/smspillaz/polysquare-ci-scripts/branch/master)|[![Coverage](https://coveralls.io/repos/polysquare/polysquare-ci-scripts/badge.png?branch=master)](https://coveralls.io/r/polysquare/polysquare-ci-scripts?branch=master)|
 
 ## Usage ##
 
