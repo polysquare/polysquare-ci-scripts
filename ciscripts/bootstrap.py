@@ -131,6 +131,56 @@ class BashParentEnvironment(object):
         self._printer("exit {0}".format(status))
 
 
+class PowershellParentEnvironment(object):
+
+    """A parent environment in a bash shell."""
+
+    def __init__(self, printer):
+        """Initialize this parent environment with printer."""
+        super(PowershellParentEnvironment, self).__init__()
+        self._printer = printer
+
+    def overwrite_environment_variable(self, key, value):
+        """Generate and execute script to overwrite variable key."""
+        if value is not None:
+            self._printer("$env:{0} = \"{1}\"".format(key, value))
+        else:
+            self._printer("$env:{0} = \"\"".format(key))
+
+    # suppress(invalid-name)
+    def remove_from_environment_variable(self, key, value):
+        """Generate and execute script to remove value from key."""
+        script = ("$env:{k} = python -c \"print(';'.join(["
+                  "v for v in r'$env:{k}'.split(';') "
+                  "if v not in r'{v}'.split(';')]))\"")
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = script.format(**script_keys)
+        self._printer(script)
+
+    def prepend_environment_variable(self, key, value):
+        """Generate and execute script to prepend value to key."""
+        script_keys = {
+            "k": key,
+            "v": value
+        }
+        script = "$env:{k} = \"{v};$env:{k}\"".format(**script_keys)
+        self._printer(script.encode())
+
+    def define_command(self, name, command):
+        """Define a function called name which runs command."""
+        code = ("function %s {"
+                "    %s \"$@\"\n"
+                "}") % (name, command)
+        self._printer(code.encode())
+
+    def exit(self, status):
+        """Cause the shell to exit with status."""
+        self._printer("exit {0}".format(status).encode())
+
+
 def _update_set_like_file(path, key):
     """For the file containing unique lines at :path:, add :key:.
 
