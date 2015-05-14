@@ -168,7 +168,7 @@ class IndentedLogger(object):
 
         if (IndentedLogger._indent_level == 0 and
                 IndentedLogger._printed_on_secondary_indents):
-            sys.stderr.write("\n")
+            print_message("\n")
             IndentedLogger._printed_on_secondary_indents = False
 
     @staticmethod
@@ -185,7 +185,7 @@ class IndentedLogger(object):
     @staticmethod
     def dot():
         """Print a dot, just for status."""
-        sys.stderr.write(".")
+        print_message(".")
 
 
 # This is intended to be used as a context manager, so it doesn't
@@ -330,7 +330,7 @@ def running_output(process, outputs):
         state.printed_message = True
 
     if state.printed_message:
-        sys.stderr.write("\n")
+        print_message("\n")
 
     return status
 
