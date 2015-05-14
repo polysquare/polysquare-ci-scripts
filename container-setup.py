@@ -10,9 +10,9 @@
 from collections import defaultdict
 
 
-def run(cont, util, shell, argv=list()):
-    """Set up language runtimes and pass control to python project script."""
 
+def run(cont, util, shell, argv=None):
+    """Set up language runtimes and pass control to python project script."""
     with util.Task("""Installing all necessary language runtimes"""):
         rb_ver = defaultdict(lambda: "2.1.5", Windows="2.1.6")
         py_ver = defaultdict(lambda: "2.7.9")
