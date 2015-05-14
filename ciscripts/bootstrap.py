@@ -374,7 +374,7 @@ class LanguageBase(ContainerBase):
             backup = activation_keys.deactivate.format(key=key)
             util.overwrite_environment_variable(self._parent_shell,
                                                 key,
-                                                os.environ[backup])
+                                                os.environ.get(backup, ""))
             util.overwrite_environment_variable(self._parent_shell,
                                                 backup,
                                                 None)

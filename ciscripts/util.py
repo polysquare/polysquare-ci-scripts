@@ -47,7 +47,7 @@ def overwrite_environment_variable(parent, key, value):
     """Overwrite environment variables in current and parent context."""
     if value is not None:
         os.environ[key] = str(value)
-    else:
+    elif os.environ.get(key, None):
         del os.environ[key]
 
     parent.overwrite_environment_variable(key, value)
