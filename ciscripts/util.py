@@ -29,10 +29,18 @@ except ImportError:
     from queue import Queue, Empty
 
 
+PRINT_MESSAGES_TO = None
+
+
 def print_message(message):
-    """Print to stderr."""
-    sys.stderr.write(message.encode(sys.getdefaultencoding(),
-                                    "replace").decode("utf-8"))
+    """Print to PRINT_MESSAGES_TO."""
+    message = message.encode(sys.getdefaultencoding(),
+                             "replace").decode("utf-8")
+    if PRINT_MESSAGES_TO:
+        PRINT_MESSAGES_TO.write(message)
+        PRINT_MESSAGES_TO.flush()
+    else:
+        sys.stderr.write(message)
 
 
 def overwrite_environment_variable(parent, key, value):
