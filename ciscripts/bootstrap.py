@@ -198,11 +198,17 @@ def _update_set_like_file(path, key):
     if the file does not contain it already.
     """
     added_key = False
-    with open(path, "r") as set_like_file:
-        records = set(set_like_file.read().splitlines())
-        if key not in records:
-            records |= set([key])
-            added_key = True
+    try:
+        with open(path, "r") as set_like_file:
+            records = set(set_like_file.read().splitlines())
+            if key not in records:
+                records |= set([key])
+                added_key = True
+    except IOError:
+        # Set added_key to True so that we write to this file
+        # next time
+        added_key = True
+        records = set([key])
 
     # Only modify the file if we added a new language record, otherwise
     # this file will cause the cache to be constantly marked as
@@ -226,9 +232,6 @@ class ContainerBase(object):
                                                    "_cache"))
         self._ephemeral_caches = os.path.join(self._cache_dir, "emphemeral")
 
-        with open(self._ephemeral_caches, "w+"):
-            pass
-
     @staticmethod
     def _delete(node):
         """Delete node on the file system in the way you expect.
@@ -236,10 +239,14 @@ class ContainerBase(object):
         If :node: is a directory, remove it recursively. If it is a file,
         then unlink it. If it is a symbolic link, then remove it.
         """
-        if os.path.isdir(node):
-            shutil.rmtree(node)
-        else:
-            os.unlink(node)
+        try:
+            if os.path.isdir(node):
+                shutil.rmtree(node)
+            else:
+                os.unlink(node)
+        except OSError as error:
+            if error.errno != errno.ENOENT:   # suppress(PYC90)
+                raise error
 
     @abc.abstractmethod
     def clean(self, util):
@@ -247,11 +254,14 @@ class ContainerBase(object):
 
         Remove all named caches marked as ephemeral.
         """
-        with util.Task("""Cleaning ephemeral caches"""):
-            with open(self._ephemeral_caches, "r") as ephemeral_caches_file:
-                for ephemeral_cache in ephemeral_caches_file.readlines():
-                    shutil.rmtree(os.path.join(self._cache_dir,
-                                               ephemeral_cache))
+        if os.path.exists(self._ephemeral_caches):
+            with util.Task("""Cleaning ephemeral caches"""):
+                with open(self._ephemeral_caches, "r") as ephemeral_log:
+                    for ephemeral_cache in ephemeral_log.readlines():
+                        shutil.rmtree(os.path.join(self._cache_dir,
+                                                   ephemeral_cache.strip()))
+
+                self._delete(self._ephemeral_caches)
 
     def named_cache_dir(self, name, ephemeral=True):
         """Return a dir called name in the cache dir, even if it exists.
@@ -515,10 +525,6 @@ class ContainerDir(ContainerBase):
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
                 self._delete(self._scripts_dir)
-
-        with util.Task("""Cleaning linter cache files"""):
-            self._delete(self.named_cache_dir("tech_terms"))
-            self._delete(self.named_cache_dir("code_spelling_cache"))
 
     def script_path(self, relative_path):
         """Get absolute path to script specified at relative_path.
