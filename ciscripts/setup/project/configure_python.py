@@ -113,6 +113,9 @@ def get(container, util, shell, ver_info):
             os.utime(os.path.join(PythonContainer._get_py_path_from(py_path),
                                   "site-packages",
                                   "site.py"), (1, 1))
+            os.utime(os.path.join(PythonContainer._get_py_path_from(py_path),
+                                  "site-packages",
+                                  "easy-install.pth"), (1, 1))
 
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""
