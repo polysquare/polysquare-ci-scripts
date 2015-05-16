@@ -234,58 +234,6 @@ def thread_output(*args, **kwargs):
     thread.join()
 
 
-def output_on_fail(process, outputs):
-    """Capture output, displaying it if the process fails."""
-    def reader(handle, input_queue):
-        """Thread which reads handle, until EOF."""
-        input_queue.put(handle.read())
-
-    with thread_output(target=reader, args=(outputs[0], )) as stdout_queue:
-        with thread_output(target=reader,
-                           args=(outputs[1], )) as stderr_queue:
-            stdout = stdout_queue.get()
-            stderr = stderr_queue.get()
-
-    status = process.wait()
-
-    if status != 0:
-        IndentedLogger.message("\n")
-        IndentedLogger.message(stdout.decode("utf-8"))
-        IndentedLogger.message(stderr.decode("utf-8"))
-
-    return status
-
-
-def long_running_suppressed_output(dot_timeout=10):
-    """Print dots in a separate thread until our process is done."""
-    def strategy(process, outputs):
-        """Partially applied strategy to be passed to execute."""
-        def print_dots(status_queue):
-            """Print a dot every dot_timeout seconds."""
-            while True:
-                # Exit when something gets written to the pipe
-                try:
-                    status_queue.get(True, dot_timeout)
-                    return
-                except Empty:
-                    IndentedLogger.dot()
-
-        status_queue = Queue()
-        dots_thread = threading.Thread(target=print_dots,
-                                       args=(status_queue, ))
-        dots_thread.start()
-
-        try:
-            status = output_on_fail(process, outputs)
-        finally:
-            status_queue.put("done")
-            dots_thread.join()
-
-        return status
-
-    return strategy
-
-
 def running_output(process, outputs):
     """Show output of process as it runs."""
     state = type("State",
@@ -336,6 +284,74 @@ def running_output(process, outputs):
         print_message("\n")
 
     return status
+
+
+def _maybe_use_running_output(process, outputs):
+    """Use running_output if user requested verbose output."""
+    if os.environ.get("POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT", None):
+        return running_output(process, outputs)
+
+    return None
+
+
+def output_on_fail(process, outputs):
+    """Capture output, displaying it if the process fails."""
+    status = _maybe_use_running_output(process, outputs)
+    if status is not None:
+        return status
+
+    def reader(handle, input_queue):
+        """Thread which reads handle, until EOF."""
+        input_queue.put(handle.read())
+
+    with thread_output(target=reader, args=(outputs[0], )) as stdout_queue:
+        with thread_output(target=reader,
+                           args=(outputs[1], )) as stderr_queue:
+            stdout = stdout_queue.get()
+            stderr = stderr_queue.get()
+
+    status = process.wait()
+
+    if status != 0:
+        IndentedLogger.message("\n")
+        IndentedLogger.message(stdout.decode("utf-8"))
+        IndentedLogger.message(stderr.decode("utf-8"))
+
+    return status
+
+
+def long_running_suppressed_output(dot_timeout=10):
+    """Print dots in a separate thread until our process is done."""
+    def strategy(process, outputs):
+        """Partially applied strategy to be passed to execute."""
+        status = _maybe_use_running_output(process, outputs)
+        if status is not None:
+            return status
+
+        def print_dots(status_queue):
+            """Print a dot every dot_timeout seconds."""
+            while True:
+                # Exit when something gets written to the pipe
+                try:
+                    status_queue.get(True, dot_timeout)
+                    return
+                except Empty:
+                    IndentedLogger.dot()
+
+        status_queue = Queue()
+        dots_thread = threading.Thread(target=print_dots,
+                                       args=(status_queue, ))
+        dots_thread.start()
+
+        try:
+            status = output_on_fail(process, outputs)
+        finally:
+            status_queue.put("done")
+            dots_thread.join()
+
+        return status
+
+    return strategy
 
 
 @contextmanager

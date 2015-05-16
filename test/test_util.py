@@ -352,6 +352,9 @@ class TestExecute(TestCase):
 
     def test_execute_with_failure_output(self):
         """Execute a command with failure, showing output."""
+        if "POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT" in os.environ:
+            del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
             util.execute(Mock(),
@@ -364,6 +367,24 @@ class TestExecute(TestCase):
                                        "!!! Process python\n"
                                        "!!!         /does-not-exist\n"
                                        "!!! failed with ...",
+                                       doctest.ELLIPSIS |
+                                       doctest.NORMALIZE_WHITESPACE |
+                                       doctest.REPORT_NDIFF))
+
+    def test_override_suppressed_output(self):
+        """Override suppressed output with environment variable."""
+        os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"] = "1"
+
+        captured_output = testutil.CapturedOutput()
+        with captured_output:
+            util.execute(Mock(),
+                         util.output_on_fail,
+                         "python",
+                         "-c",
+                         "print('Hello')")
+
+        self.assertThat(captured_output.stderr,
+                        DocTestMatches("...Hello...",
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE |
                                        doctest.REPORT_NDIFF))
@@ -381,6 +402,9 @@ class TestExecute(TestCase):
 
     def test_running_output_handles_utf8(self):
         """Handle utf-8 strings correctly in running output."""
+        if "POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT" in os.environ:
+            del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
+
         if (platform.python_implementation() != "CPython" or
                 sys.version_info.major != 3):
             self.skipTest("""only python 3 can run this example correctly""")
@@ -399,6 +423,9 @@ class TestExecute(TestCase):
 
     def test_output_on_fail_handles_utf8(self):
         """Handle utf-8 strings correctly when showing failure output."""
+        if "POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT" in os.environ:
+            del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
+
         if (platform.python_implementation() != "CPython" or
                 sys.version_info.major != 3):
             self.skipTest("""only python 3 can run this example correctly""")
@@ -448,6 +475,9 @@ class TestExecute(TestCase):
 
     def test_execute_show_dots_for_long_running_processes(self):
         """Show dots for long running processes."""
+        if "POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT" in os.environ:
+            del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
+
         captured_output = testutil.CapturedOutput()
         with captured_output:
             util.execute(Mock(),
@@ -463,24 +493,9 @@ class TestExecute(TestCase):
                                    Equals("...")))  # suppress(PYC90)
 
 
-class TestExecutablePaths(TestCase):
+class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
 
     """Test cases for executable path functions (util.which)."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize this test case and its instance variables."""
-        super(TestExecutablePaths, self).__init__(*args, **kwargs)
-        self._saved_environ = None
-
-    def setUp(self):  # suppress(N802)
-        """Keep a copy of os.environ["PATH"]."""
-        super(TestExecutablePaths, self).setUp()
-        self._saved_environ = os.environ.copy()
-
-    def tearDown(self):  # suppress(N802)
-        """Restore os.environ["PATH"]."""
-        os.environ = self._saved_environ
-        super(TestExecutablePaths, self).tearDown()
 
     def test_raise_executable_not_in_path(self):
         """Raise RuntimeError when executable is not in PATH."""
