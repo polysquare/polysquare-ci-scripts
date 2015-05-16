@@ -60,12 +60,6 @@ def run(cont, util, shell, argv=None):
                                                               shell,
                                                               py_ver)
 
-        util.prepare_deployment(_prepare_python_deployment,
-                                cont,
-                                util,
-                                shell,
-                                py_util)
-
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
                                      util,
@@ -86,3 +80,9 @@ def run(cont, util, shell, argv=None):
 
             _install_test_dependencies(cont, util, py_util)
             py_util.pip_install(cont, util, "coverage", "coveralls")
+
+        util.prepare_deployment(_prepare_python_deployment,
+                                cont,
+                                util,
+                                shell,
+                                py_util)
