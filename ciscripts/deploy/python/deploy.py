@@ -54,7 +54,7 @@ def run(cont, util, shell, argv=None):
         util.execute(cont,
                      util.long_running_suppressed_output(),
                      "pip",
-                     "install"
+                     "install",
                      "setuptools-markdown")
 
     with util.Task("""Preparing for deployment to PyPI"""):
