@@ -49,6 +49,14 @@ def run(cont, util, shell, argv=None):
                         shutil.copy(pandoc_binary, destination)
                         break
 
+    def install_setuptools_markdown():
+        """Install setuptools-markdown in currently active python."""
+        util.execute(cont,
+                     util.long_running_suppressed_output(),
+                     "pip",
+                     "install"
+                     "setuptools-markdown")
+
     with util.Task("""Preparing for deployment to PyPI"""):
         hs_ver = defaultdict(lambda: "7.8.4")
         hs_script = "setup/project/configure_haskell.py"
@@ -62,3 +70,4 @@ def run(cont, util, shell, argv=None):
 
         if os.environ.get("CI", None):
             copy_pandoc_out_of_container()
+            install_setuptools_markdown()
