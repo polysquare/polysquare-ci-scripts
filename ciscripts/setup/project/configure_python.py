@@ -110,12 +110,28 @@ def get(container, util, shell, ver_info):
                                           py_path,
                                           matching=["*/tcl/*"])
 
-            os.utime(os.path.join(PythonContainer._get_py_path_from(py_path),
-                                  "site-packages",
-                                  "site.py"), (1, 1))
-            os.utime(os.path.join(PythonContainer._get_py_path_from(py_path),
-                                  "site-packages",
-                                  "easy-install.pth"), (1, 1))
+            def reset_mtime(path):
+                """Reset modification time of file at path to 1.
+
+                This is needed for files that change on every installation,
+                such that they don't cause caches to be spuriously
+                invalidated.
+                """
+                os.utime(path, (1, 1))
+
+            pkg_path = os.path.join(PythonContainer._get_py_path_from(py_path),
+                                    "site-packages")
+
+            reset_mtime(os.path.join(pkg_path, "easy-install.pth"))
+            util_mod.apply_to_files(reset_mtime,
+                                    pkg_path,
+                                    matching=["*.pth"])
+            util_mod.apply_to_files(reset_mtime,
+                                    os.path.join(py_path, "bin"),
+                                    matching=["*"])
+            util_mod.apply_to_files(reset_mtime,
+                                    os.path.join(py_path, "Scripts"),
+                                    matching=["*"])
 
         def _active_environment(self, tuple_type):
             """Return active environment for python container."""
