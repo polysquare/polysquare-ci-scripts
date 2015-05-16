@@ -20,7 +20,7 @@ def _install_test_dependencies(cont, util, py_util):
                              "nose-parameterized")
 
 
-def _prepare_python_deployment(cont, util, shell, py_util):
+def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
     """Install dependencies required to deploy python project."""
     hs_ver = defaultdict(lambda: "7.8.4")
     hs_config_script = "setup/project/configure_haskell.py"
@@ -36,7 +36,8 @@ def _prepare_python_deployment(cont, util, shell, py_util):
                                "pandoc")
 
     with util.Task("""Installing deploy dependencies"""):
-        py_util.pip_install_deps(cont, util, "upload")
+        with py_cont.deactivated(util):
+            py_util.pip_install_deps(cont, util, "upload")
 
 
 def run(cont, util, shell, argv=None):
@@ -83,6 +84,7 @@ def run(cont, util, shell, argv=None):
 
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,
+                                py_cont,
                                 util,
                                 shell,
                                 py_util)
