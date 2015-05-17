@@ -1,5 +1,7 @@
 ABI
 AppVeyor
+CMake
+CMAKE_CFG_INTDIR
 CONTAINER_ARCH
 CONTAINER_DISTRO
 CONTAINER_RELEASE
@@ -21,8 +23,11 @@ activatable
 appveyor
 autotools
 bashlint
+bool
+buildsystem
 _cache
 ciscripts
+cmake
 coverage
 curl
 decrement
@@ -47,6 +52,7 @@ matcher
 mccabe
 mdl
 N
+namespace
 pandoc
 polysquare
 polysquare_run
@@ -62,6 +68,7 @@ pypy
 pypy3
 python
 rootfs
+rsync
 runtime
 runtimes
 rvm

@@ -1,4 +1,4 @@
-# /test/test_project.py
+# /test/test_cmake.py
 #
 # Test cases for a "project" container.
 #
@@ -8,6 +8,8 @@
 import errno
 
 import os
+
+import platform
 
 import shutil
 
@@ -24,7 +26,7 @@ from nose_parameterized import parameterized
 
 from testtools import TestCase
 from testtools.content import text_content
-from testtools.matchers import Mismatch
+from testtools.matchers import FileExists, Mismatch
 
 
 class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
@@ -42,6 +44,9 @@ class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
 
     def match(self, candidate):
         """Return Mismatch if candidate is not in a subdirectory of path."""
+        if not candidate:
+            return Mismatch("""None passed to match""")
+
         path = self._path
         if os.path.commonprefix([os.path.realpath(path).lower(),
                                  os.path.realpath(candidate).lower()]):
@@ -153,53 +158,37 @@ def format_with_args(*args):
 
     return formatter
 
-LICENCE_STRING = "See /LICENCE.md for Copyright information"
-
-
-def write_valid_header(f):
-    """Write a valid header to file."""
-    file_path = os.path.abspath(f.name)
-    common_prefix = os.path.commonprefix([file_path, os.getcwd()])
-    header_path = file_path[len(common_prefix):].replace("\\", "/")
-    f.write("#!/bin/bash\n"
-            "# {path}\n"
-            "#\n"
-            "# Description\n"
-            "#\n"
-            "# {licence}\n\n".format(path=header_path,
-                                     licence=LICENCE_STRING))
-
-
-def write_invalid_header(f):
-    """Write a invalid header to file."""
-    file_path = os.path.abspath(f.name)
-    common_prefix = os.path.commonprefix([file_path, os.getcwd()])
-    header_path = file_path[len(common_prefix):].replace("\\", "/")
-    f.write("#!/bin/bash\n"
-            "# error-{path}\n"
-            "#\n"
-            "# Description\n"
-            "#\n"
-            "# {licence}\n".format(path=header_path,
-                                   licence=LICENCE_STRING))
-    f.flush()
-
 
 def _copytree_ignore_notfound(src, dst):
-    """Copy tree in src to dst, ignoring all errors."""
-    try:
-        shutil.copytree(src, dst)
-    except shutil.Error:  # suppress(pointless-except)
-        pass
+    """Copy an entire directory tree.
+
+    This is effectively a workaround for situations where shutil.copytree
+    is unable to copy some files. Just shell out to rsync, as rsync
+    usually always gets it right in complicated cases.
+
+    Where rsync isn't available, then we'll need to fallback to shutil.
+    """
+    if util.which("rsync"):
+        subprocess.check_call(["rsync",
+                               "-az",
+                               src + os.path.sep,
+                               dst + os.path.sep])
+    else:
+        try:
+            shutil.copytree(src, dst)
+        except shutil.Error:  # suppress(pointless-except)
+            pass
+
+_WHICH_SCRIPT = ("import ciscripts.util;assert ciscripts.util.which('{0}')")
 
 
-class TestProjectContainerSetup(TestCase):
+class TestCMakeContainerSetup(TestCase):
 
-    """Test cases for setting up a project container."""
+    """Test cases for setting up a cmake project container."""
 
     def __init__(self, *args, **kwargs):
         """Initialize the instance attributes for this test case."""
-        super(TestProjectContainerSetup, self).__init__(*args, **kwargs)
+        super(TestCMakeContainerSetup, self).__init__(*args, **kwargs)
         self.project_copy_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
         self.project_dir = os.path.join(self.project_copy_temp_dir, "project")
         self._directory_on_setup = os.getcwd()
@@ -223,21 +212,25 @@ class TestProjectContainerSetup(TestCase):
         assert "ciscripts" in os.listdir(parent)
 
         cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+
+        if os.environ.get("CONTAINER_DIR"):
+            container_dir = os.environ["CONTAINER_DIR"]
+            shutil.rmtree(cls.container_temp_dir)
+            _copytree_ignore_notfound(container_dir, cls.container_temp_dir)
+
+            # Delete ciscripts in the copied container
+            try:
+                shutil.rmtree(os.path.join(cls.container_temp_dir,
+                                           "_scripts"))
+            except (shutil.Error, OSError):  # suppress(pointless-except)
+                pass
+
         shutil.copytree(os.path.join(parent, "ciscripts"),
                         os.path.join(cls.container_temp_dir,
                                      "_scripts",
                                      "ciscripts"))
-        if os.environ.get("CONTAINER_DIR"):
-            container_dir = os.environ["CONTAINER_DIR"]
-            _copytree_ignore_notfound(os.path.join(container_dir,
-                                                   "_cache"),
-                                      os.path.join(cls.container_temp_dir,
-                                                   "_cache"))
-            _copytree_ignore_notfound(os.path.join(container_dir,
-                                                   "_languages"),
-                                      os.path.join(cls.container_temp_dir,
-                                                   "_languages"))
-        setup_script = "setup/project/setup.py"
+
+        setup_script = "setup/cmake/setup.py"
         cls.setup_container_output = testutil.CapturedOutput()
 
         extra_args = list()
@@ -253,10 +246,12 @@ class TestProjectContainerSetup(TestCase):
             cls.container = bootstrap.ContainerDir(shell,
                                                    cls.container_temp_dir)
             cls.util = cls.container.fetch_and_import("util.py")
-            cls.container.fetch_and_import(setup_script).run(cls.container,
-                                                             util,
-                                                             shell,
-                                                             extra_args)
+
+            setup_module = cls.container.fetch_and_import(setup_script)
+            cls.lang_container = setup_module.run(cls.container,
+                                                  util,
+                                                  shell,
+                                                  extra_args)
 
         assert cls.container.return_code() == 0
 
@@ -271,13 +266,13 @@ class TestProjectContainerSetup(TestCase):
 
     def setUp(self):  # suppress(N802)
         """Create a copy of and enter sample project directory."""
-        super(TestProjectContainerSetup, self).setUp()
+        super(TestCMakeContainerSetup, self).setUp()
         parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                ".."))
         assert "sample" in os.listdir(parent)
-        assert "project" in os.listdir(os.path.join(parent, "sample"))
+        assert "cmake" in os.listdir(os.path.join(parent, "sample"))
 
-        shutil.copytree(os.path.join(parent, "sample", "project"),
+        shutil.copytree(os.path.join(parent, "sample", "cmake"),
                         self.project_dir)
         os.chdir(self.project_dir)
 
@@ -287,10 +282,15 @@ class TestProjectContainerSetup(TestCase):
         """Remove the copy of the sample project."""
         os.chdir(self._directory_on_setup)
         shutil.rmtree(self.project_copy_temp_dir)
+        shutil.rmtree(self.__class__.container.named_cache_dir("cmake-build"))
 
-        super(TestProjectContainerSetup, self).tearDown()
+        super(TestCMakeContainerSetup, self).tearDown()
 
-    _PROGRAMS = ["polysquare-generic-file-linter"]
+    _PROGRAMS = [
+        "polysquare-generic-file-linter",
+        "psq-travis-container-exec",
+        "psq-travis-container-create"
+    ]
 
     if not os.environ.get("APPVEYOR", None):
         _PROGRAMS.append("mdl")
@@ -304,149 +304,60 @@ class TestProjectContainerSetup(TestCase):
     @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
     def test_program_is_available_in_parent_shell(self, program):
         """Executable {0} is available in parent shell after running setup."""
-        script = ("import ciscripts.util;"
-                  "assert ciscripts.util.which('{0}')").format(program)
+        script = _WHICH_SCRIPT.format(program)
         self.assertThat(self.in_parent_context("python -c "
                                                "\"{0}\"".format(script)),
                         SubprocessExitsWith(0))
 
-    def test_lint_with_style_guide_linter_success(self):
-        """Success code if all files satisfy style guide linter."""
-        with open(os.path.join(os.getcwd(), "success.sh"),
-                  "wt") as success_file:
-            write_valid_header(success_file)
+    _CONTAINERIZED_PROGRAMS = [
+        "cmake",
+        "ctest"
+    ]
 
-        self.assertThat("check/project/lint.py",
+    @parameterized.expand(_CONTAINERIZED_PROGRAMS,
+                          testcase_func_doc=format_with_args(0))
+    def test_containerized_program_is_available(self, program):
+        """Executable {0} is available in container after running setup."""
+        container = self.__class__.container
+        output_strategy = util.output_on_fail
+        script = _WHICH_SCRIPT.format(program)
+        self.assertEqual(self.__class__.lang_container.execute(container,
+                                                               output_strategy,
+                                                               "python",
+                                                               "-c",
+                                                               script,
+                                                               program),
+                         0)
+
+    def test_run_check_builds_cmake_project_success(self):
+        """Running check script builds cmake project."""
+        self.assertThat("check/cmake/check.py",
                         CIScriptExitsWith(0,
                                           self.__class__.container,
                                           self.__class__.util,
-                                          extensions=["sh"],
-                                          no_mdl=True))
+                                          "--no-mdl"))
 
-    def test_lint_with_style_guide_linter_failure(self):
-        """Failure code if one file doesn't satisfy style guide linter."""
-        with open(os.path.join(os.getcwd(), "failure.sh"),
-                  "wt") as failure_file:
-            write_invalid_header(failure_file)
+    def test_run_check_has_cmake_artifacts(self):
+        """After running check, artifacts are present."""
+        check_path = "check/cmake/check.py"
+        check = self.__class__.container.fetch_and_import(check_path)
 
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(1,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["sh"],
-                                          no_mdl=True))
+        check.run(self.__class__.container,
+                  self.__class__.util,
+                  None,
+                  "--no-mdl")
 
-    def test_lint_files_in_multiple_subdirectories(self):
-        """Style guide linter runs over multiple subdirectories."""
-        success_dir = tempfile.mkdtemp(dir=os.getcwd())
-        failure_dir = tempfile.mkdtemp(dir=os.getcwd())
+        build = self.__class__.container.named_cache_dir("cmake-build")
+        components = [build]
 
-        with open(os.path.join(success_dir, "success.sh"),
-                  "wt") as success_file:
-            write_valid_header(success_file)
+        # On Windows built binaries go into CMAKE_CFG_INTDIR, which
+        # will be Debug in our case.
+        if platform.system() == "Windows":
+            binary_name = "my_executable.exe"
+            components.append("Debug")
+        else:
+            binary_name = "my_executable"
 
-        with open(os.path.join(failure_dir, "failure.sh"),
-                  "wt") as failure_file:
-            write_invalid_header(failure_file)
-
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(1,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["sh"],
-                                          directories=[success_dir,
-                                                       failure_dir],
-                                          no_mdl=True))
-
-    def test_lint_files_with_multiple_extensions(self):
-        """Style guide linter runs over multiple extensions."""
-        with open(os.path.join(os.getcwd(), "success.zh"),
-                  "wt") as success_file:
-            write_valid_header(success_file)
-
-        with open(os.path.join(os.getcwd(), "failure.sh"),
-                  "wt") as failure_file:
-            write_invalid_header(failure_file)
-
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(1,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["sh"],
-                                          no_mdl=True))
-
-    def test_files_can_be_excluded_from_linting(self):
-        """Exclude certain files from style guide linter."""
-        with open(os.path.join(os.getcwd(), "success.zh"),
-                  "wt") as success_file:
-            write_valid_header(success_file)
-
-        with open(os.path.join(os.getcwd(), "failure.sh"),
-                  "wt") as failure_file:
-            write_invalid_header(failure_file)
-
-        fail_path = os.path.realpath(failure_file.name)
-
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(0,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["sh"],
-                                          exclusions=[fail_path],
-                                          no_mdl=True))
-
-    def test_many_files_can_be_excluded_from_linting(self):
-        """Exclude many files from style guide linting."""
-        with open(os.path.join(os.getcwd(), "success.sh"),
-                  "wt") as success_file:
-            write_valid_header(success_file)
-
-        with open(os.path.join(os.getcwd(), "failure.zh"),
-                  "wt") as failure_file:
-            write_invalid_header(failure_file)
-
-        with open(os.path.join(os.getcwd(), "2failure.zh"),
-                  "wt") as second_failure_file:
-            write_invalid_header(second_failure_file)
-
-        fail_path = os.path.realpath(failure_file.name)
-        second_fail_path = os.path.realpath(second_failure_file.name)
-
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(0,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["sh"],
-                                          exclusions=[
-                                              fail_path,
-                                              second_fail_path
-                                          ],
-                                          no_mdl=True))
-
-    def test_linting_of_markdown_documentation_with_success(self):
-        """Lint markdown documentation with success exit code."""
-        if os.environ.get("APPVEYOR", None):
-            self.skipTest("""installation of mdl is too slow on appveyor""")
-
-        with open(os.path.join(os.getcwd(), "documentation.md"), "wt"):
-            self.assertThat("check/project/lint.py",
-                            CIScriptExitsWith(0,
-                                              self.__class__.container,
-                                              self.__class__.util,
-                                              extensions=["other"]))
-
-    def test_linting_of_markdown_documentation_with_failure(self):
-        """Lint markdown documentation with success exit code."""
-        if os.environ.get("APPVEYOR", None):
-            self.skipTest("""installation of mdl is too slow on appveyor""")
-
-        with open(os.path.join(os.getcwd(), "documentation.md"),
-                  "wt") as markdown_file:
-            markdown_file.write("Level One\n==\n\n## Level Two ##\n")
-            markdown_file.flush()
-
-        self.assertThat("check/project/lint.py",
-                        CIScriptExitsWith(1,
-                                          self.__class__.container,
-                                          self.__class__.util,
-                                          extensions=["other"]))
+        components.append(binary_name)
+        self.assertThat(os.path.join(*components),
+                        FileExists())

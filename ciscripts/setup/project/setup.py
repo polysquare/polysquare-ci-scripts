@@ -22,7 +22,7 @@ def run(cont, util, shell, argv=None):
         parser.add_argument("--no-mdl",
                             help="""Do not install markdownlint""",
                             action="store_true")
-        parse_result = parser.parse_args(argv or list())
+        parse_result, _ = parser.parse_known_args(argv or list())
 
         config_python = "setup/project/configure_python.py"
         py_ver = defaultdict(lambda: "2.7.9")
