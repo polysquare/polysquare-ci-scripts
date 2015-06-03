@@ -438,7 +438,7 @@ class TestProjectContainerSetup(TestCase):
                                               extensions=["other"]))
 
     def test_linting_of_markdown_documentation_with_failure(self):
-        """Lint markdown documentation with success exit code."""
+        """Lint markdown documentation with failure exit code."""
         if os.environ.get("APPVEYOR", None):
             self.skipTest("""installation of mdl is too slow on appveyor""")
 
