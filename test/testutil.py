@@ -59,6 +59,21 @@ class CapturedOutput(object):  # suppress(too-few-public-methods)
 
 
 @contextmanager
+def environment_copy():
+    """Execute scope with its own os.environ.
+
+    os.environ will be restored after the scope
+    exits.
+    """
+    environ_copy = os.environ.copy()
+
+    try:
+        yield os.environ
+    finally:
+        os.environ = environ_copy
+
+
+@contextmanager
 def in_dir(directory):
     """Execute in the context of directory."""
     last_cwd = os.getcwd()

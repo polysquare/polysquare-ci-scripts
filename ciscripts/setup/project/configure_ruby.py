@@ -12,7 +12,11 @@ import os.path
 
 import platform
 
+import shutil
+
 from collections import defaultdict, namedtuple
+
+from contextlib import closing
 
 GemDirs = namedtuple("GemDirs", "system site home")
 
@@ -128,6 +132,7 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                          util.output_on_fail,
                          "git", "clone", remote, dest,
                          instant_fail=True)
+            shutil.rmtree(os.path.join(dest, ".git"))
 
     def install(version):
         """Install ruby version, returns a RubyContainer."""
@@ -170,7 +175,7 @@ def windows_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
             with open(os.path.join(ruby_build_dir,
                                    version + "-install.exe"),
                       "wb") as installer:
-                with util.url_opener()(url) as remote:
+                with closing(util.url_opener()(url)) as remote:
                     installer.write(remote.read())
 
             with util.Task("""Installing ruby version """ + version):

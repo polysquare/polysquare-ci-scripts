@@ -185,6 +185,14 @@ def write_invalid_header(f):
     f.flush()
 
 
+def _copytree_ignore_notfound(src, dst):
+    """Copy tree in src to dst, ignoring all errors."""
+    try:
+        shutil.copytree(src, dst)
+    except shutil.Error:  # suppress(pointless-except)
+        pass
+
+
 class TestProjectContainerSetup(TestCase):
 
     """Test cases for setting up a project container."""
@@ -215,18 +223,21 @@ class TestProjectContainerSetup(TestCase):
         assert "ciscripts" in os.listdir(parent)
 
         cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        cls._environ_backup = os.environ.copy()
         shutil.copytree(os.path.join(parent, "ciscripts"),
                         os.path.join(cls.container_temp_dir,
                                      "_scripts",
                                      "ciscripts"))
         if os.environ.get("CONTAINER_DIR"):
-            shutil.copytree(os.path.join(os.environ["CONTAINER_DIR"],
-                                         "_cache"),
-                            os.path.join(cls.container_temp_dir, "_cache"))
-            shutil.copytree(os.path.join(os.environ["CONTAINER_DIR"],
-                                         "_languages"),
-                            os.path.join(cls.container_temp_dir,
-                                         "_languages"))
+            container_dir = os.environ["CONTAINER_DIR"]
+            _copytree_ignore_notfound(os.path.join(container_dir,
+                                                   "_cache"),
+                                      os.path.join(cls.container_temp_dir,
+                                                   "_cache"))
+            _copytree_ignore_notfound(os.path.join(container_dir,
+                                                   "_languages"),
+                                      os.path.join(cls.container_temp_dir,
+                                                   "_languages"))
         setup_script = "setup/project/setup.py"
         cls.setup_container_output = testutil.CapturedOutput()
 
@@ -253,6 +264,7 @@ class TestProjectContainerSetup(TestCase):
     @classmethod
     def tearDownClass(cls):  # suppress(N802)
         """Remove container."""
+        os.environ = cls._environ_backup
         try:
             shutil.rmtree(cls.container_temp_dir)
         except OSError as err:
@@ -294,7 +306,10 @@ class TestProjectContainerSetup(TestCase):
     @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
     def test_program_is_available_in_parent_shell(self, program):
         """Executable {0} is available in parent shell after running setup."""
-        self.assertThat(self.in_parent_context("which {0}".format(program)),
+        script = ("import ciscripts.util;"
+                  "assert ciscripts.util.which('{0}')").format(program)
+        self.assertThat(self.in_parent_context("python -c "
+                                               "\"{0}\"".format(script)),
                         SubprocessExitsWith(0))
 
     def test_lint_with_style_guide_linter_success(self):
@@ -423,7 +438,7 @@ class TestProjectContainerSetup(TestCase):
                                               extensions=["other"]))
 
     def test_linting_of_markdown_documentation_with_failure(self):
-        """Lint markdown documentation with success exit code."""
+        """Lint markdown documentation with failure exit code."""
         if os.environ.get("APPVEYOR", None):
             self.skipTest("""installation of mdl is too slow on appveyor""")
 
