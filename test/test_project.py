@@ -223,6 +223,7 @@ class TestProjectContainerSetup(TestCase):
         assert "ciscripts" in os.listdir(parent)
 
         cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        cls._environ_backup = os.environ.copy()
         shutil.copytree(os.path.join(parent, "ciscripts"),
                         os.path.join(cls.container_temp_dir,
                                      "_scripts",
@@ -263,6 +264,7 @@ class TestProjectContainerSetup(TestCase):
     @classmethod
     def tearDownClass(cls):  # suppress(N802)
         """Remove container."""
+        os.environ = cls._environ_backup
         try:
             shutil.rmtree(cls.container_temp_dir)
         except OSError as err:

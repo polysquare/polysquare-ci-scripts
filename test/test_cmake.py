@@ -132,10 +132,11 @@ class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
         """Match if this script runs successfully."""
         captured_output = testutil.CapturedOutput()
         with captured_output:
-            run_args = [self._container, self._util] + list(self._args)
-            run_kwargs = self._kwargs
-            self._container.fetch_and_import(script).run(*run_args,
-                                                         **run_kwargs)
+            with testutil.environment_copy():
+                run_args = [self._container, self._util] + list(self._args)
+                run_kwargs = self._kwargs
+                self._container.fetch_and_import(script).run(*run_args,
+                                                             **run_kwargs)
 
         result = self._container.return_code()
         if result != self._expected_status:
@@ -212,6 +213,7 @@ class TestCMakeContainerSetup(TestCase):
         assert "ciscripts" in os.listdir(parent)
 
         cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        cls._environ_backup = os.environ.copy()
 
         if os.environ.get("CONTAINER_DIR"):
             container_dir = os.environ["CONTAINER_DIR"]
@@ -258,6 +260,7 @@ class TestCMakeContainerSetup(TestCase):
     @classmethod
     def tearDownClass(cls):  # suppress(N802)
         """Remove container."""
+        os.environ = cls._environ_backup
         try:
             shutil.rmtree(cls.container_temp_dir)
         except OSError as err:
