@@ -22,6 +22,8 @@ import tarfile
 
 from collections import namedtuple
 
+from contextlib import closing
+
 from distutils.version import LooseVersion
 
 GemDirs = namedtuple("GemDirs", "system site home")
@@ -112,10 +114,13 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
                                                timeout=3,
                                                retrycount=3)
                     with open(local_file_path, "wb") as local_file:
-                        local_file.write(remote.read())
-                        os.chmod(local_file_path,
-                                 os.stat(local_file_path).st_mode |
-                                 stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                        with closing(remote):
+                            local_file.write(remote.read())
+                            os.chmod(local_file_path,
+                                     os.stat(local_file_path).st_mode |
+                                     stat.S_IXUSR |
+                                     stat.S_IXGRP |
+                                     stat.S_IXOTH)
                 except util.url_error():
                     installed_stamp = os.path.join(self._installation,
                                                    "completed")
@@ -299,7 +304,9 @@ def run(container, util, shell, ver_info):
                 local_name = os.path.join(cache_dir,
                                           os.path.basename(remote_url))
                 with open(local_name, "wb") as local_file:
-                    local_file.write(util.url_opener()(remote_url).read())
+                    remote = util.url_opener()(remote_url)
+                    with closing(remote):
+                        local_file.write(remote.read())
 
                 with tarfile.open(local_name) as local_tar:
                     local_tar.extractall()

@@ -18,6 +18,8 @@ import shutil
 
 from collections import defaultdict
 
+from contextlib import closing
+
 
 def get(container, util, shell, ver_info):
     """Return a PythonContainer for an installed python in container."""
@@ -221,7 +223,8 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
             with open(os.path.join(python_build_dir,
                                    version + "-install.exe"),
                       "wb") as installer:
-                with util.url_opener()(url.format(ver=version)) as remote:
+                remote = util.url_opener()(url.format(ver=version))
+                with closing(remote):
                     installer.write(remote.read())
 
             with util.Task("""Installing python version """ + version):
