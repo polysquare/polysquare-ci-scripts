@@ -9,11 +9,17 @@ import errno
 
 import os
 
+import platform
+
 import shutil
 
 import subprocess
 
+import sys
+
 import tempfile
+
+from contextlib import contextmanager
 
 from test import testutil
 
@@ -204,6 +210,7 @@ class TestProjectContainerSetup(TestCase):
         self.project_dir = os.path.join(self.project_copy_temp_dir, "project")
         self._directory_on_setup = os.getcwd()
 
+    @contextmanager
     def in_parent_context(self, command):
         """Get script to run command in parent context.
 
@@ -211,9 +218,24 @@ class TestProjectContainerSetup(TestCase):
         standard output of the container's setup script has been evaluated,
         eg, all environment variables are exported.
         """
-        script = "{0}{1}".format(self.__class__.setup_container_output.stdout,
-                                 command)
-        return ["bash", "-c", script]
+        if platform.system() == "Windows":
+            shell = ["powershell", "-ExecutionPolicy", "Bypass"]
+        else:
+            shell = ["bash"]
+        script = ("{cls.setup_container_output.stdout}"
+                  "{command}").format(cls=self.__class__, command=command)
+
+        directory = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                         "parent_script"))
+
+        try:
+            with util.in_dir(directory):
+                with open("script.ps1", "w") as script_file:
+                    script_file.write(script)
+                yield shell + [script_file.name]
+        finally:
+            script_file.close()
+            shutil.rmtree(directory)
 
     @classmethod
     def setUpClass(cls):  # suppress(N802)
@@ -249,8 +271,12 @@ class TestProjectContainerSetup(TestCase):
             extra_args.append("--no-mdl")
 
         with cls.setup_container_output:
-            printer = bootstrap.escaped_printer_with_character("\\")
-            shell = bootstrap.BashParentEnvironment(printer)
+            if platform.system() == "Windows":
+                shell = bootstrap.construct_parent_shell("powershell",
+                                                         sys.stdout)
+            else:
+                shell = bootstrap.construct_parent_shell("bash",
+                                                         sys.stdout)
             cls.container = bootstrap.ContainerDir(shell,
                                                    cls.container_temp_dir)
             cls.util = cls.container.fetch_and_import("util.py")
@@ -308,9 +334,8 @@ class TestProjectContainerSetup(TestCase):
         """Executable {0} is available in parent shell after running setup."""
         script = ("import ciscripts.util;"
                   "assert ciscripts.util.which('{0}')").format(program)
-        self.assertThat(self.in_parent_context("python -c "
-                                               "\"{0}\"".format(script)),
-                        SubprocessExitsWith(0))
+        with self.in_parent_context("python -c \"{}\"".format(script)) as cmd:
+            self.assertThat(cmd, SubprocessExitsWith(0))
 
     def test_lint_with_style_guide_linter_success(self):
         """Success code if all files satisfy style guide linter."""
