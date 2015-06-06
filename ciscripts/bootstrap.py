@@ -654,7 +654,7 @@ def escaped_printer_with_character(char, file_object=None):
     return escaped_printer
 
 
-def _construct_parent_shell(eval_output_with, print_script_to):
+def construct_parent_shell(eval_output_with, print_script_to):
     """Construct a class emitting scripts compatible with eval_output_with."""
     if eval_output_with:
         environment_ctor = {
@@ -729,8 +729,8 @@ def main(argv):
         print_messages_to = sys.stdout
 
     with closing(print_script_to):
-        parent_shell = _construct_parent_shell(args.eval_output,
-                                               print_script_to)
+        parent_shell = construct_parent_shell(args.eval_output,
+                                              print_script_to)
         container = ContainerDir(parent_shell, **(vars(args)))
         util = container.fetch_and_import("util.py")
         # suppress(unused-attribute)
