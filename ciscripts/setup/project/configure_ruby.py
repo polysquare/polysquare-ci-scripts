@@ -150,7 +150,9 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                              util.long_running_suppressed_output(),
                              "bash", rvm_download, version,
                              env={
-                                 "RBENV_ROOT": lang_dir
+                                 "RBENV_ROOT": lang_dir,
+                                 "RUBIES_ROOT": os.path.join(lang_dir,
+                                                             "versions")
                              },
                              instant_fail=True)
 
