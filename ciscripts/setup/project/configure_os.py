@@ -14,6 +14,8 @@ import os.path
 
 import platform
 
+import subprocess
+
 import tempfile
 
 from collections import defaultdict
@@ -78,15 +80,27 @@ def get(container,
             """Clean out cruft in the container."""
             super(OSContainer, self).clean(util)
 
-        def execute(self, container, output_strategy, *argv, **kwargs):
-            """Execute command specified by argv in this OSContainer."""
-            use_args = []
+        def _container_specification_args(self):
+            """Return arguments to specify location of container.
+
+            These arguments should be passed to the polysquare-travis-container
+            family of scripts.
+            """
+            args = [
+                "--distro=" + self._distro,
+                "--release=" + self._distro_version
+            ]
 
             if self._distro_arch:
-                use_args.append("--arch=" + self._distro_arch)
+                args.append("--arch=" + self._distro_arch)
 
-            use_args.append("--")
-            use_args.extend(list(argv))
+            return args
+
+        def execute(self, container, output_strategy, *argv, **kwargs):
+            """Execute command specified by argv in this OSContainer."""
+            use_args = (self._container_specification_args() +
+                        ["--"] +
+                        list(argv))
 
             return util.execute(container,
                                 output_strategy,
@@ -97,6 +111,19 @@ def get(container,
                                 "--release=" + self._distro_version,
                                 *use_args,
                                 **kwargs)
+
+        # suppress(unused-function)
+        def root_fs_path(self):
+            """Get path to this container's package file system.
+
+            In the case of containers on linux, this is usually the
+            path which is the "fake root". On other operating system
+            containers, it is effectively the prefix where programs
+            are installed to.
+            """
+            args = self._container_specification_args()
+            return subprocess.check_output(["psq-travis-container-get-root",
+                                            self._installation] + args)
 
         def _active_environment(self, tuple_type):
             """Return variables that make up this container's active state."""
@@ -239,7 +266,9 @@ def run(container,
                                py_cont,
                                util,
                                remote,
-                               "--process-dependency-links")
+                               "--process-dependency-links",
+                               path=py_cont.executable_path(),
+                               instant_fail=True)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""
