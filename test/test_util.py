@@ -23,6 +23,8 @@ import sys
 
 import tempfile
 
+import time
+
 from collections import defaultdict, namedtuple
 
 from test import testutil
@@ -40,6 +42,7 @@ from testtools import ExpectedException, TestCase
 from testtools.matchers import (Contains,
                                 DocTestMatches,
                                 Equals,
+                                GreaterThan,
                                 MatchesAll,
                                 MatchesAny,
                                 Not)
@@ -834,3 +837,80 @@ class TestGetSystemIdentifier(TestCase):
         sys_id = system_identifier_map[sys_id](sys_id)
         self.assertThat(util.get_system_identifier(self.container),
                         Contains(sys_id))
+
+
+class TestStoredMTimes(TestCase):
+
+    """Test storing and acting on modification times."""
+
+    def test_two_mtimes_have_different_values(self):
+        """Two stored modification times have different values."""
+        with testutil.in_tempdir(os.getcwd(), "mtimes"):
+            util.store_current_mtime_in("1")
+            time.sleep(1)
+            util.store_current_mtime_in("2")
+
+            self.assertThat(util.fetch_mtime_from("2"),
+                            GreaterThan(util.fetch_mtime_from("1")))
+
+    # suppress(no-self-use)
+    def test_act_on_no_mtime_file(self):
+        """Perform action when modification time file doesn't exist."""
+        with testutil.in_tempdir(os.getcwd(), "mtimes"):
+            callee = Mock()
+            with open("temporary_file", "w") as temporary_file:
+                temporary_file.write("contents")
+                temporary_file.flush()
+
+            util.where_more_recent(temporary_file.name,
+                                   util.fetch_mtime_from("1"),
+                                   callee)
+
+            callee.assert_called()
+
+    # suppress(no-self-use)
+    def test_no_act_where_file_doesnt_exist(self):
+        """Don't perform action when candidate file doesn't exist."""
+        with testutil.in_tempdir(os.getcwd(), "mtimes"):
+            callee = Mock()
+            util.where_more_recent(os.path.join(os.getcwd(), "temp"),
+                                   util.fetch_mtime_from("1"),
+                                   callee)
+
+            callee.assert_not_called()
+
+    # suppress(no-self-use)
+    def test_no_act_where_file_is_up_to_date(self):
+        """Don't perform action when candidate file is up to date."""
+        with testutil.in_tempdir(os.getcwd(), "mtimes"):
+            callee = Mock()
+            with open("temporary_file", "w") as temporary_file:
+                temporary_file.write("contents")
+                temporary_file.flush()
+
+            time.sleep(1)
+            util.store_current_mtime_in("1")
+
+            util.where_more_recent(temporary_file.name,
+                                   util.fetch_mtime_from("1"),
+                                   callee)
+
+            callee.assert_not_called()
+
+    # suppress(no-self-use)
+    def test_act_where_file_is_up_to_date(self):
+        """Perform action when candidate file is not up to date."""
+        with testutil.in_tempdir(os.getcwd(), "mtimes"):
+            callee = Mock()
+
+            util.store_current_mtime_in("1")
+            time.sleep(1)
+            with open("temporary_file", "w") as temporary_file:
+                temporary_file.write("contents")
+                temporary_file.flush()
+
+            util.where_more_recent(temporary_file.name,
+                                   util.fetch_mtime_from("1"),
+                                   callee)
+
+            callee.assert_called()
