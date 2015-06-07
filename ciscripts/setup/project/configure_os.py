@@ -239,7 +239,9 @@ def run(container,
                                py_cont,
                                util,
                                remote,
-                               "--process-dependency-links")
+                               "--process-dependency-links",
+                               path=py_cont.executable_path(),
+                               instant_fail=True)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""

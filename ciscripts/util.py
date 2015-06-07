@@ -488,12 +488,37 @@ def which(executable):
     return None
 
 
-def where_unavailable(executable, function, *args, **kwargs):
-    """Call function if executable is not available in PATH."""
-    if which(executable) is None:
-        return function(*args, **kwargs)
+def where_unavailable(executable,
+                      function,
+                      *args,
+                      **kwargs):
+    """Call function if executable is not available in PATH.
 
-    return None
+    Specify the keyword argument :path: to constrain the search to that
+    executable path only.
+    """
+    @contextmanager
+    def constrain_path_relative_to(path):
+        """Constrain PATH relative to executable specified."""
+        environ_backup = os.environ
+        environ = os.environ
+
+        if path:
+            environ = os.environ.copy()
+            environ["PATH"] = path
+
+        os.environ = environ
+
+        try:
+            yield
+        finally:
+            os.environ = environ_backup
+
+    with constrain_path_relative_to(kwargs.get("path", None)):
+        if which(executable):
+            return None
+
+    return function(*args, **kwargs)
 
 
 def prepare_deployment(function, *args, **kwargs):
