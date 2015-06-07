@@ -126,11 +126,11 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
     """Ruby installer for posix compatible operating systems."""
     if not os.path.exists(ruby_build_dir):
         with util.Task("""Downloading rvm-download"""):
-            remote = "git://github.com/garnieretienne/rvm-download"
+            remote = "git://github.com/smspillaz/rvm-download"
             dest = ruby_build_dir
             util.execute(container,
                          util.output_on_fail,
-                         "git", "clone", remote, dest,
+                         "git", "clone", remote, "--branch", "fix-13", dest,
                          instant_fail=True)
             shutil.rmtree(os.path.join(dest, ".git"))
 
