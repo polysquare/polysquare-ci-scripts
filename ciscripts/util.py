@@ -17,6 +17,8 @@ import subprocess
 
 import sys
 
+import tempfile
+
 import threading
 
 
@@ -519,6 +521,39 @@ def where_unavailable(executable,
             return None
 
     return function(*args, **kwargs)
+
+
+def store_current_mtime_in(filename):
+    """Store current modification time in filename."""
+    with open(filename, "w") as mtime_file:
+        with tempfile.NamedTemporaryFile() as temp:
+            temp.write("contents".encode())
+            mtime_file.truncate(0)
+            mtime_file.write(str(os.stat(temp.name).st_mtime))
+
+
+def fetch_mtime_from(filename):
+    """Get time from filename."""
+    try:
+        with open(filename) as mtime_file:
+            return float(mtime_file.read())
+    except (IOError, ValueError):
+        return float(0)
+
+
+def exists_and_is_more_recent(filename, mtime):
+    """Return true if this filename exists and is more recent."""
+    if not os.path.exists(filename):
+        return False
+
+    if os.stat(filename).st_mtime > mtime:
+        return True
+
+
+def where_more_recent(filename, mtime, func, *args, **kwargs):
+    """Call func if filename is more recent than mtime."""
+    if exists_and_is_more_recent(filename, mtime):
+        return func(*args, **kwargs)
 
 
 def prepare_deployment(function, *args, **kwargs):

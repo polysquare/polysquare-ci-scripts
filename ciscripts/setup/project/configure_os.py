@@ -16,8 +16,6 @@ import platform
 
 import subprocess
 
-import tempfile
-
 from collections import defaultdict
 
 
@@ -171,39 +169,30 @@ def _update_os_container(container,
         to even call the create command at all, and list is a list of
         command line options to pass.
         """
-        def exists_and_is_more_recent(filename, mtime):
-            """Return true if this filename exists and is more recent."""
-            if not os.path.exists(filename):
-                return False
-
-            if os.stat(filename).st_mtime > mtime:
-                return True
-
         repositories = (distro_repositories or
                         ".".join(["REPOSITORIES", distro, distro_version]))
         packages = (distro_packages or
                     ".".join(["PACKAGES", distro, distro_version]))
 
-        additional_options = list()
+        options = list()
 
         # The time the distro container was last updated
-        try:
-            with open(updates_filename) as updates_file:
-                last_updated = float(updates_file.read())
-                re_call_create = False
-        except (IOError, ValueError):
-            last_updated = float(0)
-            re_call_create = True
+        last_updated = util.fetch_mtime_from(updates_filename)
+        util.where_more_recent(repositories,
+                               last_updated,
+                               lambda: options.append("--repositories=" +
+                                                      repositories))
+        util.where_more_recent(packages,
+                               last_updated,
+                               lambda: options.append("--packages=" +
+                                                      packages))
 
-        if exists_and_is_more_recent(repositories, last_updated):
-            additional_options.append("--repositories=" + repositories)
+        if last_updated == float(0) or len(options):
             re_call_create = True
+        else:
+            re_call_create = False
 
-        if exists_and_is_more_recent(packages, last_updated):
-            additional_options.append("--packages=" + packages)
-            re_call_create = True
-
-        return (re_call_create, additional_options)
+        return (re_call_create, options)
 
     container_updates_dir = container.named_cache_dir("container-updates",
                                                       ephemeral=False)
@@ -225,13 +214,9 @@ def _update_os_container(container,
                          *additional_options,
                          instant_fail=True)
 
-            # Get the mtime of a temporary file to set as our baseline
-            # in the future
-            with open(updates, "w") as updates_file:
-                with tempfile.NamedTemporaryFile() as temp:
-                    temp.write("contents".encode())
-                    updates_file.truncate(0)
-                    updates_file.write(str(os.stat(temp.name).st_mtime))
+            # Get the modification time of a temporary file to set as
+            # our baseline in the future
+            util.store_current_mtime_in(updates)
 
 
 # suppress(too-many-arguments)

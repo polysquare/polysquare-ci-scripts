@@ -81,6 +81,41 @@ def _write_repos_file(container_config_dir, cmake_version):
     return repositories
 
 
+def _prepare_for_os_cont_setup(container_config, util, parse_result):
+    """Get keyword arguments for call to /configure_os.py:run.
+
+    This may involve writes to PACKAGES and REPOSITORIES in our container,
+    so calling this function is not idempotent.
+    """
+    last_updated_filename = os.path.join(container_config, "last_updated")
+    last_updated = util.fetch_mtime_from(last_updated_filename)
+    cmake_version = parse_result.cmake_version
+
+    user_packages = _USER_PACKAGES[platform.system()]
+    user_repos = _USER_REPOS[platform.system()]
+
+    os_cont_kwargs = {
+        "distro_packages": util.where_more_recent(user_packages,
+                                                  last_updated,
+                                                  _write_packages_file,
+                                                  container_config),
+        "distro_repositories": util.where_more_recent(user_repos,
+                                                      last_updated,
+                                                      _write_repos_file,
+                                                      container_config,
+                                                      cmake_version),
+    }
+
+    # If we set a value, then that means that we wrote a
+    # REPOSITORIES or PACKAGES file for this run, so update
+    # the modification time that we updated the container on.
+    for value in os_cont_kwargs.values():
+        if value:
+            util.store_current_mtime_in(last_updated_filename)
+
+    return os_cont_kwargs
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test and check a python project.
 
@@ -102,15 +137,11 @@ def run(cont, util, shell, argv=None):
 
     with util.Task("""Setting up cmake project"""):
         container_config = cont.named_cache_dir("container-config")
-        cmake_version = parse_result.cmake_version
-        packages = _write_packages_file(container_config)
-        repositories = _write_repos_file(container_config, cmake_version)
 
         os_cont_setup = "setup/project/configure_os.py"
-        os_cont_kwargs = {
-            "distro_repositories": repositories,
-            "distro_packages": packages
-        }
+        os_cont_kwargs = _prepare_for_os_cont_setup(container_config,
+                                                    util,
+                                                    parse_result)
 
         with util.in_dir(container_config):
             return cont.fetch_and_import(os_cont_setup).run(cont,
