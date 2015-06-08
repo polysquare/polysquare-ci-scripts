@@ -60,50 +60,58 @@ def _copy_from_user_file_and_append(destination, user_file, append):
         destination_file.write("\n".join(list(destination_file_entries)))
 
 
-def _write_packages_file(container_config_dir):
+def _write_packages_file(util, last_updated, container_config_dir):
     """Write PACKAGES file in /container/_cache/container-config."""
     packages = os.path.join(container_config_dir, "PACKAGES")
     user_packages = _USER_PACKAGES[platform.system()]
-    _copy_from_user_file_and_append(packages,
-                                    user_packages,
-                                    " ".join(_PACKAGES[platform.system()]))
-    return packages
+
+    if last_updated == 0 or util.exists_and_is_more_recent(user_packages,
+                                                           last_updated):
+        _copy_from_user_file_and_append(packages,
+                                        user_packages,
+                                        " ".join(_PACKAGES[platform.system()]))
+        return packages
+
+    return None
 
 
-def _write_repos_file(container_config_dir, cmake_version):
+def _write_repos_file(util, last_updated, container_config_dir, cmake_version):
     """Write REPOSITORIES file in /container/_cache/container-config."""
     repositories = os.path.join(container_config_dir, "REPOSITORIES")
     user_repos = _USER_REPOS[platform.system()]
     cmake_repository = _REPOS[platform.system()][cmake_version]
-    _copy_from_user_file_and_append(repositories,
-                                    user_repos,
-                                    cmake_repository)
-    return repositories
+
+    if last_updated == 0 or util.exists_and_is_more_recent(user_repos,
+                                                           last_updated):
+        _copy_from_user_file_and_append(repositories,
+                                        user_repos,
+                                        cmake_repository)
+        return repositories
+
+    return None
 
 
-def _prepare_for_os_cont_setup(container_config, util, parse_result):
+def _prepare_for_os_cont_setup(container_config,
+                               container_updates,
+                               util,
+                               parse_result):
     """Get keyword arguments for call to /configure_os.py:run.
 
     This may involve writes to PACKAGES and REPOSITORIES in our container,
     so calling this function is not idempotent.
     """
-    last_updated_filename = os.path.join(container_config, "last_updated")
+    last_updated_filename = os.path.join(container_updates, "last_updated")
     last_updated = util.fetch_mtime_from(last_updated_filename)
     cmake_version = parse_result.cmake_version
 
-    user_packages = _USER_PACKAGES[platform.system()]
-    user_repos = _USER_REPOS[platform.system()]
-
     os_cont_kwargs = {
-        "distro_packages": util.where_more_recent(user_packages,
-                                                  last_updated,
-                                                  _write_packages_file,
-                                                  container_config),
-        "distro_repositories": util.where_more_recent(user_repos,
-                                                      last_updated,
-                                                      _write_repos_file,
-                                                      container_config,
-                                                      cmake_version),
+        "distro_packages": _write_packages_file(util,
+                                                last_updated,
+                                                container_config),
+        "distro_repositories": _write_repos_file(util,
+                                                 last_updated,
+                                                 container_config,
+                                                 cmake_version),
     }
 
     # If we set a value, then that means that we wrote a
@@ -137,9 +145,12 @@ def run(cont, util, shell, argv=None):
 
     with util.Task("""Setting up cmake project"""):
         container_config = cont.named_cache_dir("container-config")
+        container_updates = cont.named_cache_dir("container-updates",
+                                                 ephemeral=False)
 
         os_cont_setup = "setup/project/configure_os.py"
         os_cont_kwargs = _prepare_for_os_cont_setup(container_config,
+                                                    container_updates,
                                                     util,
                                                     parse_result)
 
