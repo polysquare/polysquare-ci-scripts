@@ -15,7 +15,7 @@ from collections import defaultdict
 
 _LINUX_REPOS = {
     "2.8": "{launchpad}/smspillaz/cmake-2.8.12/ubuntu {release} main",
-    "3.0": "{launchpad}/smspillaz/cmake-3.0/ubuntu {release} main",
+    "3.0": "{launchpad}/smspillaz/cmake-3.0.2/ubuntu {release} main",
     "latest": "{launchpad}/smspillaz/cmake-master/ubuntu {release} main"
 }
 
