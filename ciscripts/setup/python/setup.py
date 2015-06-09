@@ -40,6 +40,16 @@ def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
             py_util.pip_install_deps(cont, util, "upload")
 
 
+def _upgrade_pip(cont, util):
+    """Upgrade pip installation in current virtual environment."""
+    util.execute(cont,
+                 util.long_running_suppressed_output(),
+                 "pip",
+                 "install",
+                 "--upgrade",
+                 "pip")
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test and check a python project.
 
@@ -60,6 +70,12 @@ def run(cont, util, shell, argv=None):
                                                               util,
                                                               shell,
                                                               py_ver)
+
+        with util.Task("""Upgrading pip"""):
+            with py_cont.deactivated(util):
+                _upgrade_pip(cont, util)
+
+            _upgrade_pip(cont, util)
 
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
