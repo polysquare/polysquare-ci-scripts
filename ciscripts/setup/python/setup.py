@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a python project."""
 
+import platform
+
 from collections import defaultdict
 
 
@@ -71,11 +73,15 @@ def run(cont, util, shell, argv=None):
                                                               shell,
                                                               py_ver)
 
-        with util.Task("""Upgrading pip"""):
-            with py_cont.deactivated(util):
-                _upgrade_pip(cont, util)
+        # Upgrading pip on Windows fails with permission
+        # errors when attempting to remove the old version of
+        # pip, so don't perform, the upgrade on Windows
+        if platform.system() != "Windows":
+            with util.Task("""Upgrading pip"""):
+                with py_cont.deactivated(util):
+                    _upgrade_pip(cont, util)
 
-            _upgrade_pip(cont, util)
+                _upgrade_pip(cont, util)
 
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
