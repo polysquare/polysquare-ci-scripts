@@ -18,14 +18,24 @@ _LINUX_REPOS = {
     "3.0": "{launchpad}/smspillaz/cmake-3.0.2/ubuntu {release} main",
     "latest": "{launchpad}/smspillaz/cmake-master/ubuntu {release} main"
 }
-
+_OSX_REPOS = defaultdict(lambda: "homebrew/versions")
 _REPOS = defaultdict(lambda: defaultdict(lambda: ""),
-                     Linux=_LINUX_REPOS)
+                     Linux=_LINUX_REPOS,
+                     Darwin=_OSX_REPOS)
 
 _PACKAGES = defaultdict(lambda: defaultdict(lambda: ""),
-                        Linux=["cmake", "cmake-data", "make", "gcc", "g++"],
-                        Darwin=["cmake"],
-                        Windows=["cmake.portable"])
+                        Linux=defaultdict(lambda: [
+                            "cmake",
+                            "cmake-data",
+                            "make",
+                            "gcc",
+                            "g++"
+                        ]),
+                        Darwin=defaultdict(lambda: ["cmake"], **({
+                            "2.8": ["cmake28"],
+                            "3.0": ["cmake30"]
+                        })),
+                        Windows=defaultdict(lambda: ["cmake.portable"]))
 
 _USER_PACKAGES = {
     "Linux": "PACKAGES.Ubuntu.precise",
@@ -60,16 +70,20 @@ def _copy_from_user_file_and_append(destination, user_file, append):
         destination_file.write("\n".join(list(destination_file_entries)))
 
 
-def _write_packages_file(util, last_updated, container_config_dir):
+def _write_packages_file(util,
+                         last_updated,
+                         container_config_dir,
+                         cmake_version):
     """Write PACKAGES file in /container/_cache/container-config."""
     packages = os.path.join(container_config_dir, "PACKAGES")
     user_packages = _USER_PACKAGES[platform.system()]
+    our_packages = _PACKAGES[platform.system()][cmake_version]
 
     if last_updated == 0 or util.exists_and_is_more_recent(user_packages,
                                                            last_updated):
         _copy_from_user_file_and_append(packages,
                                         user_packages,
-                                        " ".join(_PACKAGES[platform.system()]))
+                                        " ".join(our_packages))
         return packages
 
     return None
@@ -107,7 +121,8 @@ def _prepare_for_os_cont_setup(container_config,
     os_cont_kwargs = {
         "distro_packages": _write_packages_file(util,
                                                 last_updated,
-                                                container_config),
+                                                container_config,
+                                                cmake_version),
         "distro_repositories": _write_repos_file(util,
                                                  last_updated,
                                                  container_config,
