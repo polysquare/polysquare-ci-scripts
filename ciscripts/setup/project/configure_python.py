@@ -124,7 +124,14 @@ def get(container, util, shell, ver_info):
             pkg_path = os.path.join(PythonContainer._get_py_path_from(py_path),
                                     "site-packages")
 
-            reset_mtime(os.path.join(pkg_path, "easy-install.pth"))
+            # Reset /easy-install.pth if we installed anything into this
+            # container, otherwise ignore it.
+            try:
+                reset_mtime(os.path.join(pkg_path, "easy-install.pth"))
+            except OSError as error:
+                if error.errno == errno.EEXIST:
+                    pass
+
             util_mod.apply_to_files(reset_mtime,
                                     pkg_path,
                                     matching=["*.pth"])
