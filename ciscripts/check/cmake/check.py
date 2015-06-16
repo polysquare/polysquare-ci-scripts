@@ -25,10 +25,53 @@ def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
                                                        no_mdl,
                                                        extensions=[
                                                            "cmake",
-                                                           "txt"
+                                                           "CMakeLists.txt"
                                                        ],
                                                        exclusions=excl,
                                                        block_regexps=supps)
+
+
+def _lint_cmake_files(cont, util, namespace, exclusions):
+    """Run cmake specific linters on specified files."""
+    files_to_lint = util.apply_to_files(lambda x: x,
+                                        os.getcwd(),
+                                        matching=[
+                                            "CMakeLists.txt",
+                                            "*.cmake",
+                                        ],
+                                        not_matching=[
+                                            os.path.join(cont.path(), "*"),
+                                        ] + exclusions)
+
+    if len(files_to_lint):
+        polysquare_linter_args = files_to_lint + [
+            "--indent",
+            "4"
+        ]
+
+        if namespace:
+            polysquare_linter_args += [
+                "--namespace",
+                namespace
+            ]
+
+        cmakelint_args = files_to_lint + [
+            "--filter=-whitespace/extra"
+        ]
+
+        util.execute(cont,
+                     util.output_on_fail,
+                     "polysquare-cmake-linter",
+                     *polysquare_linter_args)
+        util.execute(cont,
+                     util.output_on_fail,
+                     "cmakelint",
+                     *cmakelint_args)
+
+
+def _reset_mtime(path):
+    """Reset modification time of file at path."""
+    os.utime(path, (1, 1))
 
 
 def run(cont,
@@ -78,11 +121,17 @@ def run(cont,
                                                              shell,
                                                              None)
 
-    with util.Task("""Checking python project style guide compliance"""):
+    with util.Task("""Checking cmake project style guide compliance"""):
         _run_style_guide_lint(cont,
                               util,
                               result.lint_exclude or list(),
                               result.no_mdl)
+
+    with util.Task("""Linting cmake project"""):
+        _lint_cmake_files(cont,
+                          util,
+                          result.cmake_namespace,
+                          result.lint_exclude or list())
 
     build_dir = cont.named_cache_dir("cmake-build", ephemeral=False)
     project_dir = os.getcwd()
@@ -112,6 +161,22 @@ def run(cont,
             os_cont.execute(cont,
                             util.running_output,
                             "ctest",
+                            "--output-on-failure",
                             "-C",
                             "Debug",
                             ".")
+
+        with util.Task("""Preliminary cleanup of cmake project"""):
+            util.apply_to_files(_reset_mtime,
+                                build_dir,
+                                matching=[
+                                    "*/CMakeFiles/*",
+                                    "*/DRIVER.error",
+                                    "*/DRIVER.output",
+                                    "*/Makefile",
+                                    "*/Testing/*",
+                                    "cmake_install.cmake",
+                                    "CMakeCache.cmake",
+                                    "CTestTestfile.cmake",
+                                    "DartConfiguration.tcl",
+                                ])

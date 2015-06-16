@@ -159,6 +159,26 @@ def run(cont, util, shell, argv=None):
                                                         remainder)
 
     with util.Task("""Setting up cmake project"""):
+        py_ver = defaultdict(lambda: "2.7.9")
+        py_config_script = "setup/project/configure_python.py"
+        py_util = cont.fetch_and_import("python_util.py")
+        cont.fetch_and_import(py_config_script).run(cont,
+                                                    util,
+                                                    shell,
+                                                    py_ver)
+
+        with util.Task("""Installing cmake linters"""):
+            util.where_unavailable("polysquare-cmake-linter",
+                                   py_util.pip_install,
+                                   cont,
+                                   util,
+                                   "polysquare-cmake-linter")
+            util.where_unavailable("cmakelint",
+                                   py_util.pip_install,
+                                   cont,
+                                   util,
+                                   "cmakelint")
+
         container_config = cont.named_cache_dir("container-config")
         container_updates = cont.named_cache_dir("container-updates",
                                                  ephemeral=False)
