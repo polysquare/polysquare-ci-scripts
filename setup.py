@@ -40,9 +40,5 @@ setup(name="polysquare-ci-scripts",
           "polysquarelint": ["polysquare-setuptools-lint"],
           "upload": ["setuptools-markdown>=0.1"]
       },
-      dependency_links=[
-          ("https://github.com/smspillaz/nose-parameterized/tarball/"
-           "detailed-docs#egg=nose-parameterized-0.4.0"),
-      ],
       zip_safe=True,
       include_package_data=True)

@@ -88,9 +88,14 @@ def maybe_environ(key):
 
 def _match_all(abs_dir, matching, not_matching):
     """Return all directories in abs_dirs matching all expressions."""
+    num_not_matching = 0
+
     for expression in matching:
         if not fnmatch.fnmatch(abs_dir, expression):
-            return False
+            num_not_matching += 1
+
+    if num_not_matching == len(matching):
+        return False
 
     for expression in not_matching:
         if fnmatch.fnmatch(abs_dir, expression):

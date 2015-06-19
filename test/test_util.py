@@ -726,7 +726,25 @@ class TestApplicationToFilePatterns(TestCase):
                 function_applied = Mock()
                 util.apply_to_files(function_applied,
                                     temp_dir,
-                                    matching=["*.{0}".format("tmp")])
+                                    matching=["*.tmp"])
+
+                function_applied.assert_called_with(temp_file.name)
+
+    # suppress(no-self-use)
+    def test_apply_to_matching_files_by_multiple_suffixes(self):
+        """Apply functions to files matching suffix."""
+        with testutil.in_tempdir(os.getcwd(), "file_patterns") as temp_dir:
+            with tempfile.NamedTemporaryFile(mode="wt",
+                                             dir=temp_dir,
+                                             suffix=".tmp2") as temp_file:
+                temp_file.write("")
+                temp_file.flush()
+
+                function_applied = Mock()
+                util.apply_to_files(function_applied,
+                                    temp_dir,
+                                    matching=["*.tmp1",
+                                              "*.tmp2"])
 
                 function_applied.assert_called_with(temp_file.name)
 
