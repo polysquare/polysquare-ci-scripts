@@ -12,7 +12,7 @@ include ("included.cmake")
 
 include (CTest)
 
-enable_testing()
+enable_testing ()
 
 add_executable (my_executable
                 "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
