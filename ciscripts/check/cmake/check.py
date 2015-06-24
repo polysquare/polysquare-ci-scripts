@@ -36,7 +36,7 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
     files_to_lint = util.apply_to_files(lambda x: x,
                                         os.getcwd(),
                                         matching=[
-                                            "CMakeLists.txt",
+                                            "*CMakeLists.txt",
                                             "*.cmake",
                                         ],
                                         not_matching=[
