@@ -50,23 +50,23 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
         ]
 
         if namespace:
-            polysquare_linter_args += [
-                "--namespace",
-                namespace
-            ]
-
-        cmakelint_args = files_to_lint + [
-            "--filter=-whitespace/extra"
-        ]
+            polysquare_linter_args.extend(["--namespace", namespace])
 
         util.execute(cont,
                      util.output_on_fail,
                      "polysquare-cmake-linter",
                      *polysquare_linter_args)
+
+        # Set HOME to the user's actual base directory, since
+        # cmakelint depends on it
         util.execute(cont,
                      util.output_on_fail,
                      "cmakelint",
-                     *cmakelint_args)
+                     "--filter=-whitespace/extra,-whitespace/indent",
+                     *files_to_lint,
+                     env={
+                         "HOME": os.path.expanduser("~")
+                     })
 
 
 def _reset_mtime(path):
