@@ -476,6 +476,11 @@ def acceptance_test_for(project_type, expected_programs):
                                                        cls.container_temp_dir)
                 cls.util = cls.container.fetch_and_import("util.py")
 
+                # Look up where to print messages to at the time messages
+                # are printed, such that we get the redirected messages
+                # from sys.stderr
+                cls.util.PRINT_MESSAGES_TO = None
+
                 setup_module = cls.container.fetch_and_import(setup_script)
                 cls.lang_container = setup_module.run(cls.container,
                                                       util,
