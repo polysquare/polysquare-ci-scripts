@@ -76,7 +76,7 @@ class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
             check.run(self.__class__.container,
                       self.__class__.util,
                       None,
-                      "--no-mdl")
+                      ["--no-mdl"])
 
         build = self.__class__.container.named_cache_dir("cmake-build")
         components = [build]
