@@ -38,7 +38,9 @@ def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
 
     cont.fetch_and_import("check/project/lint.py").run(cont,
                                                        util,
-                                                       no_mdl,
+                                                       None,
+                                                       None,
+                                                       no_mdl=no_mdl,
                                                        extensions=["py"],
                                                        exclusions=excl,
                                                        block_regexps=supps)
