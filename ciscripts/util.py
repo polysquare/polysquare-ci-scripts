@@ -660,6 +660,13 @@ def url_opener():
     return _urlopen
 
 
+def make_executable(path):
+    """Make file at path executable."""
+    os.chmod(path,
+             os.stat(path).st_mode |
+             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
 def get_system_identifier(container):
     """Return an identifier which contains information about the ABI."""
     system_identifier_cache_dir = container.named_cache_dir("system-id")
@@ -673,10 +680,7 @@ def get_system_identifier(container):
             remote = url_opener()(config_project + "/config.guess")
             config_guess.write(remote.read().decode("utf-8"))
 
-    os.chmod(system_identifier_config_guess,
-             os.stat(system_identifier_config_guess).st_mode |
-             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
+    make_executable(system_identifier_config_guess)
     output = subprocess.Popen(["sh", system_identifier_config_guess],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()
