@@ -16,12 +16,13 @@ def run(cont, util, shell, argv=None):
         hs_ver = defaultdict(lambda: "7.8.4")
         configure_haskell = "setup/project/configure_haskell.py"
         configure_os = "setup/project/configure_os.py"
+        configure_bii = "setup/project/configure_bii.py"
 
         cont.fetch_and_import(configure_haskell).run(cont, util, shell, hs_ver)
         cont.fetch_and_import(configure_os).run(cont, util, shell, None)
+        cont.fetch_and_import(configure_bii).run(cont, util, shell, None)
 
     cont.fetch_and_import("setup/python/setup.py").run(cont, util, shell, argv)
 
     with util.Task("""Preparing for this container to be copied later"""):
         cont.clean(util)
-

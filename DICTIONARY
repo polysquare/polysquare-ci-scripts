@@ -13,7 +13,10 @@ EOF
 FIELD
 LanguageBase
 LanguageContainer
+Makefiles
+MinGW
 PATHEXT
+PermissionError
 PyPI
 PyPy
 REPOSITORIES
@@ -27,6 +30,8 @@ activatable
 appveyor
 autotools
 bashlint
+bii
+biicode
 bool
 buildsystem
 _cache
