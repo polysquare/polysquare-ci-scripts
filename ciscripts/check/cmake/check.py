@@ -22,7 +22,9 @@ def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
 
     cont.fetch_and_import("check/project/lint.py").run(cont,
                                                        util,
-                                                       no_mdl,
+                                                       None,
+                                                       None,
+                                                       no_mdl=no_mdl,
                                                        extensions=[
                                                            "cmake",
                                                            "CMakeLists.txt"
@@ -36,7 +38,7 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
     files_to_lint = util.apply_to_files(lambda x: x,
                                         os.getcwd(),
                                         matching=[
-                                            "CMakeLists.txt",
+                                            "*CMakeLists.txt",
                                             "*.cmake",
                                         ],
                                         not_matching=[
@@ -50,23 +52,23 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
         ]
 
         if namespace:
-            polysquare_linter_args += [
-                "--namespace",
-                namespace
-            ]
-
-        cmakelint_args = files_to_lint + [
-            "--filter=-whitespace/extra"
-        ]
+            polysquare_linter_args.extend(["--namespace", namespace])
 
         util.execute(cont,
                      util.output_on_fail,
                      "polysquare-cmake-linter",
                      *polysquare_linter_args)
+
+        # Set HOME to the user's actual base directory, since
+        # cmakelint depends on it
         util.execute(cont,
                      util.output_on_fail,
                      "cmakelint",
-                     *cmakelint_args)
+                     "--filter=-whitespace/extra,-whitespace/indent",
+                     *files_to_lint,
+                     env={
+                         "HOME": os.path.expanduser("~")
+                     })
 
 
 def _reset_mtime(path):

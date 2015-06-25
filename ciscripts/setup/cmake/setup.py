@@ -140,7 +140,7 @@ def _prepare_for_os_cont_setup(container_config,
 
 
 def run(cont, util, shell, argv=None):
-    """Install everything necessary to test and check a python project.
+    """Install everything necessary to test and check a cmake project.
 
     This script installs language runtimes to the extent that they're necessary
     for the linter checks, however those runtimes won't be active at the
@@ -162,22 +162,24 @@ def run(cont, util, shell, argv=None):
         py_ver = defaultdict(lambda: "2.7.9")
         py_config_script = "setup/project/configure_python.py"
         py_util = cont.fetch_and_import("python_util.py")
-        cont.fetch_and_import(py_config_script).run(cont,
-                                                    util,
-                                                    shell,
-                                                    py_ver)
+        py_cont = cont.fetch_and_import(py_config_script).run(cont,
+                                                              util,
+                                                              shell,
+                                                              py_ver)
 
         with util.Task("""Installing cmake linters"""):
             util.where_unavailable("polysquare-cmake-linter",
                                    py_util.pip_install,
                                    cont,
                                    util,
-                                   "polysquare-cmake-linter")
+                                   "polysquare-cmake-linter",
+                                   path=py_cont.executable_path())
             util.where_unavailable("cmakelint",
                                    py_util.pip_install,
                                    cont,
                                    util,
-                                   "cmakelint")
+                                   "cmakelint",
+                                   path=py_cont.executable_path())
 
         container_config = cont.named_cache_dir("container-config")
         container_updates = cont.named_cache_dir("container-updates",

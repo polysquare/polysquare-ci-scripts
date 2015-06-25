@@ -12,6 +12,7 @@ import platform
 import shutil
 
 from test.testutil import (CIScriptExitsWith,
+                           CapturedOutput,
                            WHICH_SCRIPT,
                            acceptance_test_for,
                            format_with_args)
@@ -68,13 +69,14 @@ class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
 
     def test_run_check_has_cmake_artifacts(self):
         """After running check, artifacts are present."""
-        check_path = "check/cmake/check.py"
-        check = self.__class__.container.fetch_and_import(check_path)
+        with CapturedOutput():
+            check_path = "check/cmake/check.py"
+            check = self.__class__.container.fetch_and_import(check_path)
 
-        check.run(self.__class__.container,
-                  self.__class__.util,
-                  None,
-                  "--no-mdl")
+            check.run(self.__class__.container,
+                      self.__class__.util,
+                      None,
+                      ["--no-mdl"])
 
         build = self.__class__.container.named_cache_dir("cmake-build")
         components = [build]

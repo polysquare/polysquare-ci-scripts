@@ -28,6 +28,7 @@ buildsystem
 _cache
 ciscripts
 cmake
+cmakelint
 coverage
 curl
 decrement

@@ -324,9 +324,15 @@ class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
     def match(self, script):
         """Match if this script runs successfully."""
         captured_output = CapturedOutput()
+        assert self._container.return_code() == 0
         with captured_output:
             with environment_copy():
-                run_args = [self._container, self._util] + list(self._args)
+                run_args = [
+                    self._container,
+                    self._util,
+                    None,
+                    list(self._args)
+                ]
                 run_kwargs = self._kwargs
                 self._container.fetch_and_import(script).run(*run_args,
                                                              **run_kwargs)
@@ -475,6 +481,11 @@ def acceptance_test_for(project_type, expected_programs):
                 cls.container = bootstrap.ContainerDir(shell,
                                                        cls.container_temp_dir)
                 cls.util = cls.container.fetch_and_import("util.py")
+
+                # Look up where to print messages to at the time messages
+                # are printed, such that we get the redirected messages
+                # from sys.stderr
+                cls.util.PRINT_MESSAGES_TO = None
 
                 setup_module = cls.container.fetch_and_import(setup_script)
                 cls.lang_container = setup_module.run(cls.container,

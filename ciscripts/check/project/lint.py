@@ -10,6 +10,8 @@ import os
 
 def run(cont,  # suppress(too-many-arguments)
         util,
+        shell,
+        argv,
         no_mdl=False,
         extensions=None,
         directories=None,
@@ -30,6 +32,9 @@ def run(cont,  # suppress(too-many-arguments)
     To exclude certain expressions from being considered by the spellchecker,
     pass them to :block_regexps:
     """
+    del shell
+    del argv
+
     technical_terms_path = os.path.join(cont.named_cache_dir("tech_terms"),
                                         "technical_terms.txt")
 
