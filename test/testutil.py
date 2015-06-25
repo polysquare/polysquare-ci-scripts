@@ -324,6 +324,7 @@ class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
     def match(self, script):
         """Match if this script runs successfully."""
         captured_output = CapturedOutput()
+        assert self._container.return_code() == 0
         with captured_output:
             with environment_copy():
                 run_args = [
