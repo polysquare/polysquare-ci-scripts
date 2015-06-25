@@ -326,7 +326,12 @@ class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
         captured_output = CapturedOutput()
         with captured_output:
             with environment_copy():
-                run_args = [self._container, self._util] + list(self._args)
+                run_args = [
+                    self._container,
+                    self._util,
+                    None,
+                    list(self._args)
+                ]
                 run_kwargs = self._kwargs
                 self._container.fetch_and_import(script).run(*run_args,
                                                              **run_kwargs)
