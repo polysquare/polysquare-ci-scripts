@@ -533,7 +533,22 @@ def acceptance_test_for(project_type, expected_programs):
         def tearDownClass(cls):  # suppress(N802)
             """Remove container."""
             os.environ = cls._environ_backup
-            _safe_rmtree(cls.container_temp_dir)
+            try:
+                _safe_rmtree(cls.container_temp_dir)
+            except OSError as err:
+                if err.errno != errno.ENOENT:  # suppress(PYC90)
+                    # On Windows, we might get PermissionError when attempting
+                    # to delete things, so shell out to /rmdir.exe to handle
+                    # the case for us.
+                    if platform.system() == "Windows":
+                        subprocess.check_call(["cmd",
+                                               "/c",
+                                               "rmdir",
+                                               cls.container_temp_dir,
+                                               "/s",
+                                               "/q"])
+                    else:
+                        raise err
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
