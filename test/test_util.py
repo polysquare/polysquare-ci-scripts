@@ -15,8 +15,6 @@ import os
 
 import platform
 
-import shutil
-
 import stat
 
 import subprocess
@@ -513,7 +511,7 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
         """Raise RuntimeError when executable is not in PATH."""
         temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
                                                         "executable_path"))
-        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        self.addCleanup(lambda: util.force_remove_tree(temp_dir))
         with tempfile.NamedTemporaryFile(mode="wt",
                                          dir=temp_dir) as temp_file:
             temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
@@ -614,7 +612,7 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
         """Check that executables not in PATH are not found."""
         temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
                                                         "executable_path"))
-        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        self.addCleanup(lambda: util.force_remove_tree(temp_dir))
         with tempfile.NamedTemporaryFile(mode="wt",
                                          dir=temp_dir) as temp_file:
             temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
@@ -673,7 +671,7 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
         """Execute function with where_unavailable if executable not found."""
         temp_dir = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
                                                         "executable_path"))
-        self.addCleanup(lambda: shutil.rmtree(temp_dir))
+        self.addCleanup(lambda: util.force_remove_tree(temp_dir))
         with tempfile.NamedTemporaryFile(mode="wt",
                                          dir=temp_dir) as temp_file:
             temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
@@ -836,16 +834,12 @@ class TestGetSystemIdentifier(TestCase):
 
         temp_dir_prefix = os.path.join(os.getcwd(), "sysid")
         temporary_directory = tempfile.mkdtemp(prefix=temp_dir_prefix)
-        self.addCleanup(lambda: shutil.rmtree(temporary_directory))
+        self.addCleanup(util.force_remove_tree, temporary_directory)
         cache_dir_func = named_cache_dir_func(temporary_directory)
 
         self.container = type("StubContainer",
                               (object, ),
                               {"named_cache_dir": cache_dir_func})()
-
-    def tearDown(self):  # suppress(N802)
-        """Remove the temporary directory for this container."""
-        super(TestGetSystemIdentifier, self).tearDown()
 
     def test_system_identifier_has_architecture(self):
         """Determined system identifier has architecture."""

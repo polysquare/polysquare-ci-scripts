@@ -14,8 +14,6 @@ import os.path
 
 import platform
 
-import shutil
-
 from collections import defaultdict
 
 from contextlib import closing
@@ -105,10 +103,10 @@ def get(container, util, shell, ver_info):
                                     py_path,
                                     matching=["*.egg-link"])
 
-            util_mod.apply_to_directories(shutil.rmtree,
+            util_mod.apply_to_directories(util_mod.force_remove_tree,
                                           py_path,
                                           matching=["*/test/*"])
-            util_mod.apply_to_directories(shutil.rmtree,
+            util_mod.apply_to_directories(util_mod.force_remove_tree,
                                           py_path,
                                           matching=["*/tcl/*"])
 

@@ -7,8 +7,6 @@
 
 import atexit
 
-import errno
-
 import os
 
 import platform
@@ -117,7 +115,7 @@ def in_tempdir(parent, prefix):
         with in_dir(directory):
             yield directory
     finally:
-        shutil.rmtree(directory)
+        util.force_remove_tree(directory)
 
 
 @contextmanager
@@ -403,15 +401,6 @@ def copy_scripts_to_directory(target):
                     os.path.join(target, "ciscripts"))
 
 
-def _safe_rmtree(directory):
-    """Call shutil.rmtree, but ignore ENOENT."""
-    try:
-        shutil.rmtree(directory)
-    except OSError as err:
-        if err.errno != errno.ENOENT:  # suppress(PYC90)
-            raise err
-
-
 def acceptance_test_for(project_type, expected_programs):
     """Generate acceptance test class for :project_type:.
 
@@ -462,7 +451,7 @@ def acceptance_test_for(project_type, expected_programs):
                     yield shell + [script_path_for_shell]
             finally:
                 script_file.close()
-                shutil.rmtree(directory)
+                util.force_remove_tree(directory)
 
         @classmethod
         def setup_script(cls):
@@ -475,19 +464,19 @@ def acceptance_test_for(project_type, expected_programs):
             temp_dir_prefix = "{}_acceptance_test".format(project_type)
             cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd(),
                                                       prefix=temp_dir_prefix)
-            atexit.register(_safe_rmtree, cls.container_temp_dir)
+            atexit.register(util.force_remove_tree, cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
 
             if os.environ.get("CONTAINER_DIR"):
                 container_dir = os.environ["CONTAINER_DIR"]
-                shutil.rmtree(cls.container_temp_dir)
+                util.force_remove_tree(cls.container_temp_dir)
                 _copytree_ignore_notfound(container_dir,
                                           cls.container_temp_dir)
 
                 # Delete ciscripts in the copied container
                 try:
-                    shutil.rmtree(os.path.join(cls.container_temp_dir,
-                                               "_scripts"))
+                    util.force_remove_tree(os.path.join(cls.container_temp_dir,
+                                                        "_scripts"))
                 except (shutil.Error, OSError):  # suppress(pointless-except)
                     pass
 
@@ -533,22 +522,7 @@ def acceptance_test_for(project_type, expected_programs):
         def tearDownClass(cls):  # suppress(N802)
             """Remove container."""
             os.environ = cls._environ_backup
-            try:
-                _safe_rmtree(cls.container_temp_dir)
-            except OSError as err:
-                if err.errno != errno.ENOENT:  # suppress(PYC90)
-                    # On Windows, we might get PermissionError when attempting
-                    # to delete things, so shell out to /rmdir.exe to handle
-                    # the case for us.
-                    if platform.system() == "Windows":
-                        subprocess.check_call(["cmd",
-                                               "/c",
-                                               "rmdir",
-                                               cls.container_temp_dir,
-                                               "/s",
-                                               "/q"])
-                    else:
-                        raise err
+            util.force_remove_tree(cls.container_temp_dir)
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
@@ -567,13 +541,13 @@ def acceptance_test_for(project_type, expected_programs):
             temp_dir_prefix = "{}_project_copy".format(project_type)
             project_copy_temp_dir = tempfile.mkdtemp(dir=current_directory,
                                                      prefix=temp_dir_prefix)
-            self.addCleanup(lambda: shutil.rmtree(project_copy_temp_dir))
+            self.addCleanup(util.force_remove_tree, project_copy_temp_dir)
             self.project_dir = os.path.join(project_copy_temp_dir,
                                             project_type)
 
             shutil.copytree(self._get_project_template(), self.project_dir)
             os.chdir(self.project_dir)
-            self.addCleanup(lambda: os.chdir(current_directory))
+            self.addCleanup(os.chdir, current_directory)
 
             self.__class__.container.reset_failure_count()
 

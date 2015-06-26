@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """General utility functions which are made available to all other scripts."""
 
+import errno
+
 import fnmatch
 
 import hashlib
@@ -12,6 +14,8 @@ import hashlib
 import os
 
 import platform
+
+import shutil
 
 import stat
 
@@ -431,6 +435,34 @@ def process_shebang(args):
         pass
 
     return args
+
+
+def force_remove_tree(directory):
+    """Use various strategies to see that directory is removed.
+
+    First we try shutil.rmtree. If that fails due to weird PermissionErrors,
+    then fall back to shelling out to rmdir on Windows or rm -rf on
+    Unix.
+    """
+    try:
+        shutil.rmtree(directory)
+    except OSError as err:
+        if err.errno == errno.ENOENT:
+            pass
+        elif err.errno == errno.EPERM:
+            # On Windows, we might get PermissionError when attempting
+            # to delete things, so shell out to /rmdir.exe to handle
+            # the case for us. On Unix use rm -rf
+            if platform.system() == "Windows":
+                subprocess.check_call(["cmd",
+                                       "/c",
+                                       "rmdir",
+                                       directory,
+                                       "/s",
+                                       "/q"])
+            else:
+                subprocess.check_call(["rm", "-rf", directory])
+                raise err
 
 
 def execute(container, output_strategy, *args, **kwargs):

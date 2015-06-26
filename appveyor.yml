@@ -15,6 +15,7 @@ install:
  - ps: python ciscripts/bootstrap.py -d C:/container -s container-setup.py -r $(pwd) -e powershell -p test-env.ps1 --no-mdl
  - ps: . ./test-env
 
+
 build: false
 
 test_script:

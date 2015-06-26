@@ -9,8 +9,6 @@ import os
 
 import platform
 
-import shutil
-
 from test.testutil import (CIScriptExitsWith,
                            CapturedOutput,
                            WHICH_SCRIPT,
@@ -36,7 +34,8 @@ class TestBiiContainerSetup(acceptance_test_for("bii", REQ_PROGRAMS)):
 
     def tearDown(self):  # suppress(N802)
         """Remove build tree."""
-        shutil.rmtree(self.__class__.container.named_cache_dir("cmake-build"))
+        build = self.__class__.container.named_cache_dir("cmake-build")
+        util.force_remove_tree(build)
 
         super(TestBiiContainerSetup, self).tearDown()
 

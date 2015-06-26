@@ -10,8 +10,6 @@ import os.path
 
 import platform
 
-import shutil
-
 from collections import defaultdict
 
 
@@ -94,7 +92,7 @@ def run(container, util, shell, ver_info):
         bii_script_filename = os.path.join(bii_bin, "bii")
 
     if not os.path.exists(bii_script_filename):
-        shutil.rmtree(bii_dir)
+        util.force_remove_tree(bii_dir)
         os.makedirs(bii_dir)
         with util.in_dir(bii_dir), py_cont.activated(util):
             biicode_repo = os.path.join(bii_dir, "biicode")
@@ -128,8 +126,12 @@ def run(container, util, shell, ver_info):
                                  "--recursive",
                                  instant_fail=True)
                     os.makedirs(bii_bin)
-                    shutil.rmtree(os.path.join(biicode_repo, "client", "test"))
-                    shutil.rmtree(os.path.join(biicode_repo, "common", "test"))
+                    util.force_remove_tree(os.path.join(biicode_repo,
+                                                        "client",
+                                                        "test"))
+                    util.force_remove_tree(os.path.join(biicode_repo,
+                                                        "common",
+                                                        "test"))
                     with open(bii_script_filename, "w") as bii_scr:
                         escaped_bii_dir = bii_dir.replace("\\", "/")
                         bii_scr.write(_BII_SCRIPT.format(escaped_bii_dir))
@@ -153,11 +155,9 @@ def run(container, util, shell, ver_info):
                                               "requirements.txt"),
                                  instant_fail=True)
 
-            # Deleting the git directory causes PermissionError on Windows
-            if platform.system() != "Windows":
-                shutil.rmtree(os.path.join(biicode_repo, ".git"))
-                os.remove(os.path.join(biicode_repo, "client", ".git"))
-                os.remove(os.path.join(biicode_repo, "common", ".git"))
+            util.force_remove_tree(os.path.join(biicode_repo, ".git"))
+            os.remove(os.path.join(biicode_repo, "client", ".git"))
+            os.remove(os.path.join(biicode_repo, "common", ".git"))
 
     with util.Task("""Activating biicode"""):
         bii_container = get(container, util, shell, ver_info)

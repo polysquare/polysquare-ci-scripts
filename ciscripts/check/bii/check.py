@@ -11,8 +11,6 @@ import errno
 
 import os
 
-import shutil
-
 from collections import defaultdict
 
 from contextlib import contextmanager
@@ -27,15 +25,6 @@ def _move_directories_ignore_errors(directories, src, dst):
         except OSError as error:
             if error.errno != errno.ENOENT:
                 raise error
-
-
-def _try_rmtree(path):
-    """Attempt to remove tree at path, ignoring file not found errors."""
-    try:
-        shutil.rmtree(path)
-    except OSError as error:
-        if error.errno != errno.ENOENT:
-            raise error
 
 
 _BII_LAYOUT = [
@@ -88,7 +77,7 @@ def run(cont, util, shell, argv=None):
         del cont
 
         with util.Task("""Moving bii layout to cache"""):
-            _try_rmtree(os.path.join(os.getcwd(), "cmake"))
+            util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
             _move_directories_ignore_errors(_BII_LAYOUT, os.getcwd(), build)
 
         with util.Task("""Performing cleanup on cache"""):

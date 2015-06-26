@@ -12,8 +12,6 @@ import os.path
 
 import platform
 
-import shutil
-
 import stat
 
 import subprocess
@@ -45,11 +43,11 @@ def _force_makedirs(path):
             raise error
 
 
-def _rmtree(path):
+def _rmtree(util, path):
     """Remove directory at :path: if it exists."""
     if os.path.exists(path):
         if os.path.isdir(path):
-            shutil.rmtree(path)
+            util.force_remove_tree(path)
         else:
             os.unlink(path)
 
@@ -146,23 +144,23 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
             super(HaskellContainer, self).clean(util)
 
             # Source code
-            _rmtree(os.path.join(self._internal_container, "src"))
-            _rmtree(os.path.join(self._internal_container, "tmp"))
-            _rmtree(os.path.join(self._internal_container, "cache"))
-            _rmtree(os.path.join(self._internal_container,
-                                 "cabal",
-                                 "bootstrap",
-                                 "lib"))
+            _rmtree(util, os.path.join(self._internal_container, "src"))
+            _rmtree(util, os.path.join(self._internal_container, "tmp"))
+            _rmtree(util, os.path.join(self._internal_container, "cache"))
+            _rmtree(util, os.path.join(self._internal_container,
+                                       "cabal",
+                                       "bootstrap",
+                                       "lib"))
 
             # Documentation
-            _rmtree(os.path.join(self._internal_container,
-                                 "ghc",
-                                 "share",
-                                 "doc"))
+            _rmtree(util, os.path.join(self._internal_container,
+                                       "ghc",
+                                       "share",
+                                       "doc"))
 
             # Logs
-            _rmtree(os.path.join(self._build_dir, "tmp"))
-            _rmtree(os.path.join(self._internal_container, "hsenv.log"))
+            _rmtree(util, os.path.join(self._build_dir, "tmp"))
+            _rmtree(util, os.path.join(self._internal_container, "hsenv.log"))
 
             # Object code and dynamic libraries
             debug_ghc_version = "*_debug-ghc{0}.so".format(self._version)

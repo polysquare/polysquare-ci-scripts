@@ -17,6 +17,7 @@ Makefiles
 MinGW
 PATHEXT
 PermissionError
+PermissionErrors
 PyPI
 PyPy
 REPOSITORIES
@@ -80,6 +81,7 @@ pylint
 pypy
 pypy3
 python
+rmdir
 rootfs
 rsync
 runtime

@@ -81,8 +81,8 @@ class TestProjectContainerSetup(acceptance_test_for("project", [])):
         success_dir = tempfile.mkdtemp(dir=os.getcwd(), prefix="success")
         failure_dir = tempfile.mkdtemp(dir=os.getcwd(), prefix="failure")
 
-        self.addCleanup(lambda: shutil.rmtree(success_dir))
-        self.addCleanup(lambda: shutil.rmtree(failure_dir))
+        self.addCleanup(shutil.rmtree, success_dir)
+        self.addCleanup(shutil.rmtree, failure_dir)
 
         with open(os.path.join(success_dir, "success.sh"),
                   "wt") as success_file:

@@ -139,7 +139,7 @@ def run(cont, util, shell, argv=None):
                 for filename in install_log_file.readlines():
                     try:
                         if os.path.isdir(filename):
-                            shutil.rmtree(filename)
+                            util.force_remove_tree(filename)
                         else:
                             os.remove(filename)
                     # suppress(pointless-except)
