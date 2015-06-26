@@ -107,8 +107,6 @@ def get(container,
                                 "psq-travis-container-exec",
                                 self._installation,
                                 "--show-output",
-                                "--distro=" + self._distro,
-                                "--release=" + self._distro_version,
                                 *use_args,
                                 **kwargs)
 
