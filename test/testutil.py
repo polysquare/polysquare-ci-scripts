@@ -304,8 +304,8 @@ class SubprocessExitsWith(object):  # suppress(too-few-public-methods)
             return SubprocessExitWithMismatch(subprocess_args,
                                               code,
                                               self._expected_code,
-                                              process.stdout.read(),
-                                              process.stderr.read())
+                                              process.stdout.read().decode(),
+                                              process.stderr.read().decode())
 
 
 class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
@@ -442,6 +442,7 @@ def acceptance_test_for(project_type, expected_programs):
                 script_path_for_shell = "\"{}\"".format(script_path_for_shell)
             else:
                 shell = ["bash"]
+
             script = ("{cls.setup_container_output.stdout}"
                       "{command}").format(cls=self.__class__, command=command)
 
@@ -577,7 +578,7 @@ def acceptance_test_for(project_type, expected_programs):
         def test_program_is_available_in_parent_shell(self, program):
             """Executable {0} is available in parent shell after setup."""
             script = WHICH_SCRIPT.format(program)
-            py_cmd = "python -c \"{}\"".format(script)
+            py_cmd = "python -c \"{}\"\n".format(script)
             with self.in_parent_context(py_cmd) as cmd:
                 copy_scripts_to_directory(os.getcwd())
                 self.assertThat(cmd, SubprocessExitsWith(0))
