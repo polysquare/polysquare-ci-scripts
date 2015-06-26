@@ -362,7 +362,11 @@ def format_with_args(*args):
 
     return formatter
 
-WHICH_SCRIPT = ("import ciscripts.util;assert ciscripts.util.which('{0}')")
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(bootstrap.__file__),
+                                     ".."))
+WHICH_SCRIPT = ("import sys;sys.path.append('" + _ROOT.replace("\\",
+                                                               "/") + "');"
+                "import ciscripts.util;assert ciscripts.util.which('{0}')")
 
 
 def _copytree_ignore_notfound(src, dst):
