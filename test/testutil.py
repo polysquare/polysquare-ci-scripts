@@ -379,6 +379,7 @@ def _copytree_ignore_notfound(src, dst):
     if util.which("rsync"):
         subprocess.check_call(["rsync",
                                "-az",
+                               "--chmod=ugo=rwX",
                                src + os.path.sep,
                                dst + os.path.sep])
     else:
