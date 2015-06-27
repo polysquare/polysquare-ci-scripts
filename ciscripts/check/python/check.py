@@ -133,7 +133,7 @@ def run(cont, util, shell, argv=None):
                          "pip",
                          "uninstall",
                          "-y",
-                         pkg.decode("utf-8"))
+                         pkg.strip().decode("utf-8"))
 
             with open(install_log) as install_log_file:
                 for filename in install_log_file.readlines():
