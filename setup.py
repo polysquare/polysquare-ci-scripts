@@ -33,6 +33,7 @@ setup(name="polysquare-ci-scripts",
               "nose",
               "nose-parameterized>=0.4.0",
               "mock",
+              "green>=1.12.0",
               "setuptools-green",
               "six",
               "testtools"
@@ -40,5 +41,9 @@ setup(name="polysquare-ci-scripts",
           "polysquarelint": ["polysquare-setuptools-lint"],
           "upload": ["setuptools-markdown>=0.1"]
       },
+      dependency_links=[
+          ("http://github.com/smspillaz/green/tarball/"
+           "process-overhaul-modules-subprocesses#egg=green-1.12.0")
+      ],
       zip_safe=True,
       include_package_data=True)
