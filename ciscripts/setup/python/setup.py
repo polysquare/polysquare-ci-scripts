@@ -14,6 +14,9 @@ def _install_test_dependencies(cont, util, py_util):
     """Install testing dependencies for python project."""
     py_util.pip_install_deps(cont,
                              util,
+                             "green",
+                             "--process-dependency-links",
+                             "--allow-external",
                              "green")
 
 
