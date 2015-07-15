@@ -84,7 +84,10 @@ def run(cont, util, shell, argv=None):
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
                                      util,
-                                     "polysquarelint")
+                                     "polysquarelint",
+                                     "--process-dependency-links",
+                                     "--allow-external",
+                                     "green")
 
         with util.Task("""Installing python test runners"""):
             # Install testing dependencies both inside and outside container.
