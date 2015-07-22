@@ -16,7 +16,7 @@ install:
 build: false
 
 test_script:
- - ps: polysquare_run check/python/check.py --lint-exclude="*/sample/*" --no-mdl
+ - ps: polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" "tmp*" --lint-exclude="*/sample/*" --no-mdl
 
 after_test:
  - ps: polysquare_cleanup
