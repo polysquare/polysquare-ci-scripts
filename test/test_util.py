@@ -351,7 +351,8 @@ class TestExecute(TestCase):
         with testutil.CapturedOutput():
             util.execute(container, util.output_on_fail, "false")
 
-        container.note_failure.assert_called()  # suppress(PYC70)
+        self.assertThat(container.note_failure.call_args_list,
+                        Not(Equals(list())))
 
     def test_execute_with_failure_output(self):
         """Execute a command with failure, showing output."""
@@ -686,11 +687,15 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
                 temp_file.write("#!/usr/bin/env python\nprint(\"Test\")")
                 os.chmod(temp_file.name, 755)
 
-                mock = Mock()
-                util.where_unavailable(os.path.basename(temp_file.name),
-                                       mock,
-                                       "arg")
-                mock.assert_not_called()  # suppress(PYC70)
+                with testutil.environment_copy():
+                    os.environ["PATH"] = (os.environ["PATH"] +
+                                          os.pathsep +
+                                          temp_dir)
+                    mock = Mock()
+                    util.where_unavailable(os.path.basename(temp_file.name),
+                                           mock,
+                                           "arg")
+                    self.assertEquals(mock.call_args_list, list())
 
 
 class TestApplicationToFilePatterns(TestCase):
@@ -884,7 +889,7 @@ class TestStoredMTimes(TestCase):
                                    util.fetch_mtime_from("1"),
                                    callee)
 
-            callee.assert_called()
+            self.assertThat(callee.call_args_list, Not(Equals(list())))
 
     # suppress(no-self-use)
     def test_no_act_where_file_doesnt_exist(self):
@@ -895,7 +900,7 @@ class TestStoredMTimes(TestCase):
                                    util.fetch_mtime_from("1"),
                                    callee)
 
-            callee.assert_not_called()
+            self.assertEqual(callee.call_args_list, list())
 
     # suppress(no-self-use)
     def test_no_act_where_file_is_up_to_date(self):
@@ -913,7 +918,7 @@ class TestStoredMTimes(TestCase):
                                    util.fetch_mtime_from("1"),
                                    callee)
 
-            callee.assert_not_called()
+            self.assertEqual(callee.call_args_list, list())
 
     # suppress(no-self-use)
     def test_act_where_file_is_up_to_date(self):
@@ -931,4 +936,4 @@ class TestStoredMTimes(TestCase):
                                    util.fetch_mtime_from("1"),
                                    callee)
 
-            callee.assert_called()
+            self.assertThat(callee.call_args_list, Not(Equals(list())))
