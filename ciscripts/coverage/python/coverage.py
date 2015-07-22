@@ -23,9 +23,4 @@ def run(cont, util, shell, argv=None):
 
         if os.environ.get("CI", None) is not None:
             with util.Task("""Uploading to coveralls"""):
-                cwd = os.getcwd()
-                tests_dir = os.path.join(cwd, "test")
-                assert os.path.exists(tests_dir)
-
-                with util.in_dir(tests_dir):
-                    util.execute(cont, util.running_output, "coveralls",)
+                util.execute(cont, util.running_output, "coveralls",)
