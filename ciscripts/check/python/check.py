@@ -15,8 +15,6 @@ import subprocess
 
 from collections import defaultdict
 
-from setuptools import find_packages
-
 
 def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
     """Run /ciscripts/check/project/lint.py on this python project."""
@@ -48,23 +46,16 @@ def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
 
 def _run_tests_and_coverage(cont, util, coverage_exclude):
     """Run /setup.py green on this python project."""
-    cwd = os.getcwd()
-    tests_dir = os.path.join(cwd, "test")
-    assert os.path.exists(tests_dir)
+    assert os.path.exists(os.path.join(os.getcwd(), "test"))
 
-    packages = find_packages(exclude=["test"], )
-
-    with util.in_dir(tests_dir):
-        util.execute(cont,
-                     util.running_output,
-                     "coverage",
-                     "run",
-                     "--source=" + ",".join(packages),
-                     "--omit=" + ",".join(coverage_exclude),
-                     os.path.join(cwd, "setup.py"),
-                     "green")
-
-        util.execute(cont, util.running_output, "coverage", "report")
+    util.execute(cont,
+                 util.running_output,
+                 "python",
+                 "setup.py",
+                 "green",
+                 "--coverage",
+                 "--coverage-omit=" + ",".join(coverage_exclude),
+                 "--target=test")
 
 
 def run(cont, util, shell, argv=None):
