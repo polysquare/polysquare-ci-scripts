@@ -70,7 +70,8 @@ def _copy_from_user_file_and_append(destination, user_file, append):
         destination_file.write("\n".join(list(destination_file_entries)))
 
 
-def _write_packages_file(util,
+def _write_packages_file(cont,
+                         util,
                          last_updated,
                          container_config_dir,
                          cmake_version):
@@ -79,7 +80,8 @@ def _write_packages_file(util,
     user_packages = _USER_PACKAGES[platform.system()]
     our_packages = _PACKAGES[platform.system()][cmake_version]
 
-    if last_updated == 0 or util.exists_and_is_more_recent(user_packages,
+    if last_updated == 0 or util.exists_and_is_more_recent(cont,
+                                                           user_packages,
                                                            last_updated):
         _copy_from_user_file_and_append(packages,
                                         user_packages,
@@ -89,13 +91,18 @@ def _write_packages_file(util,
     return None
 
 
-def _write_repos_file(util, last_updated, container_config_dir, cmake_version):
+def _write_repos_file(cont,
+                      util,
+                      last_updated,
+                      container_config_dir,
+                      cmake_version):
     """Write REPOSITORIES file in /container/_cache/container-config."""
     repositories = os.path.join(container_config_dir, "REPOSITORIES")
     user_repos = _USER_REPOS[platform.system()]
     cmake_repository = _REPOS[platform.system()][cmake_version]
 
-    if last_updated == 0 or util.exists_and_is_more_recent(user_repos,
+    if last_updated == 0 or util.exists_and_is_more_recent(cont,
+                                                           user_repos,
                                                            last_updated):
         _copy_from_user_file_and_append(repositories,
                                         user_repos,
@@ -105,7 +112,8 @@ def _write_repos_file(util, last_updated, container_config_dir, cmake_version):
     return None
 
 
-def _prepare_for_os_cont_setup(container_config,
+def _prepare_for_os_cont_setup(cont,
+                               container_config,
                                container_updates,
                                util,
                                parse_result):
@@ -119,11 +127,13 @@ def _prepare_for_os_cont_setup(container_config,
     cmake_version = parse_result.cmake_version
 
     os_cont_kwargs = {
-        "distro_packages": _write_packages_file(util,
+        "distro_packages": _write_packages_file(cont,
+                                                util,
                                                 last_updated,
                                                 container_config,
                                                 cmake_version),
-        "distro_repositories": _write_repos_file(util,
+        "distro_repositories": _write_repos_file(cont,
+                                                 util,
                                                  last_updated,
                                                  container_config,
                                                  cmake_version),
@@ -186,7 +196,8 @@ def run(cont, util, shell, argv=None):
                                                  ephemeral=False)
 
         os_cont_setup = "setup/project/configure_os.py"
-        os_cont_kwargs = _prepare_for_os_cont_setup(container_config,
+        os_cont_kwargs = _prepare_for_os_cont_setup(cont,
+                                                    container_config,
                                                     container_updates,
                                                     util,
                                                     parse_result)

@@ -9,6 +9,8 @@ import doctest
 
 import errno
 
+import hashlib
+
 import os
 
 import platform
@@ -861,6 +863,33 @@ class TestGetSystemIdentifier(TestCase):
                         Contains(sys_id))
 
 
+class PrepopulatedMTimeContainer(object):  # suppress(too-few-public-methods)
+
+    """Stub for container class, exposes named_cache_dir.
+
+    The current dir will be pre-populated with the md5 of a specified
+    filename, with its actual mtime written to it.
+
+    named_cache_dir always returns the current directory.
+    """
+
+    def __init__(self, filename):
+        """Create cache dir and pre-populate it with mtime file."""
+        super(PrepopulatedMTimeContainer, self).__init__()
+
+        if filename:
+            filename_stamp = hashlib.md5(filename.encode("utf-8")).hexdigest()
+            util.store_current_mtime_in(os.path.join(os.getcwd(),
+                                                     filename_stamp))
+
+    def named_cache_dir(self, *args, **kwargs):  # suppress(no-self-use)
+        """Return current directory."""
+        del args
+        del kwargs
+
+        return os.getcwd()
+
+
 class TestStoredMTimes(TestCase):
 
     """Test storing and acting on modification times."""
@@ -884,7 +913,9 @@ class TestStoredMTimes(TestCase):
                 temporary_file.write("contents")
                 temporary_file.flush()
 
-            util.where_more_recent(temporary_file.name,
+            container = PrepopulatedMTimeContainer(temporary_file.name)
+            util.where_more_recent(container,
+                                   temporary_file.name,
                                    util.fetch_mtime_from("1"),
                                    callee)
 
@@ -895,7 +926,8 @@ class TestStoredMTimes(TestCase):
         """Don't perform action when candidate file doesn't exist."""
         with testutil.in_tempdir(os.getcwd(), "mtimes"):
             callee = Mock()
-            util.where_more_recent(os.path.join(os.getcwd(), "temp"),
+            util.where_more_recent(PrepopulatedMTimeContainer(None),
+                                   os.path.join(os.getcwd(), "temp"),
                                    util.fetch_mtime_from("1"),
                                    callee)
 
@@ -910,10 +942,13 @@ class TestStoredMTimes(TestCase):
                 temporary_file.write("contents")
                 temporary_file.flush()
 
+            container = PrepopulatedMTimeContainer(temporary_file.name)
+
             time.sleep(1)
             util.store_current_mtime_in("1")
 
-            util.where_more_recent(temporary_file.name,
+            util.where_more_recent(container,
+                                   temporary_file.name,
                                    util.fetch_mtime_from("1"),
                                    callee)
 
@@ -927,11 +962,15 @@ class TestStoredMTimes(TestCase):
 
             util.store_current_mtime_in("1")
             time.sleep(1)
+
             with open("temporary_file", "w") as temporary_file:
                 temporary_file.write("contents")
                 temporary_file.flush()
 
-            util.where_more_recent(temporary_file.name,
+            container = PrepopulatedMTimeContainer(temporary_file.name)
+
+            util.where_more_recent(container,
+                                   temporary_file.name,
                                    util.fetch_mtime_from("1"),
                                    callee)
 

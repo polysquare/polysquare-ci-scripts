@@ -178,11 +178,13 @@ def _update_os_container(container,
 
         # The time the distro container was last updated
         last_updated = util.fetch_mtime_from(updates_filename)
-        util.where_more_recent(repositories,
+        util.where_more_recent(container,
+                               repositories,
                                last_updated,
                                lambda: options.append("--repositories=" +
                                                       repositories))
-        util.where_more_recent(packages,
+        util.where_more_recent(container,
+                               packages,
                                last_updated,
                                lambda: options.append("--packages=" +
                                                       packages))

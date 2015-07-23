@@ -39,6 +39,7 @@ docstring
 docstrings
 eval
 executables
+filesystem
 ghc
 haskell
 __import__
@@ -52,6 +53,7 @@ markdownlint
 matcher	
 mccabe
 mdl
+mtime
 N
 namespace
 pandoc
