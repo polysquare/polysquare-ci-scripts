@@ -12,10 +12,14 @@ from collections import defaultdict
 
 def _install_test_dependencies(cont, util, py_util):
     """Install testing dependencies for python project."""
+    py_util.pip_install(cont,
+                        util,
+                        ("http://github.com/smspillaz/green/tarball/"
+                         "process-overhaul-modules-subprocesses"
+                         "#egg=green-1.12.0"))
     py_util.pip_install_deps(cont,
                              util,
-                             "green",
-                             polysquare_allow_external=["green"])
+                             "green")
 
 
 def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
