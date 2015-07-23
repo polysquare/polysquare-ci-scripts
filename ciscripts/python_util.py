@@ -84,7 +84,9 @@ def pip_install(container, util, *args, **kwargs):
                                           for a in allow_external]))) +
                             pip_install_args[4:])
 
-    util.execute(*pip_install_args, **kwargs)
+    util.execute(*pip_install_args,
+                 instant_fail=True,
+                 **kwargs)
 
 
 def pip_install_deps(py_cont, util, target, *args, **kwargs):
