@@ -85,7 +85,7 @@ def pip_install(container, util, *args, **kwargs):
                             pip_install_args[4:])
 
     util.execute(*pip_install_args,
-                 instant_fail=True,
+                 instant_fail=kwargs.pop("instant_fail", True),
                  **kwargs)
 
 
