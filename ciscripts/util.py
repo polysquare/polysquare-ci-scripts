@@ -7,6 +7,8 @@
 
 import fnmatch
 
+import hashlib
+
 import os
 
 import platform
@@ -528,13 +530,29 @@ def where_unavailable(executable,
     return function(*args, **kwargs)
 
 
+def compare_contents(lhs, rhs):
+    """Compare contents of two specified files."""
+    for filename in (lhs, rhs):
+        if not os.path.exists(filename):
+            return False
+
+    with open(lhs, "r") as lhs_file, open(rhs, "r") as rhs_file:
+        return lhs_file.read() == rhs_file.read()
+
+
+def store_file_mtime_in(source, output_filename):
+    """Store source's modification time in output_filename."""
+    with open(output_filename, "w") as mtime_file:
+        mtime_file.write(str(os.stat(source).st_mtime))
+
+
+# suppress(unused-function)
 def store_current_mtime_in(filename):
     """Store current modification time in filename."""
-    with open(filename, "w") as mtime_file:
-        with tempfile.NamedTemporaryFile() as temp:
-            temp.write("contents".encode())
-            mtime_file.truncate(0)
-            mtime_file.write(str(os.stat(temp.name).st_mtime))
+    with tempfile.NamedTemporaryFile() as temp:
+        temp.write("contents".encode())
+        temp.flush()
+        store_file_mtime_in(temp.name, filename)
 
 
 def fetch_mtime_from(filename):
@@ -546,18 +564,33 @@ def fetch_mtime_from(filename):
         return float(0)
 
 
-def exists_and_is_more_recent(filename, mtime):
+def exists_and_is_more_recent(cont, filename, mtime):
     """Return true if this filename exists and is more recent."""
     if not os.path.exists(filename):
         return False
 
-    if os.stat(filename).st_mtime > mtime:
+    mtimes_dir = cont.named_cache_dir("mtimes")
+    digest = os.path.join(mtimes_dir,
+                          hashlib.md5(filename.encode("utf-8")).hexdigest())
+    fetched_mtime = fetch_mtime_from(digest)
+
+    if fetched_mtime > mtime:
         return True
+    elif fetched_mtime == 0:
+        # No mtime was stored on disk, get filesystem mtime and store
+        # it for caching later. We don't usually use the filesystem
+        # mtime since it isn't tar safe.
+        store_file_mtime_in(filename, digest)
+        if os.stat(filename).st_mtime > mtime:
+            return True
+
+    return False
 
 
-def where_more_recent(filename, mtime, func, *args, **kwargs):
+# suppress(unused-function)
+def where_more_recent(cont, filename, mtime, func, *args, **kwargs):
     """Call func if filename is more recent than mtime."""
-    if exists_and_is_more_recent(filename, mtime):
+    if exists_and_is_more_recent(cont, filename, mtime):
         return func(*args, **kwargs)
 
 

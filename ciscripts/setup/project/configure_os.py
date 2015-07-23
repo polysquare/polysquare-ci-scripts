@@ -14,6 +14,8 @@ import os.path
 
 import platform
 
+import shutil
+
 import subprocess
 
 from collections import defaultdict
@@ -152,6 +154,12 @@ def get(container,
                        shell)
 
 
+def _copy_if_exists(src, dst):
+    """Copy src to dst if src exists."""
+    if os.path.exists(src):
+        shutil.copyfile(src, dst)
+
+
 # suppress(too-many-arguments)
 def _update_os_container(container,
                          util,
@@ -162,37 +170,30 @@ def _update_os_container(container,
                          distro_repositories,
                          distro_packages):
     """Re-create OS container and install packages in it."""
-    def create_command_options(updates_filename):
+    repositories = (distro_repositories or
+                    ".".join(["REPOSITORIES", distro, distro_version]))
+    packages = (distro_packages or
+                ".".join(["PACKAGES", distro, distro_version]))
+
+    def create_command_options(updates):
         """Get options for calling the create command.
 
         Returns a tuple of (bool, list), where the first member is whether
         to even call the create command at all, and list is a list of
         command line options to pass.
         """
-        repositories = (distro_repositories or
-                        ".".join(["REPOSITORIES", distro, distro_version]))
-        packages = (distro_packages or
-                    ".".join(["PACKAGES", distro, distro_version]))
-
         options = list()
 
-        # The time the distro container was last updated
-        last_updated = util.fetch_mtime_from(updates_filename)
-        util.where_more_recent(repositories,
-                               last_updated,
-                               lambda: options.append("--repositories=" +
-                                                      repositories))
-        util.where_more_recent(packages,
-                               last_updated,
-                               lambda: options.append("--packages=" +
-                                                      packages))
+        if (os.path.exists(repositories) and
+                not util.compare_contents(repositories,
+                                          "{}.REPOSITORIES".format(updates))):
+            options.append("--repositories={}".format(repositories))
+        if (os.path.exists(packages) and
+                not util.compare_contents(packages,
+                                          "{}.PACKAGES".format(updates))):
+            options.append("--packages={}".format(packages))
 
-        if last_updated == float(0) or len(options):
-            re_call_create = True
-        else:
-            re_call_create = False
-
-        return (re_call_create, options)
+        return (True if len(options) else False, options)
 
     container_updates_dir = container.named_cache_dir("container-updates",
                                                       ephemeral=False)
@@ -201,10 +202,10 @@ def _update_os_container(container,
                                                         v=distro_version,
                                                         a=distro_arch))
 
-    with util.Task("""Updating container"""):
-        re_call_create, additional_options = create_command_options(updates)
+    re_call_create, additional_options = create_command_options(updates)
 
-        if re_call_create:
+    if re_call_create:
+        with util.Task("""Updating container"""):
             util.execute(container,
                          util.running_output,
                          "psq-travis-container-create",
@@ -214,9 +215,12 @@ def _update_os_container(container,
                          *additional_options,
                          instant_fail=True)
 
-            # Get the modification time of a temporary file to set as
-            # our baseline in the future
-            util.store_current_mtime_in(updates)
+            # Store contents of REPOSITORIES and PACKAGES as they exist
+            # now in the pair of updates files for this distro, release
+            # and arch set. We'll compare the contents of those files
+            # to these later.
+            _copy_if_exists(repositories, "{}.REPOSITORIES".format(updates))
+            _copy_if_exists(packages, "{}.PACKAGES".format(updates))
 
 
 # suppress(too-many-arguments)
