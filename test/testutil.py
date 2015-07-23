@@ -406,10 +406,7 @@ def acceptance_test_for(project_type, expected_programs):
         def __init__(self, *args, **kwargs):
             """Initialize the instance attributes for this test case."""
             super(AcceptanceTestForProject, self).__init__(*args, **kwargs)
-            self.project_copy_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
-            self.project_dir = os.path.join(self.project_copy_temp_dir,
-                                            project_type)
-            self._directory_on_setup = os.getcwd()
+            self.project_dir = None
 
         @contextmanager
         def in_parent_context(self, command):
@@ -450,7 +447,9 @@ def acceptance_test_for(project_type, expected_programs):
                                                    ".."))
             assert "ciscripts" in os.listdir(parent)
 
-            cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+            temp_dir_prefix = "{}_acceptance_test".format(project_type)
+            cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd(),
+                                                      prefix=temp_dir_prefix)
             atexit.register(_safe_rmtree, cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
 
@@ -513,26 +512,32 @@ def acceptance_test_for(project_type, expected_programs):
             os.environ = cls._environ_backup
             _safe_rmtree(cls.container_temp_dir)
 
-        def setUp(self):  # suppress(N802)
-            """Create a copy of and enter sample project directory."""
-            super(AcceptanceTestForProject, self).setUp()
+        def _get_project_template(self):  # suppress(no-self-use)
+            """Get template of project type from /sample."""
             parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                    ".."))
             assert "sample" in os.listdir(parent)
             assert project_type in os.listdir(os.path.join(parent, "sample"))
+            return os.path.join(parent, "sample", project_type)
 
-            shutil.copytree(os.path.join(parent, "sample", project_type),
-                            self.project_dir)
+        def setUp(self):  # suppress(N802)
+            """Create a copy of and enter sample project directory."""
+            super(AcceptanceTestForProject, self).setUp()
+
+            # Create copy of the sample project
+            current_directory = os.getcwd()
+            temp_dir_prefix = "{}_project_copy".format(project_type)
+            project_copy_temp_dir = tempfile.mkdtemp(dir=current_directory,
+                                                     prefix=temp_dir_prefix)
+            self.addCleanup(lambda: shutil.rmtree(project_copy_temp_dir))
+            self.project_dir = os.path.join(project_copy_temp_dir,
+                                            project_type)
+
+            shutil.copytree(self._get_project_template(), self.project_dir)
             os.chdir(self.project_dir)
+            self.addCleanup(lambda: os.chdir(current_directory))
 
             self.__class__.container.reset_failure_count()
-
-        def tearDown(self):  # suppress(N802)
-            """Remove the copy of the sample project."""
-            os.chdir(self._directory_on_setup)
-            shutil.rmtree(self.project_copy_temp_dir)
-
-            super(AcceptanceTestForProject, self).tearDown()
 
         _PROGRAMS = [
             "polysquare-generic-file-linter"

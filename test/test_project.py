@@ -7,6 +7,8 @@
 
 import os
 
+import shutil
+
 import tempfile
 
 from test.testutil import (CIScriptExitsWith,
@@ -76,8 +78,11 @@ class TestProjectContainerSetup(acceptance_test_for("project", [])):
 
     def test_lint_files_in_multiple_subdirectories(self):
         """Style guide linter runs over multiple subdirectories."""
-        success_dir = tempfile.mkdtemp(dir=os.getcwd())
-        failure_dir = tempfile.mkdtemp(dir=os.getcwd())
+        success_dir = tempfile.mkdtemp(dir=os.getcwd(), prefix="success")
+        failure_dir = tempfile.mkdtemp(dir=os.getcwd(), prefix="failure")
+
+        self.addCleanup(lambda: shutil.rmtree(success_dir))
+        self.addCleanup(lambda: shutil.rmtree(failure_dir))
 
         with open(os.path.join(success_dir, "success.sh"),
                   "wt") as success_file:
