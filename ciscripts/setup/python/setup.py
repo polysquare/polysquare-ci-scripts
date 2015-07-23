@@ -15,9 +15,7 @@ def _install_test_dependencies(cont, util, py_util):
     py_util.pip_install_deps(cont,
                              util,
                              "green",
-                             "--process-dependency-links",
-                             "--allow-external",
-                             "green")
+                             polysquare_allow_external=["green"])
 
 
 def _prepare_python_deployment(cont, py_cont, util, shell, py_util):

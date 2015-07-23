@@ -11,7 +11,10 @@
 """Python related utility functions."""
 
 import os
+
 import subprocess
+
+from itertools import chain
 
 
 def get_python_version(precision):  # suppress(unused-function)
@@ -72,6 +75,14 @@ def pip_install(container, util, *args, **kwargs):
         "--download-cache",
         container.named_cache_dir("pip-cache")
     ] + list(args)
+
+    allow_external = kwargs.pop("polysquare_allow_external", None) or list()
+    if len(allow_external):
+        pip_install_args = (pip_install_args[:4] +
+                            ["--process-dependency-links"] +
+                            list(*(chain([["--allow-external", a]
+                                          for a in allow_external]))) +
+                            pip_install_args[4:])
 
     util.execute(*pip_install_args, **kwargs)
 
