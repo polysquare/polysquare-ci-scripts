@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """Some utility functions which make testing easier."""
 
+import atexit
+
 import errno
 
 import os
@@ -382,6 +384,15 @@ def _copytree_ignore_notfound(src, dst):
             pass
 
 
+def _safe_rmtree(directory):
+    """Call shutil.rmtree, but ignore ENOENT."""
+    try:
+        shutil.rmtree(directory)
+    except OSError as err:
+        if err.errno != errno.ENOENT:  # suppress(PYC90)
+            raise err
+
+
 def acceptance_test_for(project_type, expected_programs):
     """Generate acceptance test class for :project_type:.
 
@@ -440,6 +451,7 @@ def acceptance_test_for(project_type, expected_programs):
             assert "ciscripts" in os.listdir(parent)
 
             cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+            atexit.register(_safe_rmtree, cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
 
             if os.environ.get("CONTAINER_DIR"):
@@ -499,11 +511,7 @@ def acceptance_test_for(project_type, expected_programs):
         def tearDownClass(cls):  # suppress(N802)
             """Remove container."""
             os.environ = cls._environ_backup
-            try:
-                shutil.rmtree(cls.container_temp_dir)
-            except OSError as err:
-                if err.errno != errno.ENOENT:  # suppress(PYC90)
-                    raise err
+            _safe_rmtree(cls.container_temp_dir)
 
         def setUp(self):  # suppress(N802)
             """Create a copy of and enter sample project directory."""
