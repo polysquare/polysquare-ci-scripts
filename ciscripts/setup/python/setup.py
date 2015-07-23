@@ -14,9 +14,8 @@ def _install_test_dependencies(cont, util, py_util):
     """Install testing dependencies for python project."""
     py_util.pip_install(cont,
                         util,
-                        ("http://github.com/smspillaz/green/tarball/"
-                         "process-overhaul-modules-subprocesses"
-                         "#egg=green-1.12.0"))
+                        ("git+git://github.com/smspillaz/green.git"
+                         "@process-overhaul-modules-subprocesses"))
     py_util.pip_install_deps(cont,
                              util,
                              "green")

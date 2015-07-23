@@ -302,7 +302,6 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
     def __init__(self, *args, **kwargs):
         """Initialize this test case and set default variables."""
         super(TestLanguageContainer, self).__init__(*args, **kwargs)
-        self._container_dir = tempfile.mkdtemp(dir=os.getcwd())
         self._container = None
         self._util = None
 
@@ -312,28 +311,25 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         Load scripts/util.py and make a note of it.
         """
         super(TestLanguageContainer, self).setUp()
+        container_dir = tempfile.mkdtemp(prefix="language_cont_test",
+                                         dir=os.getcwd())
+        self.addCleanup(lambda: shutil.rmtree(container_dir))
 
         parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                ".."))
         assert "ciscripts" in os.listdir(parent)
 
         shutil.copytree(os.path.join(parent, "ciscripts"),
-                        os.path.join(self._container_dir,
+                        os.path.join(container_dir,
                                      "_scripts",
                                      "ciscripts"))
 
         printer = bootstrap.escaped_printer_with_character("\\")
         shell = bootstrap.BashParentEnvironment(printer)
         self._container = bootstrap.ContainerDir(shell,
-                                                 directory=self._container_dir)
+                                                 directory=container_dir)
         self._util = self._container.fetch_and_import("util.py")
-
         self.note_loaded_module_path(self._container, "util.py")
-
-    def tearDown(self):  # suppress(N802)
-        """Remove _container_dir and unloads modules."""
-        shutil.rmtree(self._container_dir)
-        super(TestLanguageContainer, self).tearDown()
 
     def _get_lang_container(self, language, override=None, prepend=None):
         """Get an empty implementation of LanguageBase."""
@@ -611,6 +607,7 @@ class TestMain(TrackedLoadedModulesTestCase):
         self._current_dir = os.getcwd()
         prefix = os.path.join(self._current_dir, "main_container_test")
         self._test_dir = tempfile.mkdtemp(prefix=prefix)
+        self.addCleanup(lambda: shutil.rmtree(self._test_dir))
         self._container_dir = os.path.join(self._test_dir, "container")
         os.chdir(self._test_dir)
 
@@ -622,7 +619,6 @@ class TestMain(TrackedLoadedModulesTestCase):
         This will remove our temporary directory.
         """
         os.chdir(self._current_dir)
-        shutil.rmtree(self._test_dir)
         super(TestMain, self).tearDown()
 
     def test_create_dir_and_pass_control_to_script(self):

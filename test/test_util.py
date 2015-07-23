@@ -803,7 +803,6 @@ class TestGetSystemIdentifier(TestCase):
     def __init__(self, *args, **kwargs):
         """Initialize this TestCase."""
         super(TestGetSystemIdentifier, self).__init__(*args, **kwargs)
-        self._temporary_directory = None
         self.container = None
 
     def setUp(self):  # suppress(N802)
@@ -828,8 +827,9 @@ class TestGetSystemIdentifier(TestCase):
             return named_cache_dir
 
         temp_dir_prefix = os.path.join(os.getcwd(), "sysid")
-        self._temporary_directory = tempfile.mkdtemp(prefix=temp_dir_prefix)
-        cache_dir_func = named_cache_dir_func(self._temporary_directory)
+        temporary_directory = tempfile.mkdtemp(prefix=temp_dir_prefix)
+        self.addCleanup(lambda: shutil.rmtree(temporary_directory))
+        cache_dir_func = named_cache_dir_func(temporary_directory)
 
         self.container = type("StubContainer",
                               (object, ),
@@ -837,7 +837,6 @@ class TestGetSystemIdentifier(TestCase):
 
     def tearDown(self):  # suppress(N802)
         """Remove the temporary directory for this container."""
-        shutil.rmtree(self._temporary_directory)
         super(TestGetSystemIdentifier, self).tearDown()
 
     def test_system_identifier_has_architecture(self):

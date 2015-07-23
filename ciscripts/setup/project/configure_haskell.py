@@ -137,7 +137,8 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
                                  util.long_running_suppressed_output(),
                                  "cabal",
                                  "install",
-                                 pkg_name)
+                                 pkg_name,
+                                 instant_fail=True)
 
         # suppress(super-on-old-class)
         def clean(self, util):
@@ -324,7 +325,8 @@ def run(container, util, shell, ver_info):
                                  util.long_running_suppressed_output(5),
                                  "make",
                                  "-j16",
-                                 "install")
+                                 "install",
+                                 instant_fail=True)
 
     def haskell_installer():
         """Install build manager."""

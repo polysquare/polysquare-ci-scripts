@@ -763,6 +763,9 @@ def main(argv):
                                                     parent_shell,
                                                     argv=remainder)
 
+        if container.return_code() != 0:
+            parent_shell.exit(container.return_code())
+
         return container.return_code()
 
 if __name__ == "__main__":
