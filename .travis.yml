@@ -14,7 +14,7 @@ install:
  # used during the build process.
  - eval "$(curl -LSs --connect-timeout 2 --retry 100 file://$(pwd)/ciscripts/bootstrap.py | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e bash -p /dev/stdout)"
 script:
- - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" "tmp*" --lint-exclude "*/sample/*" --no-mdl
+ - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" "*/_scripts/*" "tmp*" --lint-exclude "*/sample/*" --no-mdl
 after_success:
  - polysquare_run coverage/python/coverage.py
 before_cache:
