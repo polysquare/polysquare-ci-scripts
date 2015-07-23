@@ -530,12 +530,23 @@ def where_unavailable(executable,
     return function(*args, **kwargs)
 
 
+def compare_contents(lhs, rhs):
+    """Compare contents of two specified files."""
+    for filename in (lhs, rhs):
+        if not os.path.exists(filename):
+            return False
+
+    with open(lhs, "r") as lhs_file, open(rhs, "r") as rhs_file:
+        return lhs_file.read() == rhs_file.read()
+
+
 def store_file_mtime_in(source, output_filename):
     """Store source's modification time in output_filename."""
     with open(output_filename, "w") as mtime_file:
         mtime_file.write(str(os.stat(source).st_mtime))
 
 
+# suppress(unused-function)
 def store_current_mtime_in(filename):
     """Store current modification time in filename."""
     with tempfile.NamedTemporaryFile() as temp:
@@ -576,6 +587,7 @@ def exists_and_is_more_recent(cont, filename, mtime):
     return False
 
 
+# suppress(unused-function)
 def where_more_recent(cont, filename, mtime, func, *args, **kwargs):
     """Call func if filename is more recent than mtime."""
     if exists_and_is_more_recent(cont, filename, mtime):
