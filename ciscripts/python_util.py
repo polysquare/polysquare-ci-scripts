@@ -135,9 +135,7 @@ def _pip_install_internal(container, util, pip_path, *args, **kwargs):
         container,
         util.long_running_suppressed_output(),
         "pip",
-        "install",
-        "--download-cache",
-        container.named_cache_dir("pip-cache")
+        "install"
     ] + list(args)
 
     allow_external = kwargs.pop("polysquare_allow_external", None) or list()
