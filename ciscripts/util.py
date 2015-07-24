@@ -285,9 +285,13 @@ def running_output(process, outputs):
     finally:
         stdout.join()
 
-    for line in stderr_lines:
-        IndentedLogger.message(line.decode("utf-8"))
-        state.printed_message = True
+    # Print a new line before printing any stderr messages
+    if len(stderr_lines):
+        IndentedLogger.message("\n")
+
+        for line in stderr_lines:
+            IndentedLogger.message(line.decode("utf-8"))
+            state.printed_message = True
 
     if state.printed_message:
         print_message("\n")

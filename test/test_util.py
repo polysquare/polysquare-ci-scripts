@@ -459,7 +459,7 @@ class TestExecute(TestCase):
                          "import sys; "
                          "sys.stdout.write('a\\nb'); "
                          "sys.stderr.write('c'); "
-                         "sys.stdout.write('d\\n')")
+                         "sys.stdout.write('d')")
 
         self.assertEqual(captured_output.stderr.replace("\r\n", "\n"),
                          "\na\nbd\nc\n")
