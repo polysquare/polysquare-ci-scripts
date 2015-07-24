@@ -98,9 +98,11 @@ class BashParentEnvironment(object):
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
         value = BashParentEnvironment._format_environment_value(value)
-        script = ("export {k}=$(python -c \"print(\\\":\\\".join(["
-                  "v for v in \\\"${k}\\\".split(\\\":\\\") "
-                  "if v not in \\\"{v}\\\".split(\\\":\\\")]))\")")
+        script = ("export {k}=$(python -c \""
+                  "print(\\\":\\\".join(\\\"${k}\\\".split(\\\":\\\")"
+                  "[:\\\"${k}\\\".split(\\\":\\\").index(\\\"{v}\\\")] + "
+                  "\\\"${k}\\\".split(\\\":\\\")[\\\"${k}\\\".split(\\\":\\\")"
+                  ".index(\\\"{v}\\\") + 1:]))\")")
         # There is something about the format() method on str which causes
         # pychecker to trip over when passing keyword arguments. Just
         # pass keyword arguments using the ** notation.
@@ -152,9 +154,12 @@ class PowershellParentEnvironment(object):
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
-        script = ("$env:{k} = python -c \"print(';'.join(["
-                  "v for v in r'$env:{k}'.split(';') "
-                  "if v not in r'{v}'.split(';')]))\"")
+        script = ("$env:{k} = python -c \""
+                  "print(';'.join(r'$env:{k}'.split(';')"
+                  "[:r'$env:{k}'.split(r';').index(r'{v}')] + "
+                  "r'$env:{k}'.split(';')"
+                  "[r'$env:{k}'.split(';')"
+                  ".index(r'{v}') + 1:]))\"")
         script_keys = {
             "k": key,
             "v": value

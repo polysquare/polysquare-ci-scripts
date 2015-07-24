@@ -84,7 +84,9 @@ def prepend_environment_variable(parent, key, value):
 def remove_from_environment_variable(parent, key, value):
     """Remove value from an environment variable list in key."""
     environ_list = maybe_environ(key).split(os.pathsep)
-    os.environ[key] = os.pathsep.join([i for i in environ_list if i != value])
+    environ_list.remove(value)
+
+    os.environ[key] = os.pathsep.join(environ_list)
 
     # See http://stackoverflow.com/questions/370047/
     if parent:
