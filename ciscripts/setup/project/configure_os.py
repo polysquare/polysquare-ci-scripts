@@ -252,7 +252,7 @@ def run(container,
                   "polysquare-travis-container/tarball/master")
         util.where_unavailable("psq-travis-container-create",
                                py_util.pip_install,
-                               py_cont,
+                               container,
                                util,
                                remote,
                                "--process-dependency-links",
