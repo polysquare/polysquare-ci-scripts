@@ -67,7 +67,16 @@ _BII_SCRIPT = ("#!/usr/bin/env python\n"
                "main(sys.argv[1:])")
 
 
-def run(container, util, shell, ver_info):
+def _write_bii_script(util, bii_bin, bii_dir, bii_script_filename):
+    """Write bii command line script."""
+    os.makedirs(bii_bin)
+    with open(bii_script_filename, "w") as bii_scr:
+        escaped_bii_dir = bii_dir.replace("\\", "/")
+        bii_scr.write(_BII_SCRIPT.format(escaped_bii_dir))
+    util.make_executable(bii_script_filename)
+
+
+def run(container, util, shell, ver_info, os_cont):
     """Install and activates a bii installation.
 
     This function returns a BiiContainer, which has a path
@@ -125,35 +134,34 @@ def run(container, util, shell, ver_info):
                                  "--init",
                                  "--recursive",
                                  instant_fail=True)
-                    os.makedirs(bii_bin)
                     util.force_remove_tree(os.path.join(biicode_repo,
                                                         "client",
                                                         "test"))
                     util.force_remove_tree(os.path.join(biicode_repo,
                                                         "common",
                                                         "test"))
-                    with open(bii_script_filename, "w") as bii_scr:
-                        escaped_bii_dir = bii_dir.replace("\\", "/")
-                        bii_scr.write(_BII_SCRIPT.format(escaped_bii_dir))
-                    util.make_executable(bii_script_filename)
-                    util.execute(container,
-                                 util.long_running_suppressed_output(),
-                                 "pip",
-                                 "install",
-                                 "-r",
-                                 os.path.join(biicode_repo,
-                                              "common",
-                                              "requirements.txt"),
-                                 instant_fail=True)
-                    util.execute(container,
-                                 util.long_running_suppressed_output(),
-                                 "pip",
-                                 "install",
-                                 "-r",
-                                 os.path.join(biicode_repo,
-                                              "client",
-                                              "requirements.txt"),
-                                 instant_fail=True)
+                    _write_bii_script(util,
+                                      bii_bin,
+                                      bii_dir,
+                                      bii_script_filename)
+                    os_cont.execute(container,
+                                    util.long_running_suppressed_output(),
+                                    "pip",
+                                    "install",
+                                    "-r",
+                                    os.path.join(biicode_repo,
+                                                 "common",
+                                                 "requirements.txt"),
+                                    instant_fail=True)
+                    os_cont.execute(container,
+                                    util.long_running_suppressed_output(),
+                                    "pip",
+                                    "install",
+                                    "-r",
+                                    os.path.join(biicode_repo,
+                                                 "client",
+                                                 "requirements.txt"),
+                                    instant_fail=True)
 
             util.force_remove_tree(os.path.join(biicode_repo, ".git"))
             os.remove(os.path.join(biicode_repo, "client", ".git"))
