@@ -557,16 +557,14 @@ def acceptance_test_for(project_type, expected_programs):
 
         _PROGRAMS.extend(expected_programs)
 
-        @parameterized.expand(_PROGRAMS,
-                              testcase_func_doc=format_with_args(0))
+        @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
         def test_program_is_available_in_python_script(self, program):
             """Executable {0} is available after running setup."""
             temp_dir = self.__class__.container_temp_dir
             self.assertThat(util.which(program),
                             IsInSubdirectoryOf(temp_dir))
 
-        @parameterized.expand(_PROGRAMS,
-                              testcase_func_doc=format_with_args(0))
+        @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
         def test_program_is_available_in_parent_shell(self, program):
             """Executable {0} is available in parent shell after setup."""
             script = WHICH_SCRIPT.format(program)
