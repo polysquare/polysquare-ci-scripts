@@ -15,6 +15,7 @@ from test.testutil import (CIScriptExitsWith,
                            CapturedOutput,
                            WHICH_SCRIPT,
                            acceptance_test_for,
+                           copy_scripts_to_directory,
                            format_with_args)
 
 import ciscripts.util as util
@@ -27,6 +28,8 @@ REQ_PROGRAMS = [
     "psq-travis-container-exec",
     "psq-travis-container-create"
 ]
+
+__file__ = os.path.abspath(__file__)
 
 
 class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
@@ -51,6 +54,7 @@ class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
         container = self.__class__.container
         output_strategy = util.output_on_fail
         script = WHICH_SCRIPT.format(program)
+        copy_scripts_to_directory(os.getcwd())
         self.assertEqual(self.__class__.lang_container.execute(container,
                                                                output_strategy,
                                                                "python",

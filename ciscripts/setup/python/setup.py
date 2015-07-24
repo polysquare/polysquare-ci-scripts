@@ -9,16 +9,19 @@ import platform
 
 from collections import defaultdict
 
+from distutils.version import LooseVersion
 
-def _install_test_dependencies(cont, util, py_util):
+
+def _install_test_dependencies(cont, util, py_util, *args):
     """Install testing dependencies for python project."""
     py_util.pip_install(cont,
                         util,
                         ("git+git://github.com/smspillaz/green.git"
-                         "@process-overhaul-modules-subprocesses"))
+                         "@process-overhaul-modules-subprocesses#egg=green"))
     py_util.pip_install_deps(cont,
                              util,
-                             "green")
+                             "green",
+                             *args)
 
 
 def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
@@ -43,12 +46,15 @@ def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
 
 def _upgrade_pip(cont, util):
     """Upgrade pip installation in current virtual environment."""
-    util.execute(cont,
-                 util.long_running_suppressed_output(),
-                 "pip",
-                 "install",
-                 "--upgrade",
-                 "pip")
+    import pip
+
+    if LooseVersion(pip.__version__) < LooseVersion("7.1.0"):
+        util.execute(cont,
+                     util.long_running_suppressed_output(),
+                     "pip",
+                     "install",
+                     "--upgrade",
+                     "pip")
 
 
 def run(cont, util, shell, argv=None):
@@ -76,7 +82,7 @@ def run(cont, util, shell, argv=None):
         # errors when attempting to remove the old version of
         # pip, so don't perform, the upgrade on Windows
         if platform.system() != "Windows":
-            with util.Task("""Upgrading pip"""):
+            with util.Task("""Ensuring that pip is up to date"""):
                 with py_cont.deactivated(util):
                     _upgrade_pip(cont, util)
 
@@ -85,21 +91,23 @@ def run(cont, util, shell, argv=None):
         with util.Task("""Installing python linters"""):
             py_util.pip_install_deps(cont,
                                      util,
-                                     "polysquarelint",
-                                     "--process-dependency-links",
-                                     "--allow-external",
-                                     "green")
+                                     "polysquarelint")
 
         with util.Task("""Installing python test runners"""):
             # Install testing dependencies both inside and outside container.
             # They need to be installed in the container so that static
             # analysis tools can successfully import them.
             with py_cont.deactivated(util):
-                _install_test_dependencies(cont, util, py_util)
-                py_util.pip_install(cont, util, "coverage")
+                _install_test_dependencies(cont,
+                                           util,
+                                           py_util,
+                                           "coverage")
 
-            _install_test_dependencies(cont, util, py_util)
-            py_util.pip_install(cont, util, "coverage", "coveralls")
+            _install_test_dependencies(cont,
+                                       util,
+                                       py_util,
+                                       "coverage",
+                                       "coveralls")
 
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,

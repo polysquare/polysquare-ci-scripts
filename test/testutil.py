@@ -36,6 +36,8 @@ from testtools import TestCase
 from testtools.content import text_content
 from testtools.matchers import Mismatch
 
+__file__ = os.path.abspath(__file__)
+
 
 class CapturedOutput(object):  # suppress(too-few-public-methods)
 
@@ -384,6 +386,19 @@ def _copytree_ignore_notfound(src, dst):
             pass
 
 
+def copy_scripts_to_directory(target):
+    """Utility method to copy CI script to current directory.
+
+    They will be located at /ciscripts/.
+    """
+    parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
+                                           ".."))
+    assert "ciscripts" in os.listdir(parent)
+
+    shutil.copytree(os.path.join(parent, "ciscripts"),
+                    os.path.join(target, "ciscripts"))
+
+
 def _safe_rmtree(directory):
     """Call shutil.rmtree, but ignore ENOENT."""
     try:
@@ -443,10 +458,6 @@ def acceptance_test_for(project_type, expected_programs):
         @classmethod
         def setUpClass(cls):  # suppress(N802)
             """Call container setup script."""
-            parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
-                                                   ".."))
-            assert "ciscripts" in os.listdir(parent)
-
             temp_dir_prefix = "{}_acceptance_test".format(project_type)
             cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd(),
                                                       prefix=temp_dir_prefix)
@@ -466,10 +477,8 @@ def acceptance_test_for(project_type, expected_programs):
                 except (shutil.Error, OSError):  # suppress(pointless-except)
                     pass
 
-            shutil.copytree(os.path.join(parent, "ciscripts"),
-                            os.path.join(cls.container_temp_dir,
-                                         "_scripts",
-                                         "ciscripts"))
+            copy_scripts_to_directory(os.path.join(cls.container_temp_dir,
+                                                   "_scripts"))
 
             setup_script = "setup/{type}/setup.py".format(type=project_type)
             cls.setup_container_output = CapturedOutput()
@@ -548,21 +557,20 @@ def acceptance_test_for(project_type, expected_programs):
 
         _PROGRAMS.extend(expected_programs)
 
-        @parameterized.expand(_PROGRAMS,
-                              testcase_func_doc=format_with_args(0))
+        @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
         def test_program_is_available_in_python_script(self, program):
             """Executable {0} is available after running setup."""
             temp_dir = self.__class__.container_temp_dir
             self.assertThat(util.which(program),
                             IsInSubdirectoryOf(temp_dir))
 
-        @parameterized.expand(_PROGRAMS,
-                              testcase_func_doc=format_with_args(0))
+        @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
         def test_program_is_available_in_parent_shell(self, program):
             """Executable {0} is available in parent shell after setup."""
             script = WHICH_SCRIPT.format(program)
             py_cmd = "python -c \"{}\"".format(script)
             with self.in_parent_context(py_cmd) as cmd:
+                copy_scripts_to_directory(os.getcwd())
                 self.assertThat(cmd, SubprocessExitsWith(0))
 
     return AcceptanceTestForProject

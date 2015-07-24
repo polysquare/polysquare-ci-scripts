@@ -61,7 +61,7 @@ def run(cont, util, shell, argv=None):
             linter = "polysquare-generic-file-linter"
             util.where_unavailable(linter,
                                    py_util.pip_install,
-                                   py_cont,
+                                   cont,
                                    util,
                                    linter,
                                    instant_fail=True,
