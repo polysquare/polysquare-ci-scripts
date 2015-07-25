@@ -739,8 +739,15 @@ def main(argv):
         bootstrap_script_components = bootstrap_script.split(os.path.sep)
         scripts_path = os.path.sep.join(bootstrap_script_components[:-2])
 
-        parent_shell.overwrite_environment_variable("CONTAINER_DIR",
-                                                    container.path())
+        variables_to_set = {
+            "CONTAINER_DIR": container.path(),
+            "JOBSTAMPS_ALWAYS_USE_HASHES": "1",
+            "CLINT_FORCE_COLOR": "1"
+        }
+
+        for key, value in variables_to_set.items():
+            util.overwrite_environment_variable(parent_shell, key, value)
+
         parent_shell.define_command("polysquare_run",
                                     "python \"{bootstrap}\" "
                                     "-d \"{container}\" "
