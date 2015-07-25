@@ -431,21 +431,30 @@ def acceptance_test_for(project_type, expected_programs):
             standard output of the container's setup script has been evaluated,
             eg, all environment variables are exported.
             """
+            directory = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
+                                                             "parent_script"))
+
+            script_path = os.path.abspath(os.path.join(directory,
+                                                       "script.ps1"))
+            script_path_for_shell = os.path.abspath(script_path)
             if platform.system() == "Windows":
                 shell = ["powershell", "-ExecutionPolicy", "Bypass"]
+                script_path_for_shell = "\"{}\"".format(script_path_for_shell)
             else:
                 shell = ["bash"]
             script = ("{cls.setup_container_output.stdout}"
                       "{command}").format(cls=self.__class__, command=command)
 
-            directory = tempfile.mkdtemp(prefix=os.path.join(os.getcwd(),
-                                                             "parent_script"))
-
             try:
                 with util.in_dir(directory):
-                    with open("script.ps1", "w") as script_file:
+                    with open(script_path, "w") as script_file:
                         script_file.write(script)
-                    yield shell + [os.path.abspath(script_file.name)]
+
+                    # powershell requires that paths with spaces be
+                    # quoted, even when passed as part of the command line
+                    # arguments, so we use script_path here as it is formatted
+                    # above
+                    yield shell + [script_path_for_shell]
             finally:
                 script_file.close()
                 shutil.rmtree(directory)

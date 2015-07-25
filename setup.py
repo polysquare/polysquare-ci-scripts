@@ -31,10 +31,10 @@ setup(name="polysquare-ci-scripts",
       extras_require={
           "green": [
               "nose",
-              "nose-parameterized>=0.4.0",
+              "nose-parameterized>=0.5.0",
               "mock",
-              "green",
-              "setuptools-green",
+              "green>=2.0.0",
+              "setuptools-green>=0.0.11",
               "six",
               "testtools"
           ],

@@ -255,7 +255,6 @@ def run(container,
                                container,
                                util,
                                remote,
-                               "--process-dependency-links",
                                path=py_cont.executable_path(),
                                instant_fail=True)
 

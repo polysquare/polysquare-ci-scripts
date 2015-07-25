@@ -674,6 +674,58 @@ def construct_parent_shell(eval_output_with, print_script_to):
         return BashParentEnvironment(lambda _: None)
 
 
+def _set_ci_environment_variables(parent_shell):
+    """Set some influential environment variables for all CI runs."""
+    variables_to_set = {
+        "JOBSTAMPS_ALWAYS_USE_HASHES": "1",
+        "CLINT_FORCE_COLOR": "1"
+    }
+
+    for key, value in variables_to_set.items():
+        os.environ[key] = value
+        parent_shell.overwrite_environment_variable(key, value)
+
+
+def _determine_outputs(print_to_option):
+    """Return tuple of messages, script, being file objects to print to."""
+    if print_to_option:
+        print_script_to = open(print_to_option, "wt")
+        if print_to_option == "/dev/stdout":
+            print_messages_to = sys.stderr
+        else:
+            print_messages_to = sys.stdout
+    else:
+        try:
+            from io import StringIO
+        except ImportError:
+            from cStringIO import StringIO
+
+        print_script_to = StringIO()
+        print_messages_to = sys.stdout
+
+    return (print_script_to, print_messages_to)
+
+
+# suppress(too-many-arguments)
+def _define_script_command(command_name,
+                           parent_shell,
+                           bootstrap_script,
+                           container_path,
+                           scripts_path,
+                           script):
+    """Define a shortcut to run a CI script in the parent shell."""
+    script_fragment = "\"{}\"".format(script) if script else ""
+    parent_shell.define_command(command_name,
+                                "python \"{bootstrap}\" "
+                                "-d \"{container}\" "
+                                "-r \"{scripts}\" "
+                                "-s {script}"
+                                "".format(bootstrap=bootstrap_script,
+                                          container=container_path,
+                                          scripts=scripts_path,
+                                          script=script_fragment))
+
+
 def main(argv):
     """Create or use an existing container and run a script.
 
@@ -713,20 +765,7 @@ def main(argv):
                         help="Directory where scripts are already stored in")
     args, remainder = parser.parse_known_args(argv)
 
-    if args.print_to:
-        print_script_to = open(args.print_to, "wt")
-        if args.print_to == "/dev/stdout":
-            print_messages_to = sys.stderr
-        else:
-            print_messages_to = sys.stdout
-    else:
-        try:
-            from io import StringIO
-        except ImportError:
-            from cStringIO import StringIO
-
-        print_script_to = StringIO()
-        print_messages_to = sys.stdout
+    print_script_to, print_messages_to = _determine_outputs(args.print_to)
 
     with closing(print_script_to):
         parent_shell = construct_parent_shell(args.eval_output,
@@ -739,23 +778,25 @@ def main(argv):
         bootstrap_script_components = bootstrap_script.split(os.path.sep)
         scripts_path = os.path.sep.join(bootstrap_script_components[:-2])
 
+        # Overwrite CONTAINER_DIR in the output script, but not
+        # for our own invocation, we'll need the parent instance
+        # if we're actually in a test
         parent_shell.overwrite_environment_variable("CONTAINER_DIR",
                                                     container.path())
-        parent_shell.define_command("polysquare_run",
-                                    "python \"{bootstrap}\" "
-                                    "-d \"{container}\" "
-                                    "-r \"{scripts}\" "
-                                    "-s".format(bootstrap=bootstrap_script,
-                                                container=container.path(),
-                                                scripts=scripts_path))
-        parent_shell.define_command("polysquare_cleanup",
-                                    "python \"{bootstrap}\" "
-                                    "-d \"{container}\" "
-                                    "-r \"{scripts}\" "
-                                    "-s clean.py"
-                                    "".format(bootstrap=bootstrap_script,
-                                              container=container.path(),
-                                              scripts=scripts_path))
+        _set_ci_environment_variables(parent_shell)
+
+        _define_script_command("polysquare_run",
+                               parent_shell,
+                               bootstrap_script,
+                               container.path(),
+                               scripts_path,
+                               None)
+        _define_script_command("polysquare_cleanup",
+                               parent_shell,
+                               bootstrap_script,
+                               container.path(),
+                               scripts_path,
+                               "clean.py")
 
         # Done, pass control to the script we're to run
         container.fetch_and_import(args.script).run(container,
