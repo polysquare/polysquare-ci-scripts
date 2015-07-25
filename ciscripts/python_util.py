@@ -213,7 +213,10 @@ def _parse_setup_py():
 def _dependencies_to_update(installed, target):
     """Return a list of dependencies to install."""
     requested = _parse_setup_py().get("extras_require", dict()).get(target,
-                                                                    dict())
+                                                                    list())
+    requested += _parse_setup_py().get("install_requires", list())
+    requested += _parse_setup_py().get("setup_requires", list())
+    requested += _parse_setup_py().get("test_requires", list())
 
     return _packages_to_install(installed, requested)
 
