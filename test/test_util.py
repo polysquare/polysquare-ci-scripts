@@ -412,8 +412,11 @@ class TestExecute(TestCase):
             del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
 
         if (platform.python_implementation() != "CPython" or
+                platform.system() == "Windows" or
                 sys.version_info.major != 3):
-            self.skipTest("""only python 3 can run this example correctly""")
+            expected = "  ..."
+        else:
+            expected = u"\N{check mark} ..."
 
         captured_output = testutil.CapturedOutput()
         with captured_output:
@@ -423,7 +426,7 @@ class TestExecute(TestCase):
                          _utf8_print_cmd())
 
         self.assertThat(captured_output.stderr,
-                        DocTestMatches(u"\N{check mark} ...",
+                        DocTestMatches(expected,
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE))
 
@@ -433,8 +436,11 @@ class TestExecute(TestCase):
             del os.environ["POLYSQUARE_ALWAYS_PRINT_PROCESS_OUTPUT"]
 
         if (platform.python_implementation() != "CPython" or
+                platform.system() == "Windows" or
                 sys.version_info.major != 3):
-            self.skipTest("""only python 3 can run this example correctly""")
+            expected = "  ..."
+        else:
+            expected = u"\N{check mark} ..."
 
         captured_output = testutil.CapturedOutput()
         with captured_output:
@@ -444,7 +450,7 @@ class TestExecute(TestCase):
                          _utf8_print_cmd())
 
         self.assertThat(captured_output.stderr[1:],
-                        DocTestMatches(u"\N{check mark} ...",
+                        DocTestMatches(expected,
                                        doctest.ELLIPSIS |
                                        doctest.NORMALIZE_WHITESPACE))
 

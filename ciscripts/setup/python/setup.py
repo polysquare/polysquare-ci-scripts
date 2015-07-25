@@ -66,7 +66,7 @@ def run(cont, util, shell, argv=None):
                                                         argv)
 
     with util.Task("""Setting up python project"""):
-        py_ver = defaultdict(lambda: "2.7.9")
+        py_ver = defaultdict(lambda: "3.4.1")
         py_config_script = "setup/project/configure_python.py"
         py_util = cont.fetch_and_import("python_util.py")
         py_cont = cont.fetch_and_import(py_config_script).run(cont,

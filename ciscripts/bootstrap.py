@@ -36,8 +36,8 @@ try:
     from urllib.request import urlopen
     from urllib.error import URLError
 except ImportError:
-    from urllib2 import urlopen
-    from urllib2 import URLError
+    from urllib2 import urlopen  # suppress(import-error)
+    from urllib2 import URLError  # suppress(import-error)
 
 
 def force_mkdir(directory):
@@ -698,7 +698,7 @@ def _determine_outputs(print_to_option):
         try:
             from io import StringIO
         except ImportError:
-            from cStringIO import StringIO
+            from cStringIO import StringIO   # suppress(import-error)
 
         print_script_to = StringIO()
         print_messages_to = sys.stdout
