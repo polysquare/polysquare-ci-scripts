@@ -36,15 +36,20 @@ except ImportError:
 PRINT_MESSAGES_TO = None
 
 
+def _write_log_safe(message):
+    r"""Detect if writing to a file and replace \r with \n ."""
+    fileobj = PRINT_MESSAGES_TO if PRINT_MESSAGES_TO else sys.stderr
+    if not getattr(fileobj, "isatty", lambda: False)():
+        message = message.replace("\r", "")
+
+    fileobj.write(message)
+    fileobj.flush()
+
+
 def print_message(message):
     """Print to PRINT_MESSAGES_TO."""
-    message = message.encode(sys.getdefaultencoding(),
-                             "replace").decode("utf-8")
-    if PRINT_MESSAGES_TO:
-        PRINT_MESSAGES_TO.write(message)
-        PRINT_MESSAGES_TO.flush()
-    else:
-        sys.stderr.write(message)
+    _write_log_safe(message.encode(sys.getdefaultencoding(),
+                                   "replace").decode("utf-8"))
 
 
 def overwrite_environment_variable(parent, key, value):
