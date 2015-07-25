@@ -615,7 +615,7 @@ def url_error():
     try:
         from urllib.error import URLError
     except ImportError:
-        from urllib2 import URLError
+        from urllib2 import URLError  # suppress(import-error)
 
     return URLError
 
@@ -628,7 +628,7 @@ def url_opener():
     try:
         from urllib.request import urlopen
     except ImportError:
-        from urllib2 import urlopen
+        from urllib2 import urlopen  # suppress(import-error)
 
     def _urlopen(*args, **kwargs):
         """Open url, but set the timeout to 30 and retry a few times."""

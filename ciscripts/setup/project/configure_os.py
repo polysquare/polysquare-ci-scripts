@@ -240,7 +240,7 @@ def run(container,
     """
     config_python = "setup/project/configure_python.py"
 
-    py_ver = defaultdict(lambda: "2.7.9")
+    py_ver = defaultdict(lambda: "3.4.1")
     py_util = container.fetch_and_import("python_util.py")
     py_cont = container.fetch_and_import(config_python).run(container,
                                                             util,

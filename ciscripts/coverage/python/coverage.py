@@ -15,7 +15,7 @@ def run(cont, util, shell, argv=None):
     del argv
 
     with util.Task("""Submitting coverage totals"""):
-        py_ver = defaultdict(lambda: "2.7.9")
+        py_ver = defaultdict(lambda: "3.4.1")
         cont.fetch_and_import("setup/project/configure_python.py").run(cont,
                                                                        util,
                                                                        shell,

@@ -25,7 +25,7 @@ def run(cont, util, shell, argv=None):
         parse_result, _ = parser.parse_known_args(argv or list())
 
         config_python = "setup/project/configure_python.py"
-        py_ver = defaultdict(lambda: "2.7.9")
+        py_ver = defaultdict(lambda: "3.4.1")
 
         py_util = cont.fetch_and_import("python_util.py")
         py_cont = cont.fetch_and_import(config_python).run(cont,
