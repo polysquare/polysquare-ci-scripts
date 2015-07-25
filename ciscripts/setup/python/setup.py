@@ -14,10 +14,6 @@ from distutils.version import LooseVersion
 
 def _install_test_dependencies(cont, util, py_util, *args):
     """Install testing dependencies for python project."""
-    py_util.pip_install(cont,
-                        util,
-                        ("git+git://github.com/smspillaz/green.git"
-                         "@process-overhaul-modules-subprocesses#egg=green"))
     py_util.pip_install_deps(cont,
                              util,
                              "green",
