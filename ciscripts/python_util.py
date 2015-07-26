@@ -113,9 +113,9 @@ def _packages_to_install(installed, requested):
         elif ">" in requested:
             return installed <= LooseVersion(requested.split(">")[1])
         elif "<=" in requested:
-            return installed > LooseVersion(requested.split(">=")[1])
+            return installed > LooseVersion(requested.split("<=")[1])
         elif "<" in requested:
-            return installed >= LooseVersion(requested.split(">")[1])
+            return installed >= LooseVersion(requested.split("<")[1])
 
         return False
 
