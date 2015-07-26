@@ -473,7 +473,8 @@ def _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1):
                            "most_recent"), "w") as recent_file:
         recent_file.write(sha1)
 
-    shutil.rmtree(scripts_dir)
+    if os.path.exists(scripts_dir) and os.path.isdir(scripts_dir):
+        shutil.rmtree(scripts_dir)
 
 
 def _fetch_sha1(stale_check):
