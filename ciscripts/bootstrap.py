@@ -558,6 +558,14 @@ class ContainerDir(ContainerBase):
         except KeyError:
             return None
 
+    def fetch_script(self,
+                     script_path,
+                     domain="public-travis-scripts.polysquare.org"):
+        """Wrapper for _fetch_script, returns a FetchedModule."""
+        info = self.script_path(script_path)
+        _fetch_script(info, script_path, domain)
+        return info
+
     def fetch_and_import(self,
                          script_path,
                          domain="public-travis-scripts.polysquare.org"):
@@ -573,9 +581,7 @@ class ContainerDir(ContainerBase):
 
         # First try to find the script locally in the
         # current working directory.
-        info = self.script_path(script_path)
-        _fetch_script(info, script_path)
-
+        info = self.fetch_script(script_path, domain)
         key = "{0}/{1}".format(domain, script_path)
 
         try:
