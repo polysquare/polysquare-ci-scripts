@@ -10,17 +10,17 @@
 # See /LICENCE.md for Copyright information
 """Python related utility functions."""
 
+import hashlib
+
+import json
+
 import os
 
 import re
 
 import subprocess
 
-import warnings
-
 from collections import defaultdict
-
-from contextlib import contextmanager
 
 from distutils.version import LooseVersion
 
@@ -129,7 +129,7 @@ def _packages_to_install(installed, requested):
     return list(set(pkgs))
 
 
-def _pip_install_internal(container, util, pip_path, *args, **kwargs):
+def _pip_install_internal(container, util, py_path, *args, **kwargs):
     """Run pip install, without removing redundant packages."""
     pip_install_args = [
         container,
@@ -149,7 +149,7 @@ def _pip_install_internal(container, util, pip_path, *args, **kwargs):
     util.execute(*pip_install_args,
                  instant_fail=kwargs.pop("instant_fail", True),
                  **kwargs)
-    _PACKAGES_FOR_PYTHON[pip_path] = fetch_packages_in_active_python()
+    _PACKAGES_FOR_PYTHON[py_path] = fetch_packages_in_active_python()
 
 
 def pip_install(container, util, *args, **kwargs):
@@ -170,53 +170,41 @@ def pip_install(container, util, *args, **kwargs):
                               **kwargs)
 
 
-def _parse_setup_py():
+def _parse_setup_py(container, py_path, fields):
     """Parse /setup.py and return its keyword arguments."""
-    current_setup_py = os.path.join(os.getcwd(), "setup.py")
+    key = hashlib.sha1((os.path.join(os.getcwd(), "setup.py") +
+                        py_path +
+                        "".join(fields)).encode("utf-8")).hexdigest()
     try:
-        return _PARSED_SETUP_FILES[current_setup_py]
+        return _PARSED_SETUP_FILES[key]
     except KeyError:  # suppress(pointless-except)
         pass
 
-    setuptools_arguments = dict()
-
-    @contextmanager
-    def patched_setuptools():
-        """Import setuptools and patch it."""
-        import setuptools
-
-        def setup_hook(*args, **kwargs):
-            """Hook the setup function and log its arguments."""
-            del args
-
-            setuptools_arguments.update(kwargs)
-
-        old_setup = setuptools.setup
-        setuptools.setup = setup_hook
-
-        try:
-            yield
-        finally:
-            setuptools.setup = old_setup
-
-    with patched_setuptools():
-        import imp
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            imp.load_source("setup.py", current_setup_py)
+    parse_setup_py = container.fetch_script("parse_setup.py")
+    fields_stream = subprocess.Popen(["python",
+                                     parse_setup_py.fs_path] + list(fields),
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE).communicate()[0]
+    parsed_fields = json.loads(fields_stream.decode("utf-8").strip())
 
     # Remember result, as querying it takes a second.
-    _PARSED_SETUP_FILES[current_setup_py] = setuptools_arguments
-    return setuptools_arguments
+    _PARSED_SETUP_FILES[key] = parsed_fields
+    return parsed_fields
 
 
-def _dependencies_to_update(installed, target):
+def _dependencies_to_update(container, py_path, installed, target):
     """Return a list of dependencies to install."""
-    requested = _parse_setup_py().get("extras_require", dict()).get(target,
-                                                                    list())
-    requested += _parse_setup_py().get("install_requires", list())
-    requested += _parse_setup_py().get("setup_requires", list())
-    requested += _parse_setup_py().get("test_requires", list())
+    fields = ("extras_require",
+              "install_requires",
+              "setup_requires",
+              "test_requires")
+    parsed_setup_py = _parse_setup_py(container, py_path, fields)
+
+    requested = parsed_setup_py.get("extras_require", dict()).get(target,
+                                                                  list())
+    requested += parsed_setup_py.get("install_requires", list())
+    requested += parsed_setup_py.get("setup_requires", list())
+    requested += parsed_setup_py.get("test_requires", list())
 
     return _packages_to_install(installed, requested)
 
@@ -235,7 +223,9 @@ def pip_install_deps(cont, util, target, *args, **kwargs):
         active_python
     ]
 
-    to_install = (_dependencies_to_update(initially_installed_packages,
+    to_install = (_dependencies_to_update(cont,
+                                          util.which("python"),
+                                          initially_installed_packages,
                                           target) +
                   _packages_to_install(initially_installed_packages,
                                        list(args)))
