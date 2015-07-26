@@ -88,7 +88,9 @@ def removable_container_dir(directory_name):
         # Put a /bootstrap.py script in the container directory
         # so that we don't keep on trying to fetch it all the time
         write_bootstrap_script_into_container(directory_name)
-        yield bootstrap.ContainerDir(shell, directory=directory_name)
+        yield bootstrap.ContainerDir(shell,
+                                     directory=directory_name,
+                                     stale_check=None)
     finally:
         shutil.rmtree(os.path.join(current_cwd, directory_name))
 
@@ -327,7 +329,8 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         printer = bootstrap.escaped_printer_with_character("\\")
         shell = bootstrap.BashParentEnvironment(printer)
         self._container = bootstrap.ContainerDir(shell,
-                                                 directory=container_dir)
+                                                 directory=container_dir,
+                                                 stale_check=None)
         self._util = self._container.fetch_and_import("util.py")
         self.note_loaded_module_path(self._container, "util.py")
 
@@ -632,7 +635,8 @@ class TestMain(TrackedLoadedModulesTestCase):
             bootstrap.main(["-d",
                             self._container_dir,
                             "-s",
-                            "setup/test/setup.py"])
+                            "setup/test/setup.py",
+                            "--keep-scripts"])
 
         self.assertEqual(captured_output.stdout, "Hello\n")
 
@@ -648,6 +652,7 @@ class TestMain(TrackedLoadedModulesTestCase):
                             self._container_dir,
                             "-s",
                             "setup/test/setup.py",
+                            "--keep-scripts",
                             "Argument"])
 
         self.assertEqual(captured_output.stdout, "Argument\n")
@@ -679,6 +684,7 @@ class TestMain(TrackedLoadedModulesTestCase):
                         bootstrap.main(["-d",
                                         self._container_dir,
                                         "-s",
-                                        "setup/test/setup.py"])
+                                        "setup/test/setup.py",
+                                        "--keep-scripts"])
 
                     self.assertEqual(captured_output.stdout, "Hello\n")
