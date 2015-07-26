@@ -506,6 +506,9 @@ def _clear_stale(scripts_dir,
 
     sha1 = _fetch_sha1(stale_check)
 
+    if not sha1:
+        return
+
     try:
         with open(os.path.join(cache_dir, "most_recent"), "r") as recent_file:
             most_recent = recent_file.read().strip()
@@ -513,8 +516,7 @@ def _clear_stale(scripts_dir,
         if most_recent != sha1:
             _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
     except IOError:
-        if sha1:
-            _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
+        _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
 
 
 class ContainerDir(ContainerBase):
