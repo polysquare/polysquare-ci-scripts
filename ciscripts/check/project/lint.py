@@ -35,7 +35,8 @@ def run(cont,  # suppress(too-many-arguments)
     del shell
     del argv
 
-    technical_terms_path = os.path.join(cont.named_cache_dir("tech_terms"),
+    technical_terms_path = os.path.join(cont.named_cache_dir("tech_terms",
+                                                             ephemeral=False),
                                         "technical_terms.txt")
 
     extensions = extensions or list()
@@ -79,6 +80,9 @@ def run(cont,  # suppress(too-many-arguments)
                         cache_dir,
                         "--log-technical-terms-to",
                         technical_terms_path,
+                        "--stamp-file-path",
+                        cont.named_cache_dir("generic_linter",
+                                             ephemeral=False),
                         "--block-regexps"] +
                        block_regexps))
 
@@ -103,7 +107,10 @@ def run(cont,  # suppress(too-many-arguments)
                        ["--spellcheck-cache",
                         cache_dir,
                         "--technical-terms",
-                        technical_terms_path]))
+                        technical_terms_path,
+                        "--stamp-file-path",
+                        cont.named_cache_dir("generic_linter",
+                                             ephemeral=False)]))
 
                 if not no_mdl:
                     for markdown_file in files_to_lint:
@@ -116,4 +123,6 @@ def run(cont,  # suppress(too-many-arguments)
                                   block_regexps)
 
     with util.Task("""Linting markdown documentation"""):
-        run_linters_on_markdown_files(extensions, directories, no_mdl)
+        run_linters_on_markdown_files(extensions,
+                                      directories,
+                                      no_mdl)
