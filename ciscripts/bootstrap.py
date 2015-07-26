@@ -17,6 +17,8 @@ import imp
 
 import importlib
 
+import json
+
 import os
 
 import platform
@@ -465,19 +467,80 @@ def _fetch_script(info,
                     retrycount -= 1
 
 
+def _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1):
+    """Write sha1 to file in cache_dir."""
+    with open(os.path.join(cache_dir,
+                           "most_recent"), "w") as recent_file:
+        recent_file.write(sha1)
+
+    shutil.rmtree(scripts_dir)
+
+
+def _fetch_sha1(stale_check):
+    """Fetch most recent sha1 from github."""
+    retrycount = 5
+    while retrycount != 0:
+        try:
+            contents = urlopen("http://" + stale_check).read().decode("utf-8")
+            return json.loads(contents)["sha"]
+        except URLError:
+            retrycount -= 1
+
+    return None
+
+
+def _clear_stale(scripts_dir,
+                 cache_dir,
+                 stale_check):
+    """Clear scripts_dir if it is out of date.
+
+    We check the sha1 of the most recent commit returned by github
+    against the stored sha1 for our current scripts.
+
+    If stale_check is not specified then we don't bother clearing
+    the directory.
+    """
+    if not stale_check:
+        return
+
+    sha1 = _fetch_sha1(stale_check)
+
+    try:
+        with open(os.path.join(cache_dir, "most_recent"), "r") as recent_file:
+            most_recent = recent_file.read().strip()
+
+        if most_recent != sha1:
+            _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
+    except IOError:
+        if sha1:
+            _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
+
+
 class ContainerDir(ContainerBase):
 
     """A container that all scripts and other data will be stored in."""
 
-    def __init__(self, shell, directory=None, **kwargs):
+    def __init__(self,
+                 shell,
+                 directory=None,
+                 stale_check="public-travis-scripts-sha1.polysquare.org",
+                 **kwargs):
         """Initialize this container in the directory specified."""
         super(ContainerDir, self).__init__(directory)
         if kwargs.get("scripts_directory"):
             self._scripts_dir = kwargs["scripts_directory"]
             self._force_created_scripts_dir = False
         else:
-            self._scripts_dir = force_mkdir(os.path.join(self._container_dir,
-                                                         "_scripts"))
+            self._scripts_dir = (os.path.join(self._container_dir, "_scripts"))
+            # First check if there's a more recent version of these scripts
+            # than the one we have stored. If so, we'll wipe out the
+            # scripts directory
+            _clear_stale(self._scripts_dir,
+                         self.named_cache_dir("scripts-updates",
+                                              ephemeral=False),
+                         stale_check)
+            force_mkdir(self._scripts_dir)
+
             # Ensure that we have a /bootstrap.py script in our
             # container.
             _fetch_script(self.script_path("bootstrap.py"), "bootstrap.py")
@@ -732,6 +795,14 @@ def _define_script_command(command_name,
                                           script=script_fragment))
 
 
+def _stale_check_url(args):
+    """Return stale-check url when we are not keeping stale scripts."""
+    if not args.keep_scripts:
+        return "public-travis-scripts-sha1.polysquare.org"
+
+    return None
+
+
 def main(argv):
     """Create or use an existing container and run a script.
 
@@ -747,28 +818,32 @@ def main(argv):
     and an object representing the parent shell, where environment
     variables can be exported and other shell scripts be evaluated.
     """
-    parser = argparse.ArgumentParser(description="Bootstrap CI Scripts")
+    parser = argparse.ArgumentParser(description="""Bootstrap CI Scripts""")
     parser.add_argument("-d", "--directory",
                         type=str,
                         required=True,
-                        help=("Directory to store language runtimes, "
-                              "scripts and other script details in"))
+                        help=("""Directory to store language runtimes, """
+                              """scripts and other script details in"""))
     parser.add_argument("-s", "--script",
                         type=str,
-                        help="Script to pass control to")
+                        help="""Script to pass control to""")
     parser.add_argument("-e", "--eval-output",
                         type=str,
                         choices=[
                             "bash",
                             "powershell"
                         ],
-                        help="Evaluate output in shell")
+                        help="""Evaluate output in shell""")
     parser.add_argument("-p", "--print-to",
                         type=str,
-                        help="Where to print output script to")
+                        help="""Where to print output script to""")
     parser.add_argument("-r", "--scripts-directory",
                         type=str,
-                        help="Directory where scripts are already stored in")
+                        help=("""Directory where scripts are already """
+                              """stored in"""))
+    parser.add_argument("--keep-scripts",
+                        action="store_true",
+                        help="""Don't remove stale scripts.""")
     args, remainder = parser.parse_known_args(argv)
 
     print_script_to, print_messages_to = _determine_outputs(args.print_to)
@@ -776,7 +851,9 @@ def main(argv):
     with closing(print_script_to):
         parent_shell = construct_parent_shell(args.eval_output,
                                               print_script_to)
-        container = ContainerDir(parent_shell, **(vars(args)))
+        container = ContainerDir(parent_shell,
+                                 stale_check=_stale_check_url(args),
+                                 **(vars(args)))
         util = container.fetch_and_import("util.py")
         # suppress(unused-attribute)
         util.PRINT_MESSAGES_TO = print_messages_to
