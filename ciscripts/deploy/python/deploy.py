@@ -57,6 +57,12 @@ def run(cont, util, shell, argv=None):
                      "install",
                      "setuptools-markdown")
 
+    util.fetch_and_import("deploy/project/deploy.py").run(cont,
+                                                          util,
+                                                          shell,
+                                                          ["--bump-version-on",
+                                                           "setup.py"])
+
     with util.Task("""Preparing for deployment to PyPI"""):
         hs_ver = defaultdict(lambda: "7.8.4")
         hs_script = "setup/project/configure_haskell.py"

@@ -10,6 +10,15 @@ import argparse
 from collections import defaultdict
 
 
+def _prepare_project_deployment(cont, util, py_util, py_cont):
+    """Install travis-bump-version, necessary for deployment on any project."""
+    with util.Task("""Installing version bumper"""):
+        py_util.pip_install(cont, util, "travis-bump-version")
+
+        with py_cont.deactivated(util):
+            py_util.pip_install(cont, util, "travis-bump-version")
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test a generic project.
 
@@ -28,10 +37,10 @@ def run(cont, util, shell, argv=None):
         py_ver = defaultdict(lambda: "3.4.1")
 
         py_util = cont.fetch_and_import("python_util.py")
-        cont.fetch_and_import(config_python).run(cont,
-                                                 util,
-                                                 shell,
-                                                 py_ver)
+        py_cont = cont.fetch_and_import(config_python).run(cont,
+                                                           util,
+                                                           shell,
+                                                           py_ver)
 
         if not parse_result.no_mdl:
             config_ruby = "setup/project/configure_ruby.py"
@@ -62,3 +71,9 @@ def run(cont, util, shell, argv=None):
                                 util,
                                 "polysquare-generic-file-linter>=0.1.1",
                                 instant_fail=True)
+
+        util.prepare_deployment(_prepare_project_deployment,
+                                cont,
+                                util,
+                                py_util,
+                                py_cont)
