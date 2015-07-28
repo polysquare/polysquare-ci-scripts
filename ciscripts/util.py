@@ -467,7 +467,8 @@ def execute(container, output_strategy, *args, **kwargs):
             for arg in args[1:]:
                 IndentedLogger.message(u"""!!!         {0}\n""".format(arg))
             IndentedLogger.message(u"""!!! failed with {0}\n""".format(status))
-            container.note_failure(instant_fail)
+            if not kwargs.get("allow_failure", None):
+                container.note_failure(instant_fail)
 
         return status
 
