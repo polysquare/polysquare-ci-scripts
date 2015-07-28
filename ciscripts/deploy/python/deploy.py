@@ -57,7 +57,7 @@ def run(cont, util, shell, argv=None):
                      "install",
                      "setuptools-markdown")
 
-    util.fetch_and_import("deploy/project/deploy.py").run(cont,
+    cont.fetch_and_import("deploy/project/deploy.py").run(cont,
                                                           util,
                                                           shell,
                                                           ["--bump-version-on",
