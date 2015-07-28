@@ -38,7 +38,7 @@ setup(name="polysquare-ci-scripts",
               "six",
               "testtools"
           ],
-          "polysquarelint": ["polysquare-setuptools-lint"],
+          "polysquarelint": ["polysquare-setuptools-lint>=0.0.17"],
           "upload": ["setuptools-markdown>=0.1"]
       },
       zip_safe=True,

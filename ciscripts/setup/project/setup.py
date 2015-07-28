@@ -28,10 +28,10 @@ def run(cont, util, shell, argv=None):
         py_ver = defaultdict(lambda: "3.4.1")
 
         py_util = cont.fetch_and_import("python_util.py")
-        py_cont = cont.fetch_and_import(config_python).run(cont,
-                                                           util,
-                                                           shell,
-                                                           py_ver)
+        cont.fetch_and_import(config_python).run(cont,
+                                                 util,
+                                                 shell,
+                                                 py_ver)
 
         if not parse_result.no_mdl:
             config_ruby = "setup/project/configure_ruby.py"
@@ -58,11 +58,7 @@ def run(cont, util, shell, argv=None):
                                        path=rb_cont.executable_path())
 
         with util.Task("""Installing polysquare style guide linter"""):
-            linter = "polysquare-generic-file-linter"
-            util.where_unavailable(linter,
-                                   py_util.pip_install,
-                                   cont,
-                                   util,
-                                   linter,
-                                   instant_fail=True,
-                                   path=py_cont.executable_path())
+            py_util.pip_install(cont,
+                                util,
+                                "polysquare-generic-file-linter>=0.1.1",
+                                instant_fail=True)
