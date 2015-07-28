@@ -36,7 +36,7 @@ def run(cont, util, shell, argv=None):
                          util.running_output,
                          "travis-bump-version",
                          *(result.bump_version_on +
-                           ["--api-key",
+                           ["--api-token",
                             api_key,
                             "--repo",
                             job_slug]),
