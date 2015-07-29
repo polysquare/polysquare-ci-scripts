@@ -18,6 +18,9 @@ def _install_test_dependencies(cont, util, py_util, *args):
                              util,
                              "green",
                              *args)
+    py_util.pip_install(cont,
+                        util,
+                        "setuptools-green>=0.0.13")
 
 
 def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
@@ -88,6 +91,9 @@ def run(cont, util, shell, argv=None):
             py_util.pip_install_deps(cont,
                                      util,
                                      "polysquarelint")
+            py_util.pip_install(cont,
+                                util,
+                                "polysquare-setuptools-lint>=0.0.22")
 
         with util.Task("""Installing python test runners"""):
             # Install testing dependencies both inside and outside container.
