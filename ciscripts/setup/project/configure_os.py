@@ -184,11 +184,17 @@ def _update_os_container(container,
         """
         options = list()
 
-        if (os.path.exists(repositories) and
+        repositories_exists = os.path.exists(repositories)
+        packages_exists = os.path.exists(packages)
+
+        if not (repositories_exists or packages_exists):
+            return (os.path.exists(os_container_path), [])
+
+        if (repositories_exists and
                 not util.compare_contents(repositories,
                                           "{}.REPOSITORIES".format(updates))):
             options.append("--repositories={}".format(repositories))
-        if (os.path.exists(packages) and
+        if (packages_exists and
                 not util.compare_contents(packages,
                                           "{}.PACKAGES".format(updates))):
             options.append("--packages={}".format(packages))
