@@ -16,11 +16,11 @@ import shutil
 from collections import defaultdict
 
 _LINUX_REPOS = {
-    "2.8": "{launchpad}/smspillaz/cmake-2.8.12/ubuntu {release} main",
-    "3.0": "{launchpad}/smspillaz/cmake-3.0.2/ubuntu {release} main",
-    "latest": "{launchpad}/smspillaz/cmake-master/ubuntu {release} main"
+    "2.8": ["{launchpad}/smspillaz/cmake-2.8.12/ubuntu {release} main"],
+    "3.0": ["{launchpad}/smspillaz/cmake-3.0.2/ubuntu {release} main"],
+    "latest": ["{launchpad}/smspillaz/cmake-master/ubuntu {release} main"]
 }
-_OSX_REPOS = defaultdict(lambda: "homebrew/versions")
+_OSX_REPOS = defaultdict(lambda: ["homebrew/versions"])
 _REPOS = defaultdict(lambda: defaultdict(lambda: ""),
                      Linux=_LINUX_REPOS,
                      Darwin=_OSX_REPOS)
@@ -86,7 +86,16 @@ def _update_from_user_file(util,
             shutil.copyfile(user_file_name, cached_file)
             return our_file_name
 
-    return None
+        return None
+
+    # If a user file doesn't exist, then just write out our
+    # own file. We don't need to worry about updating from
+    # the user file.
+    with open(our_file_name, "w") as destination_file:
+        destination_file.truncate(0)
+        destination_file.write("\n".join(updated_contents_list))
+
+    return our_file_name
 
 
 def _write_packages_file(util,
