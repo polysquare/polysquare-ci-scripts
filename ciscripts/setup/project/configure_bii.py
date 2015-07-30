@@ -106,6 +106,18 @@ def run(container, util, shell, ver_info):
                              remote,
                              instant_fail=True)
                 with util.in_dir(biicode_repo):
+                    # Remove the server-side parts
+                    util.execute(container,
+                                 util.output_on_fail,
+                                 "git",
+                                 "submodule",
+                                 "deinit",
+                                 "bii-server")
+                    util.execute(container,
+                                 util.output_on_fail,
+                                 "git",
+                                 "rm",
+                                 "bii-server")
                     util.execute(container,
                                  util.output_on_fail,
                                  "git",
