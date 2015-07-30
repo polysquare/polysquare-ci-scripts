@@ -77,12 +77,13 @@ def run(container, util, shell, ver_info):
     """
     config_python = "setup/project/configure_python.py"
 
-    py_ver = defaultdict(lambda: "3.4.1")
+    py_ver = defaultdict(lambda: "2.7.9")
     container.fetch_and_import("python_util.py")
-    container.fetch_and_import(config_python).run(container,
-                                                  util,
-                                                  shell,
-                                                  py_ver)
+    py_cont = container.fetch_and_import(config_python).run(container,
+                                                            util,
+                                                            shell,
+                                                            py_ver)
+    py_cont.deactivate(util)
 
     bii_dir = container.language_dir("bii")
     bii_bin = os.path.join(bii_dir, "bin")
@@ -95,7 +96,7 @@ def run(container, util, shell, ver_info):
     if not os.path.exists(bii_script_filename):
         shutil.rmtree(bii_dir)
         os.makedirs(bii_dir)
-        with util.in_dir(bii_dir):
+        with util.in_dir(bii_dir), py_cont.activated(util):
             biicode_repo = os.path.join(bii_dir, "biicode")
             with util.Task("""Downloading biicode client"""):
                 remote = "git://github.com/biicode/biicode"

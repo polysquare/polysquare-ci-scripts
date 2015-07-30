@@ -13,6 +13,8 @@ import os
 
 import shutil
 
+from collections import defaultdict
+
 from contextlib import contextmanager
 
 
@@ -108,14 +110,24 @@ def run(cont, util, shell, argv=None):
         finally:
             pass
 
-    cmake_check.check_cmake_like_project(cont,
-                                         util,
-                                         shell,
-                                         kind="bii",
-                                         after_lint=_after_lint,
-                                         configure_context=_no_context,
-                                         configure_cmd=("bii", "configure"),
-                                         build_cmd=lambda _: ("bii", "build"),
-                                         test_cmd=("bii", "test"),
-                                         after_test=_after_test,
-                                         argv=remainder)
+    py_ver = defaultdict(lambda: "2.7.9")
+    config_python = "setup/project/configure_python.py"
+    py_cont = cont.fetch_and_import(config_python).run(cont,
+                                                       util,
+                                                       shell,
+                                                       py_ver)
+
+    with py_cont.activated(util):
+        cmake_check.check_cmake_like_project(cont,
+                                             util,
+                                             shell,
+                                             kind="bii",
+                                             after_lint=_after_lint,
+                                             configure_context=_no_context,
+                                             configure_cmd=("bii",
+                                                            "configure"),
+                                             build_cmd=lambda _: ("bii",
+                                                                  "build"),
+                                             test_cmd=("bii", "test"),
+                                             after_test=_after_test,
+                                             argv=remainder)
