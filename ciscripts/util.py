@@ -63,7 +63,8 @@ def overwrite_environment_variable(parent, key, value):
     elif os.environ.get(key, None):
         del os.environ[key]
 
-    parent.overwrite_environment_variable(key, value)
+    if parent:
+        parent.overwrite_environment_variable(key, value)
 
 
 def prepend_environment_variable(parent, key, value):
@@ -72,7 +73,9 @@ def prepend_environment_variable(parent, key, value):
     os.environ[key] = "{0}{1}{2}".format(str(value),
                                          env_sep,
                                          os.environ.get(key) or "")
-    parent.prepend_environment_variable(key, value)
+
+    if parent:
+        parent.prepend_environment_variable(key, value)
 
 
 # There's no way we can make this function name shorter without making
@@ -86,7 +89,8 @@ def remove_from_environment_variable(parent, key, value):
     os.environ[key] = env_sep.join([i for i in environ_list if i != value])
 
     # See http://stackoverflow.com/questions/370047/
-    parent.remove_from_environment_variable(key, value)
+    if parent:
+        parent.remove_from_environment_variable(key, value)
 
 
 def maybe_environ(key):
