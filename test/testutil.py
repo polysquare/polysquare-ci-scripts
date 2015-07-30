@@ -481,8 +481,9 @@ def acceptance_test_for(project_type, expected_programs):
                 except (shutil.Error, OSError):  # suppress(pointless-except)
                     pass
 
-            copy_scripts_to_directory(os.path.join(cls.container_temp_dir,
-                                                   "_scripts"))
+            scripts_directory = os.path.join(cls.container_temp_dir,
+                                             "_scripts")
+            copy_scripts_to_directory(scripts_directory)
 
             setup_script = "setup/{type}/setup.py".format(type=project_type)
             cls.setup_container_output = CapturedOutput()
@@ -502,8 +503,12 @@ def acceptance_test_for(project_type, expected_programs):
                     shell = bootstrap.construct_parent_shell("bash",
                                                              sys.stdout)
 
+                kwargs = {
+                    "scripts_directory": scripts_directory
+                }
                 cls.container = bootstrap.ContainerDir(shell,
-                                                       cls.container_temp_dir)
+                                                       cls.container_temp_dir,
+                                                       **kwargs)
                 cls.util = cls.container.fetch_and_import("util.py")
 
                 # Look up where to print messages to at the time messages
