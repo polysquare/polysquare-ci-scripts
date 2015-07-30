@@ -186,7 +186,7 @@ def _update_os_container(container,
         packages_exists = os.path.exists(packages)
 
         if not (repositories_exists or packages_exists):
-            return (os.path.exists(os_container_path), [])
+            return (not os.path.exists(os_container_path), [])
 
         if (repositories_exists and
                 not util.compare_contents(repositories,
