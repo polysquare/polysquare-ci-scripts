@@ -34,11 +34,11 @@ setup(name="polysquare-ci-scripts",
               "nose-parameterized>=0.5.0",
               "mock",
               "green>=2.0.0",
-              "setuptools-green>=0.0.11",
+              "setuptools-green>=0.0.13",
               "six",
               "testtools"
           ],
-          "polysquarelint": ["polysquare-setuptools-lint>=0.0.17"],
+          "polysquarelint": ["polysquare-setuptools-lint>=0.0.21"],
           "upload": ["setuptools-markdown>=0.1"]
       },
       zip_safe=True,

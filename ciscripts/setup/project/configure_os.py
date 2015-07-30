@@ -242,21 +242,16 @@ def run(container,
 
     py_ver = defaultdict(lambda: "3.4.1")
     py_util = container.fetch_and_import("python_util.py")
-    py_cont = container.fetch_and_import(config_python).run(container,
-                                                            util,
-                                                            shell,
-                                                            py_ver)
+    container.fetch_and_import(config_python).run(container,
+                                                  util,
+                                                  shell,
+                                                  py_ver)
 
     with util.Task("""Installing polysquare-travis-container"""):
-        remote = ("https://github.com/polysquare/"
-                  "polysquare-travis-container/tarball/master")
-        util.where_unavailable("psq-travis-container-create",
-                               py_util.pip_install,
-                               container,
-                               util,
-                               remote,
-                               path=py_cont.executable_path(),
-                               instant_fail=True)
+        py_util.pip_install(container,
+                            util,
+                            "polysquare-travis-container>=0.0.8",
+                            instant_fail=True)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""
