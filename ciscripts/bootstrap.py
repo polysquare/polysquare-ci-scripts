@@ -350,7 +350,7 @@ class LanguageBase(ContainerBase):
         """
         # Skip if this container has already been activated
         activation_keys = _keys_for_activation(self._language)
-        if os.environ.get(activation_keys.activated):
+        if os.environ.get(activation_keys.version, None) == self._version:
             return False
 
         active_environment = self._active_environment(ActiveEnvironment)
