@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """General utility functions which are made available to all other scripts."""
 
+import errno
+
 import fnmatch
 
 import hashlib
@@ -12,6 +14,8 @@ import hashlib
 import os
 
 import platform
+
+import shutil
 
 import stat
 
@@ -59,16 +63,18 @@ def overwrite_environment_variable(parent, key, value):
     elif os.environ.get(key, None):
         del os.environ[key]
 
-    parent.overwrite_environment_variable(key, value)
+    if parent:
+        parent.overwrite_environment_variable(key, value)
 
 
 def prepend_environment_variable(parent, key, value):
     """Prepend value to the environment variable list in key."""
-    env_sep = ";" if platform.system() == "Windows" else ":"
     os.environ[key] = "{0}{1}{2}".format(str(value),
-                                         env_sep,
+                                         os.pathsep,
                                          os.environ.get(key) or "")
-    parent.prepend_environment_variable(key, value)
+
+    if parent:
+        parent.prepend_environment_variable(key, value)
 
 
 # There's no way we can make this function name shorter without making
@@ -77,12 +83,14 @@ def prepend_environment_variable(parent, key, value):
 # suppress(invalid-name)
 def remove_from_environment_variable(parent, key, value):
     """Remove value from an environment variable list in key."""
-    env_sep = ";" if platform.system() == "Windows" else ":"
-    environ_list = maybe_environ(key).split(env_sep)
-    os.environ[key] = env_sep.join([i for i in environ_list if i != value])
+    environ_list = maybe_environ(key).split(os.pathsep)
+    environ_list.remove(value)
+
+    os.environ[key] = os.pathsep.join(environ_list)
 
     # See http://stackoverflow.com/questions/370047/
-    parent.remove_from_environment_variable(key, value)
+    if parent:
+        parent.remove_from_environment_variable(key, value)
 
 
 def maybe_environ(key):
@@ -433,6 +441,34 @@ def process_shebang(args):
     return args
 
 
+def force_remove_tree(directory):
+    """Use various strategies to see that directory is removed.
+
+    First we try shutil.rmtree. If that fails due to weird PermissionErrors,
+    then fall back to shelling out to rmdir on Windows or rm -rf on
+    Unix.
+    """
+    try:
+        shutil.rmtree(directory)
+    except OSError as err:
+        if err.errno == errno.ENOENT:
+            pass
+        elif err.errno == errno.EPERM:
+            # On Windows, we might get PermissionError when attempting
+            # to delete things, so shell out to /rmdir.exe to handle
+            # the case for us. On Unix use rm -rf
+            if platform.system() == "Windows":
+                subprocess.check_call(["cmd",
+                                       "/c",
+                                       "rmdir",
+                                       directory,
+                                       "/s",
+                                       "/q"])
+            else:
+                subprocess.check_call(["rm", "-rf", directory])
+                raise err
+
+
 def execute(container, output_strategy, *args, **kwargs):
     """A thin wrapper around subprocess.Popen.
 
@@ -660,6 +696,13 @@ def url_opener():
     return _urlopen
 
 
+def make_executable(path):
+    """Make file at path executable."""
+    os.chmod(path,
+             os.stat(path).st_mode |
+             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
 def get_system_identifier(container):
     """Return an identifier which contains information about the ABI."""
     system_identifier_cache_dir = container.named_cache_dir("system-id")
@@ -673,10 +716,7 @@ def get_system_identifier(container):
             remote = url_opener()(config_project + "/config.guess")
             config_guess.write(remote.read().decode("utf-8"))
 
-    os.chmod(system_identifier_config_guess,
-             os.stat(system_identifier_config_guess).st_mode |
-             stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
+    make_executable(system_identifier_config_guess)
     output = subprocess.Popen(["sh", system_identifier_config_guess],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()

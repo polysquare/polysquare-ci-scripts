@@ -7,8 +7,6 @@
 
 import atexit
 
-import errno
-
 import os
 
 import platform
@@ -117,7 +115,7 @@ def in_tempdir(parent, prefix):
         with in_dir(directory):
             yield directory
     finally:
-        shutil.rmtree(directory)
+        util.force_remove_tree(directory)
 
 
 @contextmanager
@@ -304,8 +302,8 @@ class SubprocessExitsWith(object):  # suppress(too-few-public-methods)
             return SubprocessExitWithMismatch(subprocess_args,
                                               code,
                                               self._expected_code,
-                                              process.stdout.read(),
-                                              process.stderr.read())
+                                              process.stdout.read().decode(),
+                                              process.stderr.read().decode())
 
 
 class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
@@ -362,7 +360,11 @@ def format_with_args(*args):
 
     return formatter
 
-WHICH_SCRIPT = ("import ciscripts.util;assert ciscripts.util.which('{0}')")
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(bootstrap.__file__),
+                                     ".."))
+WHICH_SCRIPT = ("import sys;sys.path.append('" + _ROOT.replace("\\",
+                                                               "/") + "');"
+                "import ciscripts.util;assert ciscripts.util.which('{0}')")
 
 
 def _copytree_ignore_notfound(src, dst):
@@ -377,6 +379,7 @@ def _copytree_ignore_notfound(src, dst):
     if util.which("rsync"):
         subprocess.check_call(["rsync",
                                "-az",
+                               "--chmod=ugo=rwX",
                                src + os.path.sep,
                                dst + os.path.sep])
     else:
@@ -397,15 +400,6 @@ def copy_scripts_to_directory(target):
 
     shutil.copytree(os.path.join(parent, "ciscripts"),
                     os.path.join(target, "ciscripts"))
-
-
-def _safe_rmtree(directory):
-    """Call shutil.rmtree, but ignore ENOENT."""
-    try:
-        shutil.rmtree(directory)
-    except OSError as err:
-        if err.errno != errno.ENOENT:  # suppress(PYC90)
-            raise err
 
 
 def acceptance_test_for(project_type, expected_programs):
@@ -442,6 +436,7 @@ def acceptance_test_for(project_type, expected_programs):
                 script_path_for_shell = "\"{}\"".format(script_path_for_shell)
             else:
                 shell = ["bash"]
+
             script = ("{cls.setup_container_output.stdout}"
                       "{command}").format(cls=self.__class__, command=command)
 
@@ -457,7 +452,7 @@ def acceptance_test_for(project_type, expected_programs):
                     yield shell + [script_path_for_shell]
             finally:
                 script_file.close()
-                shutil.rmtree(directory)
+                util.force_remove_tree(directory)
 
         @classmethod
         def setup_script(cls):
@@ -470,24 +465,25 @@ def acceptance_test_for(project_type, expected_programs):
             temp_dir_prefix = "{}_acceptance_test".format(project_type)
             cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd(),
                                                       prefix=temp_dir_prefix)
-            atexit.register(_safe_rmtree, cls.container_temp_dir)
+            atexit.register(util.force_remove_tree, cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
 
             if os.environ.get("CONTAINER_DIR"):
                 container_dir = os.environ["CONTAINER_DIR"]
-                shutil.rmtree(cls.container_temp_dir)
+                util.force_remove_tree(cls.container_temp_dir)
                 _copytree_ignore_notfound(container_dir,
                                           cls.container_temp_dir)
 
                 # Delete ciscripts in the copied container
                 try:
-                    shutil.rmtree(os.path.join(cls.container_temp_dir,
-                                               "_scripts"))
+                    util.force_remove_tree(os.path.join(cls.container_temp_dir,
+                                                        "_scripts"))
                 except (shutil.Error, OSError):  # suppress(pointless-except)
                     pass
 
-            copy_scripts_to_directory(os.path.join(cls.container_temp_dir,
-                                                   "_scripts"))
+            scripts_directory = os.path.join(cls.container_temp_dir,
+                                             "_scripts")
+            copy_scripts_to_directory(scripts_directory)
 
             setup_script = "setup/{type}/setup.py".format(type=project_type)
             cls.setup_container_output = CapturedOutput()
@@ -507,8 +503,12 @@ def acceptance_test_for(project_type, expected_programs):
                     shell = bootstrap.construct_parent_shell("bash",
                                                              sys.stdout)
 
+                kwargs = {
+                    "scripts_directory": scripts_directory
+                }
                 cls.container = bootstrap.ContainerDir(shell,
-                                                       cls.container_temp_dir)
+                                                       cls.container_temp_dir,
+                                                       **kwargs)
                 cls.util = cls.container.fetch_and_import("util.py")
 
                 # Look up where to print messages to at the time messages
@@ -528,7 +528,7 @@ def acceptance_test_for(project_type, expected_programs):
         def tearDownClass(cls):  # suppress(N802)
             """Remove container."""
             os.environ = cls._environ_backup
-            _safe_rmtree(cls.container_temp_dir)
+            util.force_remove_tree(cls.container_temp_dir)
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
@@ -547,13 +547,13 @@ def acceptance_test_for(project_type, expected_programs):
             temp_dir_prefix = "{}_project_copy".format(project_type)
             project_copy_temp_dir = tempfile.mkdtemp(dir=current_directory,
                                                      prefix=temp_dir_prefix)
-            self.addCleanup(lambda: shutil.rmtree(project_copy_temp_dir))
+            self.addCleanup(util.force_remove_tree, project_copy_temp_dir)
             self.project_dir = os.path.join(project_copy_temp_dir,
                                             project_type)
 
             shutil.copytree(self._get_project_template(), self.project_dir)
             os.chdir(self.project_dir)
-            self.addCleanup(lambda: os.chdir(current_directory))
+            self.addCleanup(os.chdir, current_directory)
 
             self.__class__.container.reset_failure_count()
 
@@ -577,7 +577,7 @@ def acceptance_test_for(project_type, expected_programs):
         def test_program_is_available_in_parent_shell(self, program):
             """Executable {0} is available in parent shell after setup."""
             script = WHICH_SCRIPT.format(program)
-            py_cmd = "python -c \"{}\"".format(script)
+            py_cmd = "python -c \"{}\"\n".format(script)
             with self.in_parent_context(py_cmd) as cmd:
                 copy_scripts_to_directory(os.getcwd())
                 self.assertThat(cmd, SubprocessExitsWith(0))

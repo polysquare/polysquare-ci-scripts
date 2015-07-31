@@ -12,8 +12,6 @@ import os.path
 
 import platform
 
-import shutil
-
 from collections import defaultdict, namedtuple
 
 from contextlib import closing
@@ -132,7 +130,7 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
                          util.output_on_fail,
                          "git", "clone", remote, "--branch", "fix-13", dest,
                          instant_fail=True)
-            shutil.rmtree(os.path.join(dest, ".git"))
+            util.force_remove_tree(os.path.join(dest, ".git"))
 
     def install(version):
         """Install ruby version, returns a RubyContainer."""

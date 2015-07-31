@@ -98,9 +98,11 @@ class BashParentEnvironment(object):
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
         value = BashParentEnvironment._format_environment_value(value)
-        script = ("export {k}=$(python -c \"print(\\\":\\\".join(["
-                  "v for v in \\\"${k}\\\".split(\\\":\\\") "
-                  "if v not in \\\"{v}\\\".split(\\\":\\\")]))\")")
+        script = ("export {k}=$(python -c \""
+                  "print(\\\":\\\".join(\\\"${k}\\\".split(\\\":\\\")"
+                  "[:\\\"${k}\\\".split(\\\":\\\").index(\\\"{v}\\\")] + "
+                  "\\\"${k}\\\".split(\\\":\\\")[\\\"${k}\\\".split(\\\":\\\")"
+                  ".index(\\\"{v}\\\") + 1:]))\")")
         # There is something about the format() method on str which causes
         # pychecker to trip over when passing keyword arguments. Just
         # pass keyword arguments using the ** notation.
@@ -152,9 +154,12 @@ class PowershellParentEnvironment(object):
     # suppress(invalid-name)
     def remove_from_environment_variable(self, key, value):
         """Generate and execute script to remove value from key."""
-        script = ("$env:{k} = python -c \"print(';'.join(["
-                  "v for v in r'$env:{k}'.split(';') "
-                  "if v not in r'{v}'.split(';')]))\"")
+        script = ("$env:{k} = python -c \""
+                  "print(';'.join(r'$env:{k}'.split(';')"
+                  "[:r'$env:{k}'.split(r';').index(r'{v}')] + "
+                  "r'$env:{k}'.split(';')"
+                  "[r'$env:{k}'.split(';')"
+                  ".index(r'{v}') + 1:]))\"")
         script_keys = {
             "k": key,
             "v": value
@@ -350,7 +355,7 @@ class LanguageBase(ContainerBase):
         """
         # Skip if this container has already been activated
         activation_keys = _keys_for_activation(self._language)
-        if os.environ.get(activation_keys.activated):
+        if os.environ.get(activation_keys.version, None) == self._version:
             return False
 
         active_environment = self._active_environment(ActiveEnvironment)
@@ -386,7 +391,7 @@ class LanguageBase(ContainerBase):
         container.
         """
         activation_keys = _keys_for_activation(self._language)
-        if not os.environ.get(activation_keys.activated):
+        if os.environ.get(activation_keys.version, None) != self._version:
             return False
 
         active_environment = self._active_environment(ActiveEnvironment)
@@ -402,9 +407,11 @@ class LanguageBase(ContainerBase):
 
         for key in active_environment.prepend.keys():
             inserted = activation_keys.inserted.format(key=key)
-            util.remove_from_environment_variable(self._parent_shell,
-                                                  key,
-                                                  os.environ[inserted])
+            for value in os.environ[inserted].split(os.pathsep):
+                util.remove_from_environment_variable(self._parent_shell,
+                                                      key,
+                                                      value)
+
             util.overwrite_environment_variable(self._parent_shell,
                                                 inserted,
                                                 None)

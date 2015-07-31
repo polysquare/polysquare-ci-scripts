@@ -14,21 +14,54 @@ import os.path
 
 import platform
 
-import shutil
-
 from collections import defaultdict
 
-from contextlib import closing
+from contextlib import closing, contextmanager
+
+
+@contextmanager
+def _as_path(path):
+    """Execute with path replaced with PATH."""
+    last_path = os.environ["PATH"]
+    try:
+        os.environ["PATH"] = path
+        yield
+    finally:
+        os.environ["PATH"] = last_path
+
+
+def _python_version_matches(util, py_util, python_executable_path, version):
+    """True if python at python_executable_path has matching version."""
+    with _as_path(python_executable_path):
+        python_version = py_util.get_python_version(util, 2)
+        requested_version = ".".join(version.split(".")[:2])
+        return python_version == requested_version
+
+
+def _usable_preinstalled_python(container, util, version):
+    """Return any pre-installed python matching version that we can use."""
+    py_util = container.fetch_and_import("python_util.py")
+    preinstalled_pythons = os.environ.get("POLYSQUARE_PREINSTALLED_PYTHONS",
+                                          "")
+
+    for preinstalled_python in preinstalled_pythons.split(os.pathsep):
+        if (preinstalled_python and
+                os.path.exists(preinstalled_python) and
+                _python_version_matches(util,
+                                        py_util,
+                                        preinstalled_python,
+                                        version)):
+            return preinstalled_python
+
+    return None
 
 
 def get(container, util, shell, ver_info):
     """Return a PythonContainer for an installed python in container."""
-    del util
-
     version = ver_info[platform.system()]
-    if os.environ.get("POLYSQUARE_PREINSTALLED_PYTHON", None):
-        container_path = os.environ["POLYSQUARE_PREINSTALLED_PYTHON"]
-    else:
+    container_path = _usable_preinstalled_python(container, util, version)
+
+    if not container_path:
         container_path = os.path.join(container.language_dir("python"),
                                       version)
 
@@ -105,10 +138,10 @@ def get(container, util, shell, ver_info):
                                     py_path,
                                     matching=["*.egg-link"])
 
-            util_mod.apply_to_directories(shutil.rmtree,
+            util_mod.apply_to_directories(util_mod.force_remove_tree,
                                           py_path,
                                           matching=["*/test/*"])
-            util_mod.apply_to_directories(shutil.rmtree,
+            util_mod.apply_to_directories(util_mod.force_remove_tree,
                                           py_path,
                                           matching=["*/tcl/*"])
 
@@ -272,9 +305,9 @@ def run(container, util, shell, ver_info):
     """
     lang_dir = container.language_dir("python")
     python_build_dir = os.path.join(lang_dir, "build")
+    version = ver_info[platform.system()]
 
-    if (os.environ.get("POLYSQUARE_PREINSTALLED_PYTHON", None) and
-            os.path.exists(os.environ["POLYSQUARE_PREINSTALLED_PYTHON"])):
+    if _usable_preinstalled_python(container, util, version):
         installer = pre_existing_python
     elif platform.system() in ("Linux", "Darwin"):
         installer = posix_installer
@@ -282,7 +315,6 @@ def run(container, util, shell, ver_info):
         installer = windows_installer
 
     with util.Task("""Configuring python"""):
-        version = ver_info[platform.system()]
         python_container = installer(lang_dir,
                                      python_build_dir,
                                      util,

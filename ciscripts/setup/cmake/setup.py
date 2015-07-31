@@ -21,29 +21,62 @@ _LINUX_REPOS = {
     "latest": ["{launchpad}/smspillaz/cmake-master/ubuntu {release} main"]
 }
 _OSX_REPOS = defaultdict(lambda: ["homebrew/versions"])
-_REPOS = defaultdict(lambda: defaultdict(lambda: ""),
-                     Linux=_LINUX_REPOS,
-                     Darwin=_OSX_REPOS)
-
-_PACKAGES = defaultdict(lambda: defaultdict(lambda: ""),
-                        Linux=defaultdict(lambda: [
-                            "cmake",
-                            "cmake-data",
-                            "make",
-                            "gcc",
-                            "g++"
-                        ]),
-                        Darwin=defaultdict(lambda: ["cmake"], **({
-                            "2.8": ["cmake28"],
-                            "3.0": ["cmake30"]
-                        })),
-                        Windows=defaultdict(lambda: ["cmake.portable"]))
 
 _USER_SUFFIXES = {
     "Linux": "Ubuntu.precise",
     "Darwin": "OSX.10.10",
     "Windows": "Windows.8.1"
 }
+
+
+def _get_package_names(system, cmake_version, extra=None):
+    """Get package names to install.
+
+    Specify extra per-platform package names to install in extra,
+    in the form of two nested dictionaries:
+
+    packages = {
+        "platform": {
+            "cmake version": []
+        }
+    }
+    """
+    extra = extra or defaultdict(lambda: defaultdict(lambda: []))
+    packages = defaultdict(lambda: defaultdict(lambda: []),
+                           Linux=defaultdict(lambda: [
+                               "cmake",
+                               "cmake-data",
+                               "make",
+                               "gcc",
+                               "g++"
+                           ]),
+                           Darwin=defaultdict(lambda: ["cmake"], **({
+                               "2.8": ["cmake28"],
+                               "3.0": ["cmake30"]
+                           })),
+                           Windows=defaultdict(lambda: ["cmake.portable"]))
+
+    return packages[system][cmake_version] + extra[system][cmake_version]
+
+
+def _get_repositories(system, cmake_version, extra=None):
+    """Get repositories to add.
+
+    Specify extra per-platform repositories to install in extra,
+    in the form of two nested dictionaries:
+
+    packages = {
+        "platform": {
+            "cmake version": []
+        }
+    }
+    """
+    extra = extra or defaultdict(lambda: defaultdict(lambda: []))
+    repositories = defaultdict(lambda: defaultdict(lambda: []),
+                               Linux=_LINUX_REPOS,
+                               Darwin=_OSX_REPOS)
+
+    return repositories[system][cmake_version] + extra[system][cmake_version]
 
 
 def _read_optional_user_file(filename):
@@ -100,27 +133,37 @@ def _update_from_user_file(util,
 
 def _write_packages_file(util,
                          container_config_dir,
-                         cmake_version):
+                         cmake_version,
+                         extra_packages):
     """Write PACKAGES file in /container/_cache/container-config."""
+    packages = _get_package_names(platform.system(),
+                                  cmake_version,
+                                  extra=extra_packages)
     return _update_from_user_file(util,
                                   "PACKAGES",
-                                  _PACKAGES[platform.system()][cmake_version],
+                                  packages,
                                   container_config_dir)
 
 
 def _write_repos_file(util,
                       container_config_dir,
-                      cmake_version):
+                      cmake_version,
+                      extra_repos):
     """Write REPOSITORIES file in /container/_cache/container-config."""
+    repos = _get_repositories(platform.system(),
+                              cmake_version,
+                              extra=extra_repos)
     return _update_from_user_file(util,
                                   "REPOSITORIES",
-                                  _REPOS[platform.system()][cmake_version],
+                                  repos,
                                   container_config_dir)
 
 
 def _prepare_for_os_cont_setup(container_config,
                                util,
-                               parse_result):
+                               parse_result,
+                               extra_packages,
+                               extra_repos):
     """Get keyword arguments for call to /configure_os.py:run.
 
     This may involve writes to PACKAGES and REPOSITORIES in our container,
@@ -131,16 +174,48 @@ def _prepare_for_os_cont_setup(container_config,
     os_cont_kwargs = {
         "distro_packages": _write_packages_file(util,
                                                 container_config,
-                                                cmake_version),
+                                                cmake_version,
+                                                extra_packages),
         "distro_repositories": _write_repos_file(util,
                                                  container_config,
-                                                 cmake_version),
+                                                 cmake_version,
+                                                 extra_repos),
     }
 
     return os_cont_kwargs
 
 
-def run(cont, util, shell, argv=None):
+def _install_cmake_linters(cont, util, shell):
+    """Install cmake linters."""
+    py_ver = defaultdict(lambda: "3.4.1")
+    py_config_script = "setup/project/configure_python.py"
+    py_util = cont.fetch_and_import("python_util.py")
+    py_cont = cont.fetch_and_import(py_config_script).run(cont,
+                                                          util,
+                                                          shell,
+                                                          py_ver)
+
+    with util.Task("""Installing cmake linters"""):
+        util.where_unavailable("polysquare-cmake-linter",
+                               py_util.pip_install,
+                               cont,
+                               util,
+                               "polysquare-cmake-linter",
+                               path=py_cont.executable_path())
+        util.where_unavailable("cmakelint",
+                               py_util.pip_install,
+                               cont,
+                               util,
+                               "cmakelint",
+                               path=py_cont.executable_path())
+
+
+def run(cont,  # suppress(too-many-arguments)
+        util,
+        shell,
+        argv=None,
+        extra_packages=None,
+        extra_repos=None):
     """Install everything necessary to test and check a cmake project.
 
     This script installs language runtimes to the extent that they're necessary
@@ -160,34 +235,16 @@ def run(cont, util, shell, argv=None):
                                                         remainder)
 
     with util.Task("""Setting up cmake project"""):
-        py_ver = defaultdict(lambda: "3.4.1")
-        py_config_script = "setup/project/configure_python.py"
-        py_util = cont.fetch_and_import("python_util.py")
-        py_cont = cont.fetch_and_import(py_config_script).run(cont,
-                                                              util,
-                                                              shell,
-                                                              py_ver)
-
-        with util.Task("""Installing cmake linters"""):
-            util.where_unavailable("polysquare-cmake-linter",
-                                   py_util.pip_install,
-                                   cont,
-                                   util,
-                                   "polysquare-cmake-linter",
-                                   path=py_cont.executable_path())
-            util.where_unavailable("cmakelint",
-                                   py_util.pip_install,
-                                   cont,
-                                   util,
-                                   "cmakelint",
-                                   path=py_cont.executable_path())
+        _install_cmake_linters(cont, util, shell)
 
         container_config = cont.named_cache_dir("container-config")
 
         os_cont_setup = "setup/project/configure_os.py"
         os_cont_kwargs = _prepare_for_os_cont_setup(container_config,
                                                     util,
-                                                    parse_result)
+                                                    parse_result,
+                                                    extra_packages,
+                                                    extra_repos)
 
         with util.in_dir(container_config):
             return cont.fetch_and_import(os_cont_setup).run(cont,

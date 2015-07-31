@@ -100,15 +100,13 @@ def get(container,
             """Execute command specified by argv in this OSContainer."""
             use_args = (self._container_specification_args() +
                         ["--"] +
-                        list(argv))
+                        util.process_shebang(list(argv)))
 
             return util.execute(container,
                                 output_strategy,
                                 "psq-travis-container-exec",
                                 self._installation,
                                 "--show-output",
-                                "--distro=" + self._distro,
-                                "--release=" + self._distro_version,
                                 *use_args,
                                 **kwargs)
 
@@ -188,7 +186,7 @@ def _update_os_container(container,
         packages_exists = os.path.exists(packages)
 
         if not (repositories_exists or packages_exists):
-            return (os.path.exists(os_container_path), [])
+            return (not os.path.exists(os_container_path), [])
 
         if (repositories_exists and
                 not util.compare_contents(repositories,

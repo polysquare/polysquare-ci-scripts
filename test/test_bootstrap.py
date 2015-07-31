@@ -22,6 +22,7 @@ from contextlib import contextmanager
 from test import testutil
 
 import ciscripts.bootstrap as bootstrap
+import ciscripts.util as util
 
 from nose_parameterized import param, parameterized
 
@@ -92,7 +93,7 @@ def removable_container_dir(directory_name):
                                      directory=directory_name,
                                      stale_check=None)
     finally:
-        shutil.rmtree(os.path.join(current_cwd, directory_name))
+        util.force_remove_tree(os.path.join(current_cwd, directory_name))
 
 
 class TrackedLoadedModulesTestCase(TestCase):
@@ -315,7 +316,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
         super(TestLanguageContainer, self).setUp()
         container_dir = tempfile.mkdtemp(prefix="language_cont_test",
                                          dir=os.getcwd())
-        self.addCleanup(lambda: shutil.rmtree(container_dir))
+        self.addCleanup(util.force_remove_tree, container_dir)
 
         parent = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                                ".."))
@@ -356,9 +357,9 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                 self._override = override or dict()  # suppress(PYC70)
                 self._prepend = prepend or dict()  # suppress(PYC70)
 
-            def clean(self, util):   # suppress(no-self-use)
+            def clean(self, util_mod):   # suppress(no-self-use)
                 """Clean out this container."""
-                del util
+                del util_mod
 
             def _active_environment(self, tuple_type):
                 """Get this language container's environment."""
@@ -597,7 +598,6 @@ class TestMain(TrackedLoadedModulesTestCase):
     def __init__(self, *args, **kwargs):
         """Initialize instance variables on this TestCase."""
         super(TestMain, self).__init__(*args, **kwargs)
-        self._current_dir = None
         self._test_dir = None
         self._container_dir = None
 
@@ -607,22 +607,15 @@ class TestMain(TrackedLoadedModulesTestCase):
         Create a temporary directory to perform all actions in.
         """
         super(TestMain, self).setUp()
-        self._current_dir = os.getcwd()
-        prefix = os.path.join(self._current_dir, "main_container_test")
+        current_dir = os.getcwd()
+        prefix = os.path.join(current_dir, "main_container_test")
         self._test_dir = tempfile.mkdtemp(prefix=prefix)
-        self.addCleanup(lambda: shutil.rmtree(self._test_dir))
+        self.addCleanup(util.force_remove_tree, self._test_dir)
         self._container_dir = os.path.join(self._test_dir, "container")
         os.chdir(self._test_dir)
+        self.addCleanup(os.chdir, current_dir)
 
         write_bootstrap_script_into_container(self._container_dir)
-
-    def tearDown(self):  # suppress(N802)
-        """Tear down TestMain.
-
-        This will remove our temporary directory.
-        """
-        os.chdir(self._current_dir)
-        super(TestMain, self).tearDown()
 
     def test_create_dir_and_pass_control_to_script(self):
         """Test creating a container and passing control to a script."""

@@ -7,6 +7,7 @@
 
 import sys
 
+from ciscripts import util
 import ciscripts.python_util as python_util
 
 from mock import Mock
@@ -32,7 +33,7 @@ class TestGetPythonVersion(TestCase):
                                              expected_version):
         """Get python version at precision."""
         self.assertEqual(expected_version,
-                         python_util.get_python_version(precision))
+                         python_util.get_python_version(util, precision))
 
 
 class TestDetermineIfPythonModulesAvailable(TestCase):

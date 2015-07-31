@@ -41,7 +41,7 @@ _PACKAGES_FOR_PYTHON = defaultdict(fetch_packages_in_active_python)
 _PARSED_SETUP_FILES = dict()
 
 
-def get_python_version(precision):  # suppress(unused-function)
+def get_python_version(util, precision):  # suppress(unused-function)
     """Get python version at precision.
 
     1 gets the major version, 2 gets major and minor, 3 gets the patch version.
@@ -51,7 +51,7 @@ def get_python_version(precision):  # suppress(unused-function)
     through on stdout, on others it comes through on stderr. Just join them
     both and parse the whole string.
     """
-    output = subprocess.Popen(["python", "--version"],
+    output = subprocess.Popen([util.which("python"), "--version"],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()
     version = "".join([o.decode() for o in output])
