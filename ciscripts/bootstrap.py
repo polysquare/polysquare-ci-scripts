@@ -402,9 +402,11 @@ class LanguageBase(ContainerBase):
 
         for key in active_environment.prepend.keys():
             inserted = activation_keys.inserted.format(key=key)
-            util.remove_from_environment_variable(self._parent_shell,
-                                                  key,
-                                                  os.environ[inserted])
+            for value in os.environ[inserted].split(os.pathsep):
+                util.remove_from_environment_variable(self._parent_shell,
+                                                      key,
+                                                      value)
+
             util.overwrite_environment_variable(self._parent_shell,
                                                 inserted,
                                                 None)
