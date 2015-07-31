@@ -48,29 +48,37 @@ def run(cont, util, shell, argv=None):
     cmake_check_script = "check/cmake/check.py"
     cmake_check = cont.fetch_and_import(cmake_check_script)
 
+    py_ver = defaultdict(lambda: "2.7.9")
+    config_python = "setup/project/configure_python.py"
+    py_cont = cont.fetch_and_import(config_python).get(cont,
+                                                       util,
+                                                       shell,
+                                                       py_ver)
+
     def _after_lint(cont, os_cont, util, build):
         """Restore cached files and perform bii specific setup."""
         with util.Task("""Restoring cached files to build tree"""):
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
 
-        with util.Task("""Downloading dependencies"""):
-            if not os.path.exists(os.path.join(os.getcwd(), "bii")):
+        with py_cont.activated(util):
+            with util.Task("""Downloading dependencies"""):
+                if not os.path.exists(os.path.join(os.getcwd(), "bii")):
+                    os_cont.execute(cont,
+                                    util.long_running_suppressed_output(),
+                                    "bii",
+                                    "init",
+                                    "-l")
                 os_cont.execute(cont,
                                 util.long_running_suppressed_output(),
                                 "bii",
-                                "init",
-                                "-l")
-            os_cont.execute(cont,
-                            util.long_running_suppressed_output(),
-                            "bii",
-                            "find")
+                                "find")
 
-        with util.Task("""Initializing bii block"""):
-            os_cont.execute(cont,
-                            util.running_output,
-                            "bii",
-                            "new",
-                            result.block)
+            with util.Task("""Initializing bii block"""):
+                os_cont.execute(cont,
+                                util.running_output,
+                                "bii",
+                                "new",
+                                result.block)
 
     def _after_test(cont, util, build):
         """Restore build tree from bii layout to container caches."""
@@ -89,34 +97,21 @@ def run(cont, util, shell, argv=None):
                                 ] + cmake_check.NO_CACHE_FILE_PATTERNS)
 
     @contextmanager
-    def _no_context(util, build):
+    def _activate_py27(util, build):
         """Stay in current directory."""
-        del util
         del build
 
-        try:
+        with py_cont.activated(util):
             yield
-        finally:
-            pass
 
-    py_ver = defaultdict(lambda: "2.7.9")
-    config_python = "setup/project/configure_python.py"
-    py_cont = cont.fetch_and_import(config_python).run(cont,
-                                                       util,
-                                                       shell,
-                                                       py_ver)
-
-    with py_cont.activated(util):
-        cmake_check.check_cmake_like_project(cont,
-                                             util,
-                                             shell,
-                                             kind="bii",
-                                             after_lint=_after_lint,
-                                             configure_context=_no_context,
-                                             configure_cmd=("bii",
-                                                            "configure"),
-                                             build_cmd=lambda _: ("bii",
-                                                                  "build"),
-                                             test_cmd=("bii", "test"),
-                                             after_test=_after_test,
-                                             argv=remainder)
+    cmake_check.check_cmake_like_project(cont,
+                                         util,
+                                         shell,
+                                         kind="bii",
+                                         after_lint=_after_lint,
+                                         configure_context=_activate_py27,
+                                         configure_cmd=("bii", "configure"),
+                                         build_cmd=lambda _: ("bii", "build"),
+                                         test_cmd=("bii", "test"),
+                                         after_test=_after_test,
+                                         argv=remainder)

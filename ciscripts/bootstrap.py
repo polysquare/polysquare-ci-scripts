@@ -386,7 +386,7 @@ class LanguageBase(ContainerBase):
         container.
         """
         activation_keys = _keys_for_activation(self._language)
-        if not os.environ.get(activation_keys.activated):
+        if os.environ.get(activation_keys.version, None) != self._version:
             return False
 
         active_environment = self._active_environment(ActiveEnvironment)
