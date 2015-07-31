@@ -69,9 +69,8 @@ def overwrite_environment_variable(parent, key, value):
 
 def prepend_environment_variable(parent, key, value):
     """Prepend value to the environment variable list in key."""
-    env_sep = ";" if platform.system() == "Windows" else ":"
     os.environ[key] = "{0}{1}{2}".format(str(value),
-                                         env_sep,
+                                         os.pathsep,
                                          os.environ.get(key) or "")
 
     if parent:
@@ -84,9 +83,8 @@ def prepend_environment_variable(parent, key, value):
 # suppress(invalid-name)
 def remove_from_environment_variable(parent, key, value):
     """Remove value from an environment variable list in key."""
-    env_sep = ";" if platform.system() == "Windows" else ":"
-    environ_list = maybe_environ(key).split(env_sep)
-    os.environ[key] = env_sep.join([i for i in environ_list if i != value])
+    environ_list = maybe_environ(key).split(os.pathsep)
+    os.environ[key] = os.pathsep.join([i for i in environ_list if i != value])
 
     # See http://stackoverflow.com/questions/370047/
     if parent:
