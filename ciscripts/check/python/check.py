@@ -11,8 +11,6 @@ import os
 
 import shutil
 
-import subprocess
-
 from collections import defaultdict
 
 
@@ -125,16 +123,6 @@ def run(cont, util, shell, argv=None):
                                     result.coverage_exclude or list())
 
         with util.Task("""Uninstalling development installation"""):
-            pkg, _ = subprocess.Popen(["python", "setup.py", "--name"],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE).communicate()
-            util.execute(cont,
-                         util.output_on_fail,
-                         "pip",
-                         "uninstall",
-                         "-y",
-                         pkg.strip().decode("utf-8"))
-
             with open(install_log) as install_log_file:
                 for filename in install_log_file.readlines():
                     try:
