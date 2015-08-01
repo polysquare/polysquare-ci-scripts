@@ -211,6 +211,11 @@ def run(container, util, shell, ver_info):
     This function returns a RubyContainer, which has a path
     and keeps a reference to its parent container.
     """
+    version = ver_info[platform.system()]
+    result = util.already_completed("_POLYSQUARE_CONFIGURE_RB_" + version)
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     lang_dir = container.language_dir("ruby")
     ruby_build_dir = os.path.join(lang_dir, "build")
 
@@ -223,7 +228,6 @@ def run(container, util, shell, ver_info):
         elif platform.system() == "Windows":
             ruby_installer = windows_ruby_installer
 
-        version = ver_info[platform.system()]
         ruby_container = ruby_installer(lang_dir,
                                         ruby_build_dir,
                                         container,
@@ -232,4 +236,6 @@ def run(container, util, shell, ver_info):
         with util.Task("""Activating ruby """ + version):
             ruby_container.activate(util)
 
+        util.register_result("_POLYSQUARE_CONFIGURE_RB_" + version,
+                             ruby_container)
         return ruby_container

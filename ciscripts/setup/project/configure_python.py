@@ -303,9 +303,13 @@ def run(container, util, shell, ver_info):
     This function returns a PythonContainer, which has a path
     and keeps a reference to its parent container.
     """
+    version = ver_info[platform.system()]
+    result = util.already_completed("_POLYSQUARE_CONFIGURE_PY_" + version)
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     lang_dir = container.language_dir("python")
     python_build_dir = os.path.join(lang_dir, "build")
-    version = ver_info[platform.system()]
 
     if _usable_preinstalled_python(container, util, version):
         installer = pre_existing_python
@@ -323,4 +327,6 @@ def run(container, util, shell, ver_info):
         with util.Task("""Activating python {0}""".format(version)):
             python_container.activate(util)
 
+        util.register_result("_POLYSQUARE_CONFIGURE_PY_" + version,
+                             python_container)
         return python_container

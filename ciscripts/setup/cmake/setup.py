@@ -222,6 +222,10 @@ def run(cont,  # suppress(too-many-arguments)
     for the linter checks, however those runtimes won't be active at the
     time that tests are run.
     """
+    result = util.already_completed("_POLYSQUARE_SETUP_CMAKE_PROJECT")
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     parser = argparse.ArgumentParser(description="""Set up cmake project""")
     parser.add_argument("--cmake-version",
                         help="""CMake version to install""",
@@ -240,15 +244,17 @@ def run(cont,  # suppress(too-many-arguments)
         container_config = cont.named_cache_dir("container-config")
 
         os_cont_setup = "setup/project/configure_os.py"
-        os_cont_kwargs = _prepare_for_os_cont_setup(container_config,
-                                                    util,
-                                                    parse_result,
-                                                    extra_packages,
-                                                    extra_repos)
+        os_cont_kw = _prepare_for_os_cont_setup(container_config,
+                                                util,
+                                                parse_result,
+                                                extra_packages,
+                                                extra_repos)
 
         with util.in_dir(container_config):
-            return cont.fetch_and_import(os_cont_setup).run(cont,
-                                                            util,
-                                                            shell,
-                                                            None,
-                                                            **os_cont_kwargs)
+            os_cont = cont.fetch_and_import(os_cont_setup).run(cont,
+                                                               util,
+                                                               shell,
+                                                               None,
+                                                               **os_cont_kw)
+            util.register_result("_POLYSQUARE_SETUP_CMAKE_PROJECT", os_cont)
+            return os_cont

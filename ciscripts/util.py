@@ -56,6 +56,39 @@ def print_message(message):
                                    "replace").decode("utf-8"))
 
 
+_COMPLETED_TASKS = dict()
+NOT_YET_COMPLETED = object()
+
+
+def already_completed(name):
+    """Return stored value if task with name has been completed.
+
+    Otherwise return NOT_YET_COMPLETED. This allows us to return None.
+    """
+    try:
+        return _COMPLETED_TASKS[name]
+    except KeyError:
+        return NOT_YET_COMPLETED
+
+
+def register_result(name, result):
+    """Register the result of the task :name:.
+
+    It will be automatically returned again later if
+    already_completed is called with :name:.
+    """
+    _COMPLETED_TASKS[name] = result
+
+
+def clear_completed_tasks():  # suppress(unused-function)
+    """Clear out completed tasks.
+
+    This function is intended to be used by tests who need to run
+    tasks more than once.
+    """
+    _COMPLETED_TASKS.clear()
+
+
 def overwrite_environment_variable(parent, key, value):
     """Overwrite environment variables in current and parent context."""
     if value is not None:

@@ -242,14 +242,20 @@ def run(container,
     This function returns a OSContainer, which has a path
     and keeps a reference to its parent container.
     """
-    config_python = "setup/project/configure_python.py"
+    subdirectory_name = _format_subdir_name(distro,
+                                            distro_arch,
+                                            distro_version)
+    result = util.already_completed("_POLYSQUARE_CONFIGURE_OS_" +
+                                    subdirectory_name)
+    if result is not util.NOT_YET_COMPLETED:
+        return result
 
-    py_ver = defaultdict(lambda: "3.4.1")
+    config_python = "setup/project/configure_python.py"
     py_util = container.fetch_and_import("python_util.py")
     container.fetch_and_import(config_python).run(container,
                                                   util,
                                                   shell,
-                                                  py_ver)
+                                                  defaultdict(lambda: "3.4.1"))
 
     with util.Task("""Installing polysquare-travis-container"""):
         py_util.pip_install(container,
@@ -283,4 +289,7 @@ def run(container,
                    distro_arch=distro_arch)
 
     with util.Task("""Configuring operating system container"""):
-        return install(distro, distro_version, distro_arch)
+        os_cont = install(distro, distro_version, distro_arch)
+        util.register_result("_POLYSQUARE_CONFIGURE_OS_" + subdirectory_name,
+                             os_cont)
+        return os_cont

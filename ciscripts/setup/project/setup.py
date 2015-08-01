@@ -26,6 +26,10 @@ def run(cont, util, shell, argv=None):
     markdownlint and polysquare-generic-file-linter. It provides actions
     to check every file in a directory for the polysquare style guide.
     """
+    result = util.already_completed("_POLYSQUARE_SETUP_GENERIC_PROJECT")
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     with util.Task("""Setting up generic project"""):
         parser = argparse.ArgumentParser(description="""Set up project""")
         parser.add_argument("--no-mdl",
@@ -77,3 +81,6 @@ def run(cont, util, shell, argv=None):
                                 util,
                                 py_util,
                                 py_cont)
+
+        util.register_result("_POLYSQUARE_SETUP_GENERIC_PROJECT", None)
+        return None

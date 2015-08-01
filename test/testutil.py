@@ -529,6 +529,7 @@ def acceptance_test_for(project_type, expected_programs):
             """Remove container."""
             os.environ = cls._environ_backup
             util.force_remove_tree(cls.container_temp_dir)
+            cls.util.clear_completed_tasks()
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
