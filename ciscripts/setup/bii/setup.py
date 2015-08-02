@@ -15,6 +15,10 @@ def run(cont, util, shell, argv=None):
     for the linter checks, however those runtimes won't be active at the
     time that tests are run.
     """
+    result = util.already_completed("_POLYSQUARE_SETUP_BII_PROJECT")
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     cont.fetch_and_import("setup/project/setup.py").run(cont,
                                                         util,
                                                         shell,
@@ -45,4 +49,5 @@ def run(cont, util, shell, argv=None):
                                                                     argv,
                                                                     os_cont)
 
+    util.register_result("_POLYSQUARE_SETUP_BII_PROJECT", os_cont)
     return os_cont

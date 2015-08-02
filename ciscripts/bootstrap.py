@@ -265,8 +265,8 @@ class ContainerBase(object):
             with util.Task("""Cleaning ephemeral caches"""):
                 with open(self._ephemeral_caches, "r") as ephemeral_log:
                     for ephemeral_cache in ephemeral_log.readlines():
-                        shutil.rmtree(os.path.join(self._cache_dir,
-                                                   ephemeral_cache.strip()))
+                        self._delete(os.path.join(self._cache_dir,
+                                                  ephemeral_cache.strip()))
 
                 self._delete(self._ephemeral_caches)
 

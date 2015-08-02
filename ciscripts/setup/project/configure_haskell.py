@@ -288,6 +288,11 @@ def run(container, util, shell, ver_info):
     This function returns a HaskellContainer, which has a path
     and keeps a reference to its parent container.
     """
+    version = ver_info[platform.system()]
+    result = util.already_completed("_POLYSQUARE_CONFIGURE_HS_" + version)
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     lang_dir = container.language_dir("haskell")
     haskell_build_dir = os.path.join(lang_dir, "build")
 
@@ -405,9 +410,10 @@ def run(container, util, shell, ver_info):
         return install
 
     with util.Task("""Configuring haskell"""):
-        version = ver_info[platform.system()]
         haskell_container = haskell_installer()()
         with util.Task("""Activating haskell {0}""".format(version)):
             haskell_container.activate(util)
 
+        util.register_result("_POLYSQUARE_CONFIGURE_HS_" + version,
+                             haskell_container)
         return haskell_container

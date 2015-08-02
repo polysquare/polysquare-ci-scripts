@@ -82,6 +82,10 @@ def run(container, util, shell, ver_info, os_cont):
     This function returns a BiiContainer, which has a path
     and keeps a reference to its parent container.
     """
+    result = util.already_completed("_POLYSQUARE_CONFIGURE_BIICODE")
+    if result is not util.NOT_YET_COMPLETED:
+        return result
+
     config_python = "setup/project/configure_python.py"
 
     py_ver = defaultdict(lambda: "2.7.9")
@@ -170,4 +174,5 @@ def run(container, util, shell, ver_info, os_cont):
     with util.Task("""Activating biicode"""):
         bii_container = get(container, util, shell, ver_info)
         bii_container.activate(util)
+        util.register_result("_POLYSQUARE_CONFIGURE_BIICODE", bii_container)
         return bii_container
