@@ -5,6 +5,8 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a bii project."""
 
+import os
+
 from collections import defaultdict
 
 
@@ -23,6 +25,26 @@ def run(cont, util, shell, argv=None):
                                                         util,
                                                         shell,
                                                         argv)
+    configure_ruby = "setup/project/configure_ruby.py"
+    ruby_version = defaultdict(lambda: "2.1.5")
+    rb_cont = cont.fetch_and_import(configure_ruby).get(cont,
+                                                        util,
+                                                        shell,
+                                                        ruby_version)
+
+    if not os.environ.get("APPVEYOR", None):
+        util.where_unavailable("coveralls-lcov",
+                               util.execute,
+                               cont,
+                               util.long_running_suppressed_output(),
+                               "gem",
+                               "install",
+                               "--conservative",
+                               "--no-ri",
+                               "--no-rdoc",
+                               "coveralls-lcov",
+                               instant_fail=True,
+                               path=rb_cont.executable_path())
 
     extra_packages = defaultdict(lambda: defaultdict(lambda: []),
                                  Linux=defaultdict(lambda: [
