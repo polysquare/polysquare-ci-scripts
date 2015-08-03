@@ -126,15 +126,15 @@ def get(container, util, shell, ver_info):
 
             py_path = self._installation
 
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.a"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.a"])
 
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyc"])
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.chm"])
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.html"])
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.pyo"])
-            util_mod.apply_to_files(os.unlink, py_path, matching=["*.whl"])
-            util_mod.apply_to_files(os.unlink,
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.pyc"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.chm"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.html"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.pyo"])
+            util_mod.apply_to_files(self.delete, py_path, matching=["*.whl"])
+            util_mod.apply_to_files(self.delete,
                                     py_path,
                                     matching=["*.egg-link"])
 

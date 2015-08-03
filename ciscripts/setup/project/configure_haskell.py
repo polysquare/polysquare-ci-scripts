@@ -165,28 +165,28 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
             # Object code and dynamic libraries
             debug_ghc_version = "*_debug-ghc{0}.so".format(self._version)
             l_ghc_version = "*_l-ghc{0}.so".format(self._version)
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["*.o"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=[debug_ghc_version])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=[l_ghc_version])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_l.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_p.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_thr.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_debug.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["*.p_"])
 

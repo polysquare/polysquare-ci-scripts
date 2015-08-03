@@ -240,7 +240,7 @@ class ContainerBase(object):
         self._ephemeral_caches = os.path.join(self._cache_dir, "emphemeral")
 
     @staticmethod
-    def _delete(node):
+    def delete(node):
         """Delete node on the file system in the way you expect.
 
         If :node: is a directory, remove it recursively. If it is a file,
@@ -252,7 +252,7 @@ class ContainerBase(object):
             else:
                 os.unlink(node)
         except OSError as error:
-            if error.errno != errno.ENOENT:   # suppress(PYC90)
+            if error.errno not in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise error
 
     @abc.abstractmethod
@@ -265,10 +265,10 @@ class ContainerBase(object):
             with util.Task("""Cleaning ephemeral caches"""):
                 with open(self._ephemeral_caches, "r") as ephemeral_log:
                     for ephemeral_cache in ephemeral_log.readlines():
-                        self._delete(os.path.join(self._cache_dir,
-                                                  ephemeral_cache.strip()))
+                        self.delete(os.path.join(self._cache_dir,
+                                                 ephemeral_cache.strip()))
 
-                self._delete(self._ephemeral_caches)
+                self.delete(self._ephemeral_caches)
 
     def named_cache_dir(self, name, ephemeral=True):
         """Return a dir called name in the cache dir, even if it exists.
@@ -301,11 +301,7 @@ class ContainerBase(object):
         try:
             yield path
         finally:
-            try:
-                self._delete(path)
-            except OSError as error:
-                if error.errno != errno.ENOENT:
-                    raise error
+            self.delete(path)
 
 ActivationKeys = namedtuple("ActivationKeys",
                             "activated version deactivate inserted")
@@ -597,7 +593,7 @@ class ContainerDir(ContainerBase):
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
-                self._delete(self._scripts_dir)
+                self.delete(self._scripts_dir)
 
     def script_path(self, relative_path):
         """Get absolute path to script specified at relative_path.
