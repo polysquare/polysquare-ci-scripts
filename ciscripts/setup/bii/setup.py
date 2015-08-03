@@ -49,7 +49,14 @@ def run(cont, util, shell, argv=None):
     extra_packages = defaultdict(lambda: defaultdict(lambda: []),
                                  Linux=defaultdict(lambda: [
                                      "python",
-                                     "python-pip"
+                                     "python-pip",
+                                     "ninja-build"
+                                 ]),
+                                 Windows=defaultdict(lambda: [
+                                     "ninja"
+                                 ]),
+                                 Darwin=defaultdict(lambda: [
+                                     "ninja"
                                  ]))
 
     extra_repos = defaultdict(lambda: defaultdict(lambda: []),
