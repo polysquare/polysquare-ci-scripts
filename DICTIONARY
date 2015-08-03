@@ -81,6 +81,7 @@ pylint
 pypy
 pypy3
 python
+rdoc
 rmdir
 rootfs
 rsync

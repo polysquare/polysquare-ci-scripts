@@ -33,15 +33,11 @@ def run(cont, util, shell, argv=None):
                                                         ruby_version)
 
     if not os.environ.get("APPVEYOR", None):
+        rb_util = cont.fetch_and_import("ruby_util.py")
         util.where_unavailable("coveralls-lcov",
-                               util.execute,
+                               rb_util.gem_install,
                                cont,
-                               util.long_running_suppressed_output(),
-                               "gem",
-                               "install",
-                               "--conservative",
-                               "--no-ri",
-                               "--no-rdoc",
+                               util,
                                "coveralls-lcov",
                                instant_fail=True,
                                path=rb_cont.executable_path())

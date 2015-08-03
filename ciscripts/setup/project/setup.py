@@ -19,6 +19,28 @@ def _prepare_project_deployment(cont, util, py_util, py_cont):
             py_util.pip_install(cont, util, "travis-bump-version")
 
 
+def _install_markdownlint(cont, util, shell):
+    """Install markdownlint into this container."""
+    config_ruby = "setup/project/configure_ruby.py"
+    rb_ver = defaultdict(lambda: "2.1.5",
+                         Windows="2.1.6")
+
+    rb_cont = cont.fetch_and_import(config_ruby).run(cont,
+                                                     util,
+                                                     shell,
+                                                     rb_ver)
+
+    with util.Task("""Installing markdownlint"""):
+        rb_util = cont.fetch_and_import("ruby_util.py")
+        util.where_unavailable("mdl",
+                               rb_util.gem_install,
+                               cont,
+                               util,
+                               "mdl",
+                               instant_fail=True,
+                               path=rb_cont.executable_path())
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test a generic project.
 
@@ -47,28 +69,7 @@ def run(cont, util, shell, argv=None):
                                                            py_ver)
 
         if not parse_result.no_mdl:
-            config_ruby = "setup/project/configure_ruby.py"
-            rb_ver = defaultdict(lambda: "2.1.5",
-                                 Windows="2.1.6")
-
-            rb_cont = cont.fetch_and_import(config_ruby).run(cont,
-                                                             util,
-                                                             shell,
-                                                             rb_ver)
-
-            with util.Task("""Installing markdownlint"""):
-                util.where_unavailable("mdl",
-                                       util.execute,
-                                       cont,
-                                       util.long_running_suppressed_output(),
-                                       "gem",
-                                       "install",
-                                       "--conservative",
-                                       "--no-ri",
-                                       "--no-rdoc",
-                                       "mdl",
-                                       instant_fail=True,
-                                       path=rb_cont.executable_path())
+            _install_markdownlint(cont, util, shell)
 
         with util.Task("""Installing polysquare style guide linter"""):
             py_util.pip_install(cont,
