@@ -516,7 +516,15 @@ def execute(container, output_strategy, *args, **kwargs):
         env.update(kwargs["env"])
 
     try:
-        cmd = process_shebang(args)
+        cmd = list(process_shebang(args))
+
+        # On Windows, we need to explicitly specify the
+        # executable, since PATH is only read in its
+        # state at the time this process started and
+        # not at the time Popen is called.
+        if not os.path.exists(cmd[0]):
+            cmd[0] = which(cmd[0])
+            assert cmd[0] is not None
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
@@ -754,3 +762,56 @@ def get_system_identifier(container):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()
     return "".join([o.decode() for o in output]).strip()
+
+
+def make_meta_container(containers, **kwargs):
+    """Make a meta-container object out of containers.
+
+    Activating the meta-container activates all sub-containers.
+    Pass the names of any methods to forward and the method on the child
+    container to forward those methods.
+    """
+    class MetaContainer(object):
+
+        """A meta-container."""
+
+        def __init__(self):
+            """Initialize meta-container."""
+            super(MetaContainer, self).__init__()
+            self._sub_containers = containers
+
+        def activate(self, util):
+            """Activate all containers."""
+            for container in self._sub_containers:
+                container.activate(util)
+
+        def deactivate(self, util):
+            """Deactivate all containers."""
+            for container in self._sub_containers:
+                container.deactivate(util)
+
+        @contextmanager
+        def activated(self, util):
+            """Proceed with all containers activated."""
+            self.activate(util)
+
+            try:
+                yield
+            finally:
+                self.deactivate(util)
+
+        @contextmanager
+        def deactivated(self, util):
+            """Proceed with all containers deactivated."""
+            self.deactivate(util)
+
+            try:
+                yield
+            finally:
+                self.activate(util)
+
+    meta_container = MetaContainer()
+    for name, method in kwargs.items():
+        setattr(meta_container, name, method)
+
+    return meta_container

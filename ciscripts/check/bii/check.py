@@ -16,6 +16,24 @@ from collections import defaultdict
 from contextlib import contextmanager
 
 
+def _get_python_container(cont, util, shell):
+    """Get python container to run linters in."""
+    config_python = "setup/project/configure_python.py"
+    python_ver = defaultdict(lambda: "2.7.9")
+    return cont.fetch_and_import(config_python).get(cont,
+                                                    util,
+                                                    shell,
+                                                    python_ver)
+
+
+def _get_bii_container(cont, util, shell):
+    """Get biicode container."""
+    return cont.fetch_and_import("setup/project/configure_bii.py").get(cont,
+                                                                       util,
+                                                                       shell,
+                                                                       None)
+
+
 def _move_directories_ignore_errors(directories, src, dst):
     """Move specified directories from :src: to :dst: ignoring errors."""
     for name in directories:
@@ -48,19 +66,18 @@ def run(cont, util, shell, argv=None):
     cmake_check_script = "check/cmake/check.py"
     cmake_check = cont.fetch_and_import(cmake_check_script)
 
-    py_ver = defaultdict(lambda: "2.7.9")
-    config_python = "setup/project/configure_python.py"
-    py_cont = cont.fetch_and_import(config_python).get(cont,
-                                                       util,
-                                                       shell,
-                                                       py_ver)
+    py_cont = _get_python_container(cont, util, shell)
+    bii_cont = _get_bii_container(cont, util, shell)
+
+    with util.Task(repr(bii_cont)):
+        pass
 
     def _after_lint(cont, os_cont, util, build):
         """Restore cached files and perform bii specific setup."""
         with util.Task("""Restoring cached files to build tree"""):
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
 
-        with py_cont.activated(util):
+        with py_cont.activated(util), bii_cont.activated(util):
             with util.Task("""Downloading dependencies"""):
                 if not os.path.exists(os.path.join(os.getcwd(), "bii")):
                     os_cont.execute(cont,
@@ -101,7 +118,7 @@ def run(cont, util, shell, argv=None):
         """Stay in current directory."""
         del build
 
-        with py_cont.activated(util):
+        with py_cont.activated(util), bii_cont.activated(util):
             yield
 
     cmake_check.check_cmake_like_project(cont,

@@ -20,19 +20,21 @@ def run(cont, util, shell, argv=None):
                                                                  None)
 
         cmake_build = cont.named_cache_dir("cmake-build", False)
-        with open(os.path.join(cmake_build,
-                               "TracefileConverterLoc")) as location_file:
-            converter = location_file.read().strip()
-
         tracefile = os.path.join(cmake_build, "coverage.trace")
-        lcov_output = os.path.join(os.getcwd(), "coverage.info")
-        os_cont.execute(cont,
-                        util.running_output,
-                        "cmake",
-                        "-DTRACEFILE=" + tracefile,
-                        "-DLCOV_OUTPUT=" + lcov_output,
-                        "-P",
-                        converter)
+        converter = os.path.join(cmake_build, "TracefileConverterLoc")
+        if os.path.exists(converter) and os.path.exists(tracefile):
+            with open(converter) as location_file:
+                converter = location_file.read().strip()
+
+            tracefile = os.path.join(cmake_build, "coverage.trace")
+            lcov_output = os.path.join(os.getcwd(), "coverage.info")
+            os_cont.execute(cont,
+                            util.running_output,
+                            "cmake",
+                            "-DTRACEFILE=" + tracefile,
+                            "-DLCOV_OUTPUT=" + lcov_output,
+                            "-P",
+                            converter)
 
     with util.Task("""Submitting coverage totals"""):
         if os.environ.get("CI", None) is not None:

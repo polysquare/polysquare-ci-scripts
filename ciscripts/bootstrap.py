@@ -240,7 +240,7 @@ class ContainerBase(object):
         self._ephemeral_caches = os.path.join(self._cache_dir, "emphemeral")
 
     @staticmethod
-    def _delete(node):
+    def delete(node):
         """Delete node on the file system in the way you expect.
 
         If :node: is a directory, remove it recursively. If it is a file,
@@ -252,7 +252,7 @@ class ContainerBase(object):
             else:
                 os.unlink(node)
         except OSError as error:
-            if error.errno != errno.ENOENT:   # suppress(PYC90)
+            if error.errno not in [errno.ENOENT, errno.EPERM, errno.EACCES]:
                 raise error
 
     @abc.abstractmethod
@@ -265,10 +265,10 @@ class ContainerBase(object):
             with util.Task("""Cleaning ephemeral caches"""):
                 with open(self._ephemeral_caches, "r") as ephemeral_log:
                     for ephemeral_cache in ephemeral_log.readlines():
-                        self._delete(os.path.join(self._cache_dir,
-                                                  ephemeral_cache.strip()))
+                        self.delete(os.path.join(self._cache_dir,
+                                                 ephemeral_cache.strip()))
 
-                self._delete(self._ephemeral_caches)
+                self.delete(self._ephemeral_caches)
 
     def named_cache_dir(self, name, ephemeral=True):
         """Return a dir called name in the cache dir, even if it exists.
@@ -301,11 +301,7 @@ class ContainerBase(object):
         try:
             yield path
         finally:
-            try:
-                self._delete(path)
-            except OSError as error:
-                if error.errno != errno.ENOENT:
-                    raise error
+            self.delete(path)
 
 ActivationKeys = namedtuple("ActivationKeys",
                             "activated version deactivate inserted")
@@ -346,7 +342,7 @@ class LanguageBase(ContainerBase):
         """
         return
 
-    def activate(self, util):
+    def _activate(self, util, persist=False):
         """Activate this container in both the parent and current context.
 
         This will set the environment using the data in _active_environment
@@ -358,32 +354,33 @@ class LanguageBase(ContainerBase):
         if os.environ.get(activation_keys.version, None) == self._version:
             return False
 
+        shell = self._parent_shell if persist else None
         active_environment = self._active_environment(ActiveEnvironment)
 
         for key, value in active_environment.overwrite.items():
             backup = activation_keys.deactivate.format(key=key)
-            util.overwrite_environment_variable(self._parent_shell,
+            util.overwrite_environment_variable(shell,
                                                 backup,
                                                 util.maybe_environ(key))
-            util.overwrite_environment_variable(self._parent_shell, key, value)
+            util.overwrite_environment_variable(shell, key, value)
 
         for key, value in active_environment.prepend.items():
             inserted = activation_keys.inserted.format(key=key)
-            util.overwrite_environment_variable(self._parent_shell,
+            util.overwrite_environment_variable(shell,
                                                 inserted,
                                                 value)
-            util.prepend_environment_variable(self._parent_shell, key, value)
+            util.prepend_environment_variable(shell, key, value)
 
-        util.overwrite_environment_variable(self._parent_shell,
+        util.overwrite_environment_variable(shell,
                                             activation_keys.activated,
                                             "1")
-        util.overwrite_environment_variable(self._parent_shell,
+        util.overwrite_environment_variable(shell,
                                             activation_keys.version,
                                             self._version)
 
         return True
 
-    def deactivate(self, util):
+    def _deactivate(self, util, persist=False):
         """Deactivate this container in both the parent and current context.
 
         This will look at the keys in _active_environment and use those to
@@ -394,36 +391,45 @@ class LanguageBase(ContainerBase):
         if os.environ.get(activation_keys.version, None) != self._version:
             return False
 
+        shell = self._parent_shell if persist else None
         active_environment = self._active_environment(ActiveEnvironment)
 
         for key in active_environment.overwrite.keys():
             backup = activation_keys.deactivate.format(key=key)
-            util.overwrite_environment_variable(self._parent_shell,
+            util.overwrite_environment_variable(shell,
                                                 key,
                                                 os.environ.get(backup, ""))
-            util.overwrite_environment_variable(self._parent_shell,
+            util.overwrite_environment_variable(shell,
                                                 backup,
                                                 None)
 
         for key in active_environment.prepend.keys():
             inserted = activation_keys.inserted.format(key=key)
             for value in os.environ[inserted].split(os.pathsep):
-                util.remove_from_environment_variable(self._parent_shell,
+                util.remove_from_environment_variable(shell,
                                                       key,
                                                       value)
 
-            util.overwrite_environment_variable(self._parent_shell,
+            util.overwrite_environment_variable(shell,
                                                 inserted,
                                                 None)
 
-        util.overwrite_environment_variable(self._parent_shell,
+        util.overwrite_environment_variable(shell,
                                             activation_keys.activated,
                                             None)
-        util.overwrite_environment_variable(self._parent_shell,
+        util.overwrite_environment_variable(shell,
                                             activation_keys.version,
                                             None)
 
         return True
+
+    def activate(self, util):
+        """Activate this container, persisting across invocations."""
+        return self._activate(util, persist=True)
+
+    def deactivate(self, util):
+        """Deactivate this container, persisting across invocations."""
+        return self._deactivate(util, persist=True)
 
     def executable_path(self):
         """Return executable path for this container.
@@ -436,21 +442,27 @@ class LanguageBase(ContainerBase):
 
     @contextmanager
     def activated(self, util):
-        """Perform actions in this context with activated container."""
-        self.activate(util)
-        try:
-            yield
-        finally:
-            self.deactivate(util)
+        """Perform actions in this context with activated container.
 
-    @contextmanager
-    def deactivated(self, util):
-        """Perform actions in this context with deactivated container."""
-        self.deactivate(util)
+        There is no persistence across invocations.
+        """
+        self._activate(util)
         try:
             yield
         finally:
-            self.activate(util)
+            self._deactivate(util)
+
+    @contextmanager  # suppress(unused-function)
+    def deactivated(self, util):
+        """Perform actions in this context with deactivated container.
+
+        There is no persistence across invocations.
+        """
+        self._deactivate(util)
+        try:
+            yield
+        finally:
+            self._activate(util)
 
 
 FetchedModule = namedtuple("FetchedModule", "in_scripts_dir fs_path")
@@ -597,7 +609,7 @@ class ContainerDir(ContainerBase):
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
-                self._delete(self._scripts_dir)
+                self.delete(self._scripts_dir)
 
     def script_path(self, relative_path):
         """Get absolute path to script specified at relative_path.

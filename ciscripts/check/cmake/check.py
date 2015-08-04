@@ -11,6 +11,18 @@ import os
 
 import platform
 
+from collections import defaultdict
+
+
+def _get_python_container(cont, util, shell):
+    """Get python container to run linters in."""
+    config_python = "setup/project/configure_python.py"
+    python_ver = defaultdict(lambda: "3.4.1")
+    return cont.fetch_and_import(config_python).get(cont,
+                                                    util,
+                                                    shell,
+                                                    python_ver)
+
 
 def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
     """Run /ciscripts/check/project/lint.py on this cmake project."""
@@ -56,21 +68,22 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
         if namespace:
             polysquare_linter_args.extend(["--namespace", namespace])
 
-        util.execute(cont,
-                     util.output_on_fail,
-                     "polysquare-cmake-linter",
-                     *polysquare_linter_args)
+        with _get_python_container(cont, util, None).activated(util):
+            util.execute(cont,
+                         util.output_on_fail,
+                         "polysquare-cmake-linter",
+                         *polysquare_linter_args)
 
-        # Set HOME to the user's actual base directory, since
-        # cmakelint depends on it
-        util.execute(cont,
-                     util.output_on_fail,
-                     "cmakelint",
-                     "--filter=-whitespace/extra,-whitespace/indent",
-                     *files_to_lint,
-                     env={
-                         "HOME": os.path.expanduser("~")
-                     })
+            # Set HOME to the user's actual base directory, since
+            # cmakelint depends on it
+            util.execute(cont,
+                         util.output_on_fail,
+                         "cmakelint",
+                         "--filter=-whitespace/extra,-whitespace/indent",
+                         *files_to_lint,
+                         env={
+                             "HOME": os.path.expanduser("~")
+                         })
 
 
 def _configure_cmake_project(cont,  # suppress(too-many-arguments)

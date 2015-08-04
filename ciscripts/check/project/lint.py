@@ -7,6 +7,29 @@
 
 import os
 
+from collections import defaultdict
+
+
+def _get_python_container(cont, util, shell):
+    """Get python container to run linters in."""
+    config_python = "setup/project/configure_python.py"
+    python_ver = defaultdict(lambda: "3.4.1")
+    return cont.fetch_and_import(config_python).get(cont,
+                                                    util,
+                                                    shell,
+                                                    python_ver)
+
+
+def _get_ruby_container(cont, util, shell):
+    """Get ruby container to run linters in."""
+    config_ruby = "setup/project/configure_ruby.py"
+    rb_ver = defaultdict(lambda: "2.1.5",
+                         Windows="2.1.6")
+    return cont.fetch_and_import(config_ruby).get(cont,
+                                                  util,
+                                                  shell,
+                                                  rb_ver)
+
 
 def run(cont,  # suppress(too-many-arguments)
         util,
@@ -32,7 +55,6 @@ def run(cont,  # suppress(too-many-arguments)
     To exclude certain expressions from being considered by the spellchecker,
     pass them to :block_regexps:
     """
-    del shell
     del argv
 
     technical_terms_path = os.path.join(cont.named_cache_dir("tech_terms",
@@ -113,16 +135,21 @@ def run(cont,  # suppress(too-many-arguments)
                                              ephemeral=False)]))
 
                 if not no_mdl:
-                    for markdown_file in files_to_lint:
-                        lint("mdl", markdown_file)
+                    with _get_ruby_container(cont,
+                                             util,
+                                             shell).activated(util):
+                        for markdown_file in files_to_lint:
+                            lint("mdl", markdown_file)
 
-    with util.Task("""Linting files using polysquare style guide linter"""):
-        run_linters_on_code_files(extensions,
-                                  exclusions,
-                                  directories,
-                                  block_regexps)
-
-    with util.Task("""Linting markdown documentation"""):
-        run_linters_on_markdown_files(extensions,
+    with _get_python_container(cont, util, shell).activated(util):
+        with util.Task("""Checking files using polysquare style guide """
+                       """linter"""):
+            run_linters_on_code_files(extensions,
+                                      exclusions,
                                       directories,
-                                      no_mdl)
+                                      block_regexps)
+
+        with util.Task("""Checking markdown documentation"""):
+            run_linters_on_markdown_files(extensions,
+                                          directories,
+                                          no_mdl)

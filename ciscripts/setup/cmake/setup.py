@@ -196,18 +196,29 @@ def _install_cmake_linters(cont, util, shell):
                                                           py_ver)
 
     with util.Task("""Installing cmake linters"""):
-        util.where_unavailable("polysquare-cmake-linter",
-                               py_util.pip_install,
-                               cont,
-                               util,
-                               "polysquare-cmake-linter",
-                               path=py_cont.executable_path())
-        util.where_unavailable("cmakelint",
-                               py_util.pip_install,
-                               cont,
-                               util,
-                               "cmakelint",
-                               path=py_cont.executable_path())
+        with py_cont.activated(util):
+            util.where_unavailable("polysquare-cmake-linter",
+                                   py_util.pip_install,
+                                   cont,
+                                   util,
+                                   "polysquare-cmake-linter",
+                                   path=py_cont.executable_path())
+            util.where_unavailable("cmakelint",
+                                   py_util.pip_install,
+                                   cont,
+                                   util,
+                                   "cmakelint",
+                                   path=py_cont.executable_path())
+
+
+def _parse_arguments(argv):
+    """Parse arguments to run."""
+    parser = argparse.ArgumentParser(description="""Set up cmake project""")
+    parser.add_argument("--cmake-version",
+                        help="""CMake version to install""",
+                        default="latest",
+                        type=str)
+    return parser.parse_known_args(argv or list())
 
 
 def run(cont,  # suppress(too-many-arguments)
@@ -226,17 +237,12 @@ def run(cont,  # suppress(too-many-arguments)
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    parser = argparse.ArgumentParser(description="""Set up cmake project""")
-    parser.add_argument("--cmake-version",
-                        help="""CMake version to install""",
-                        default="latest",
-                        type=str)
-    parse_result, remainder = parser.parse_known_args(argv or list())
+    parse_result, remainder = _parse_arguments(argv)
 
-    cont.fetch_and_import("setup/project/setup.py").run(cont,
-                                                        util,
-                                                        shell,
-                                                        remainder)
+    prj_meta = cont.fetch_and_import("setup/project/setup.py").run(cont,
+                                                                   util,
+                                                                   shell,
+                                                                   remainder)
 
     with util.Task("""Setting up cmake project"""):
         _install_cmake_linters(cont, util, shell)
@@ -256,5 +262,7 @@ def run(cont,  # suppress(too-many-arguments)
                                                                shell,
                                                                None,
                                                                **os_cont_kw)
-            util.register_result("_POLYSQUARE_SETUP_CMAKE_PROJECT", os_cont)
-            return os_cont
+            meta_cont = util.make_meta_container((os_cont, prj_meta),
+                                                 execute=os_cont.execute)
+            util.register_result("_POLYSQUARE_SETUP_CMAKE_PROJECT", meta_cont)
+            return meta_cont

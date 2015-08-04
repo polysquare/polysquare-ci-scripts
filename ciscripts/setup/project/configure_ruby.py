@@ -68,15 +68,15 @@ def get(container, util, shell, ver_info):
 
             rb_path = self._installation
 
-            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.a"])
-            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.chm"])
-            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.pdf"])
-            util_mod.apply_to_files(os.unlink, rb_path, matching=["*.html"])
+            util_mod.apply_to_files(self.delete, rb_path, matching=["*.a"])
+            util_mod.apply_to_files(self.delete, rb_path, matching=["*.chm"])
+            util_mod.apply_to_files(self.delete, rb_path, matching=["*.pdf"])
+            util_mod.apply_to_files(self.delete, rb_path, matching=["*.html"])
 
-            util_mod.apply_to_files(os.unlink,
+            util_mod.apply_to_files(self.delete,
                                     rb_path,
                                     matching=["*unins000.exe"])
-            util_mod.apply_to_files(os.unlink,
+            util_mod.apply_to_files(self.delete,
                                     rb_path,
                                     matching=["*unins000.dat"])
 
@@ -233,8 +233,6 @@ def run(container, util, shell, ver_info):
                                         container,
                                         util,
                                         shell)(version)
-        with util.Task("""Activating ruby """ + version):
-            ruby_container.activate(util)
 
         util.register_result("_POLYSQUARE_CONFIGURE_RB_" + version,
                              ruby_container)

@@ -124,8 +124,7 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
                                                    "completed")
                     if not os.path.exists(installed_stamp):
                         self._installer(self._installation,
-                                        self._version,
-                                        self.activate)
+                                        self._version)
                         self.clean(util)
                         with open(installed_stamp, "w") as stamp:
                             stamp.write("done")
@@ -165,28 +164,28 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
             # Object code and dynamic libraries
             debug_ghc_version = "*_debug-ghc{0}.so".format(self._version)
             l_ghc_version = "*_l-ghc{0}.so".format(self._version)
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["*.o"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=[debug_ghc_version])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=[l_ghc_version])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_l.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_p.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_thr.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["lib*_debug.a"])
-            util.apply_to_files(os.unlink,
+            util.apply_to_files(self.delete,
                                 self._internal_container,
                                 matching=["*.p_"])
 
@@ -359,7 +358,7 @@ def run(container, util, shell, ver_info):
 
         def install():
             """Install haskell version, returns a HaskellContainer."""
-            def deferred_installer(installation, version, activate):
+            def deferred_installer(installation, version):
                 """Closure which installs haskell on request."""
                 install_haskell_dependencies()
 
@@ -402,17 +401,12 @@ def run(container, util, shell, ver_info):
                                            "documentation: False\n"
                                            "tests: False\n")
 
-                with util.Task("""Activating haskell {0}""".format(version)):
-                    activate(util)
-
             return get(container, util, shell, ver_info, deferred_installer)
 
         return install
 
     with util.Task("""Configuring haskell"""):
         haskell_container = haskell_installer()()
-        with util.Task("""Activating haskell {0}""".format(version)):
-            haskell_container.activate(util)
 
         util.register_result("_POLYSQUARE_CONFIGURE_HS_" + version,
                              haskell_container)

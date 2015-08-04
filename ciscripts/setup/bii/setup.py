@@ -5,7 +5,18 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a bii project."""
 
+import os
+
 from collections import defaultdict
+
+
+def _get_bii_container(cont, util, shell, argv, os_cont):
+    """Get bii container to run this project in."""
+    return cont.fetch_and_import("setup/project/configure_bii.py").run(cont,
+                                                                       util,
+                                                                       shell,
+                                                                       argv,
+                                                                       os_cont)
 
 
 def run(cont, util, shell, argv=None):
@@ -23,11 +34,35 @@ def run(cont, util, shell, argv=None):
                                                         util,
                                                         shell,
                                                         argv)
+    configure_ruby = "setup/project/configure_ruby.py"
+    ruby_version = defaultdict(lambda: "2.1.5")
+    rb_cont = cont.fetch_and_import(configure_ruby).get(cont,
+                                                        util,
+                                                        shell,
+                                                        ruby_version)
+
+    if not os.environ.get("APPVEYOR", None):
+        rb_util = cont.fetch_and_import("ruby_util.py")
+        with rb_cont.activated(util):
+            util.where_unavailable("coveralls-lcov",
+                                   rb_util.gem_install,
+                                   cont,
+                                   util,
+                                   "coveralls-lcov",
+                                   instant_fail=True,
+                                   path=rb_cont.executable_path())
 
     extra_packages = defaultdict(lambda: defaultdict(lambda: []),
                                  Linux=defaultdict(lambda: [
                                      "python",
-                                     "python-pip"
+                                     "python-pip",
+                                     "ninja-build"
+                                 ]),
+                                 Windows=defaultdict(lambda: [
+                                     "ninja"
+                                 ]),
+                                 Darwin=defaultdict(lambda: [
+                                     "ninja"
                                  ]))
 
     extra_repos = defaultdict(lambda: defaultdict(lambda: []),
@@ -43,11 +78,7 @@ def run(cont, util, shell, argv=None):
                                                                 extra_repos)
 
     with util.Task("""Setting up bii project"""):
-        cont.fetch_and_import("setup/project/configure_bii.py").run(cont,
-                                                                    util,
-                                                                    shell,
-                                                                    argv,
-                                                                    os_cont)
+        bii_meta = _get_bii_container(cont, util, shell, argv, os_cont)
 
-    util.register_result("_POLYSQUARE_SETUP_BII_PROJECT", os_cont)
-    return os_cont
+    util.register_result("_POLYSQUARE_SETUP_BII_PROJECT", bii_meta)
+    return bii_meta

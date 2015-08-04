@@ -23,7 +23,7 @@ def _install_test_dependencies(cont, util, py_util, *args):
                         "setuptools-green>=0.0.13")
 
 
-def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
+def _prepare_python_deployment(cont, util, shell, py_util):
     """Install dependencies required to deploy python project."""
     hs_ver = defaultdict(lambda: "7.8.4")
     hs_config_script = "setup/project/configure_haskell.py"
@@ -33,14 +33,14 @@ def _prepare_python_deployment(cont, py_cont, util, shell, py_util):
                                                                hs_ver)
 
     with util.Task("""Installing pandoc"""):
-        util.where_unavailable("pandoc",
-                               hs_container.install_cabal_pkg,
-                               cont,
-                               "pandoc")
+        with hs_container.activated(util):
+            util.where_unavailable("pandoc",
+                                   hs_container.install_cabal_pkg,
+                                   cont,
+                                   "pandoc")
 
     with util.Task("""Installing deploy dependencies"""):
-        with py_cont.deactivated(util):
-            py_util.pip_install_deps(cont, util, "upload")
+        py_util.pip_install_deps(cont, util, "upload")
 
 
 def _upgrade_pip(cont, util):
@@ -67,10 +67,10 @@ def run(cont, util, shell, argv=None):
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    cont.fetch_and_import("setup/project/setup.py").run(cont,
-                                                        util,
-                                                        shell,
-                                                        argv)
+    meta_cont = cont.fetch_and_import("setup/project/setup.py").run(cont,
+                                                                    util,
+                                                                    shell,
+                                                                    argv)
 
     with util.Task("""Setting up python project"""):
         py_ver = defaultdict(lambda: "3.4.1")
@@ -86,24 +86,25 @@ def run(cont, util, shell, argv=None):
         # pip, so don't perform, the upgrade on Windows
         if platform.system() != "Windows":
             with util.Task("""Ensuring that pip is up to date"""):
-                with py_cont.deactivated(util):
+                with py_cont.activated(util):
                     _upgrade_pip(cont, util)
 
                 _upgrade_pip(cont, util)
 
         with util.Task("""Installing python linters"""):
-            py_util.pip_install_deps(cont,
-                                     util,
-                                     "polysquarelint")
-            py_util.pip_install(cont,
-                                util,
-                                "polysquare-setuptools-lint>=0.0.22")
+            with py_cont.activated(util):
+                py_util.pip_install_deps(cont,
+                                         util,
+                                         "polysquarelint")
+                py_util.pip_install(cont,
+                                    util,
+                                    "polysquare-setuptools-lint>=0.0.22")
 
         with util.Task("""Installing python test runners"""):
             # Install testing dependencies both inside and outside container.
             # They need to be installed in the container so that static
             # analysis tools can successfully import them.
-            with py_cont.deactivated(util):
+            with py_cont.activated(util):
                 _install_test_dependencies(cont,
                                            util,
                                            py_util,
@@ -117,7 +118,9 @@ def run(cont, util, shell, argv=None):
 
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,
-                                py_cont,
                                 util,
                                 shell,
                                 py_util)
+
+        util.register_result("_POLYSQUARE_SETUP_PYTHON", meta_cont)
+        return meta_cont
