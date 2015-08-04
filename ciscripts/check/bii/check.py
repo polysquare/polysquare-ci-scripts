@@ -11,19 +11,24 @@ import errno
 
 import os
 
+import platform
+
 from collections import defaultdict
 
 from contextlib import contextmanager
 
 
 def _get_python_container(cont, util, shell):
-    """Get python container to run linters in."""
+    """Get a python 2.7.9 installation if necessary."""
+    if platform.system() == "Linux":
+        return None
+
+    py_ver = defaultdict(lambda: "2.7.9")
     config_python = "setup/project/configure_python.py"
-    python_ver = defaultdict(lambda: "2.7.9")
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,
                                                     shell,
-                                                    python_ver)
+                                                    py_ver)
 
 
 def _get_bii_container(cont, util, shell):
@@ -54,6 +59,16 @@ _BII_LAYOUT = [
 ]
 
 
+@contextmanager
+def _maybe_activate_python(py_cont, util):
+    """Activate py_cont if it exists."""
+    if py_cont:
+        with py_cont.activated(util):
+            yield
+    else:
+        yield
+
+
 def run(cont, util, shell, argv=None):
     """Run checks on this bii project."""
     parser = argparse.ArgumentParser(description="""Run bii checks""")
@@ -69,15 +84,12 @@ def run(cont, util, shell, argv=None):
     py_cont = _get_python_container(cont, util, shell)
     bii_cont = _get_bii_container(cont, util, shell)
 
-    with util.Task(repr(bii_cont)):
-        pass
-
     def _after_lint(cont, os_cont, util, build):
         """Restore cached files and perform bii specific setup."""
         with util.Task("""Restoring cached files to build tree"""):
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
 
-        with py_cont.activated(util), bii_cont.activated(util):
+        with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
             with util.Task("""Downloading dependencies"""):
                 if not os.path.exists(os.path.join(os.getcwd(), "bii")):
                     os_cont.execute(cont,
@@ -118,7 +130,7 @@ def run(cont, util, shell, argv=None):
         """Stay in current directory."""
         del build
 
-        with py_cont.activated(util), bii_cont.activated(util):
+        with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
             yield
 
     cmake_check.check_cmake_like_project(cont,

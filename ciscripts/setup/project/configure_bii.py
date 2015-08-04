@@ -12,6 +12,8 @@ import platform
 
 from collections import defaultdict
 
+from contextlib import contextmanager
+
 
 def get(container, util, shell, ver_info):
     """Return a BiiContainer for an installed bii in container."""
@@ -76,6 +78,42 @@ def _write_bii_script(util, bii_bin, bii_dir, bii_script_filename):
     util.make_executable(bii_script_filename)
 
 
+def _setup_python_if_necessary(container, util, shell):
+    """Install python 2.7.3 if necessary.
+
+    This will be for platforms where python will not be installed into
+    the OS container.
+    """
+    if platform.system() == "Linux":
+        return None
+
+    config_python = "setup/project/configure_python.py"
+
+    py_ver = defaultdict(lambda: "2.7.9")
+    py_cont = container.fetch_and_import(config_python).run(container,
+                                                            util,
+                                                            shell,
+                                                            py_ver)
+    py_cont.deactivate(util)
+    return py_cont
+
+
+@contextmanager
+def _maybe_activated_python(py_cont, util):
+    """Activate py_cont if it exists."""
+    if py_cont:
+        with py_cont.activated(util):
+            yield
+    else:
+        yield
+
+
+def _collect_nonnull_containers(util, *args, **kwargs):
+    """Return all non-null args."""
+    return util.make_meta_container(tuple([a for a in args if a is not None]),
+                                    **kwargs)
+
+
 def run(container, util, shell, ver_info, os_cont):
     """Install and activates a bii installation.
 
@@ -86,15 +124,7 @@ def run(container, util, shell, ver_info, os_cont):
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    config_python = "setup/project/configure_python.py"
-
-    py_ver = defaultdict(lambda: "2.7.9")
-    container.fetch_and_import("python_util.py")
-    py_cont = container.fetch_and_import(config_python).run(container,
-                                                            util,
-                                                            shell,
-                                                            py_ver)
-    py_cont.deactivate(util)
+    py_cont = _setup_python_if_necessary(container, util, shell)
 
     bii_dir = container.language_dir("bii")
     bii_bin = os.path.join(bii_dir, "bin")
@@ -107,7 +137,7 @@ def run(container, util, shell, ver_info, os_cont):
     if not os.path.exists(bii_script_filename):
         util.force_remove_tree(bii_dir)
         os.makedirs(bii_dir)
-        with util.in_dir(bii_dir), py_cont.activated(util):
+        with util.in_dir(bii_dir), _maybe_activated_python(py_cont, util):
             biicode_repo = os.path.join(bii_dir, "biicode")
             with util.Task("""Downloading biicode client"""):
                 remote = "git://github.com/biicode/biicode"
@@ -148,35 +178,38 @@ def run(container, util, shell, ver_info, os_cont):
                                       bii_bin,
                                       bii_dir,
                                       bii_script_filename)
-                    os_cont.execute(container,
-                                    util.long_running_suppressed_output(),
-                                    "pip",
-                                    "install",
-                                    "-r",
-                                    os.path.join(biicode_repo,
-                                                 "common",
-                                                 "requirements.txt"),
-                                    instant_fail=True)
-                    os_cont.execute(container,
-                                    util.long_running_suppressed_output(),
-                                    "pip",
-                                    "install",
-                                    "-r",
-                                    os.path.join(biicode_repo,
-                                                 "client",
-                                                 "requirements.txt"),
-                                    instant_fail=True)
+
+                    with _maybe_activated_python(py_cont, util):
+                        os_cont.execute(container,
+                                        util.long_running_suppressed_output(),
+                                        "pip",
+                                        "install",
+                                        "-r",
+                                        os.path.join(biicode_repo,
+                                                     "common",
+                                                     "requirements.txt"),
+                                        instant_fail=True)
+                        os_cont.execute(container,
+                                        util.long_running_suppressed_output(),
+                                        "pip",
+                                        "install",
+                                        "-r",
+                                        os.path.join(biicode_repo,
+                                                     "client",
+                                                     "requirements.txt"),
+                                        instant_fail=True)
 
             util.force_remove_tree(os.path.join(biicode_repo, ".git"))
             os.remove(os.path.join(biicode_repo, "client", ".git"))
             os.remove(os.path.join(biicode_repo, "common", ".git"))
 
-    meta_container = util.make_meta_container((os_cont,
-                                               py_cont,
-                                               get(container,
-                                                   util,
-                                                   shell,
-                                                   ver_info)),
-                                              execute=os_cont.execute)
+    meta_container = _collect_nonnull_containers(util,
+                                                 os_cont,
+                                                 py_cont,
+                                                 get(container,
+                                                     util,
+                                                     shell,
+                                                     ver_info),
+                                                 execute=os_cont.execute)
     util.register_result("_POLYSQUARE_CONFIGURE_BIICODE", meta_container)
     return meta_container
