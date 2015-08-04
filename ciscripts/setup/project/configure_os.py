@@ -111,7 +111,7 @@ def get(container,
             """Execute command specified by argv in this OSContainer."""
             use_args = (self._container_specification_args() +
                         ["--"] +
-                        util.process_shebang(list(argv)))
+                        list(argv))
             exec_args = []
 
             # We need to construct our command line in a way that explicitly
