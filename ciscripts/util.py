@@ -516,7 +516,15 @@ def execute(container, output_strategy, *args, **kwargs):
         env.update(kwargs["env"])
 
     try:
-        cmd = process_shebang(args)
+        cmd = list(process_shebang(args))
+
+        # On Windows, we need to explicitly specify the
+        # executable, since PATH is only read in its
+        # state at the time this process started and
+        # not at the time Popen is called.
+        if not os.path.exists(cmd[0]):
+            cmd[0] = which(cmd[0])
+            assert cmd[0] is not None
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
