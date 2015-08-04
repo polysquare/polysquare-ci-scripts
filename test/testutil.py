@@ -522,7 +522,7 @@ def acceptance_test_for(project_type, expected_programs):
                                                       shell,
                                                       extra_args)
 
-            assert cls.container.return_code() == 0
+                assert cls.container.return_code() == 0
 
         @classmethod
         def tearDownClass(cls):  # suppress(N802)
@@ -571,16 +571,8 @@ def acceptance_test_for(project_type, expected_programs):
         def test_program_is_available_in_python_script(self, program):
             """Executable {0} is available after running setup."""
             temp_dir = self.__class__.container_temp_dir
-            self.assertThat(util.which(program),
-                            IsInSubdirectoryOf(temp_dir))
-
-        @parameterized.expand(_PROGRAMS, testcase_func_doc=format_with_args(0))
-        def test_program_is_available_in_parent_shell(self, program):
-            """Executable {0} is available in parent shell after setup."""
-            script = WHICH_SCRIPT.format(program)
-            py_cmd = "python -c \"{}\"\n".format(script)
-            with self.in_parent_context(py_cmd) as cmd:
-                copy_scripts_to_directory(os.getcwd())
-                self.assertThat(cmd, SubprocessExitsWith(0))
+            with self.__class__.lang_container.activated(util):
+                self.assertThat(util.which(program),
+                                IsInSubdirectoryOf(temp_dir))
 
     return AcceptanceTestForProject

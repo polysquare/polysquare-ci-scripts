@@ -39,6 +39,16 @@ def _format_subdir_name(distro, version, arch):
     return "{d}.{v}.{a}".format(d=distro, v=version, a=arch)
 
 
+def _get_python_container(cont, util, shell):
+    """Get python container needed to run polysquare-travis-container in."""
+    config_python = "setup/project/configure_python.py"
+    py_ver = defaultdict(lambda: "3.4.1")
+    return cont.fetch_and_import(config_python).run(cont,
+                                                    util,
+                                                    shell,
+                                                    py_ver)
+
+
 # suppress(too-many-arguments)
 def get(container,
         util,
@@ -53,8 +63,9 @@ def get(container,
     subdirectory_name = _format_subdir_name(distro,
                                             distro_version,
                                             distro_arch)
-    container_path = os.path.join(container.language_dir("os"),
-                                  subdirectory_name)
+    py_cont = _get_python_container(container,
+                                    util,
+                                    shell)
 
     class OSContainer(container.new_container_for("os", subdirectory_name)):
 
@@ -101,13 +112,25 @@ def get(container,
             use_args = (self._container_specification_args() +
                         ["--"] +
                         util.process_shebang(list(argv)))
+            exec_args = []
 
+            # We need to construct our command line in a way that explicitly
+            # specifies which python we want, without actually running with
+            # the python container activated. The user might want
+            # child scripts to run under a different implementation and
+            # we should respect that.
+            with py_cont.activated(util):
+                # Don't explicitly specify python executable on Windows
+                # as the binary will already be frozen and have that built
+                # in for us.
+                if platform.system() != "Windows":
+                    exec_args.append(util.which("python"))
+                exec_args.append(util.which("psq-travis-container-exec"))
+
+            args = exec_args + [self._installation, "--show-output"] + use_args
             return util.execute(container,
                                 output_strategy,
-                                "psq-travis-container-exec",
-                                self._installation,
-                                "--show-output",
-                                *use_args,
+                                *args,
                                 **kwargs)
 
         # suppress(unused-function)
@@ -148,7 +171,8 @@ def get(container,
                               prepend=env_to_prepend)
 
     return OSContainer(subdirectory_name,
-                       container_path,
+                       os.path.join(container.language_dir("os"),
+                                    subdirectory_name),
                        shell)
 
 
@@ -161,6 +185,7 @@ def _copy_if_exists(src, dst):
 # suppress(too-many-arguments)
 def _update_os_container(container,
                          util,
+                         py_cont,
                          os_container_path,
                          distro,
                          distro_version,
@@ -199,9 +224,8 @@ def _update_os_container(container,
 
         return (True if len(options) else False, options)
 
-    container_updates_dir = container.named_cache_dir("container-updates",
-                                                      ephemeral=False)
-    updates = os.path.join(container_updates_dir,
+    updates = os.path.join(container.named_cache_dir("container-updates",
+                                                     ephemeral=False),
                            "updated-{d}-{v}-{a}".format(d=distro,
                                                         v=distro_version,
                                                         a=distro_arch))
@@ -209,15 +233,16 @@ def _update_os_container(container,
     re_call_create, additional_options = create_command_options(updates)
 
     if re_call_create:
-        with util.Task("""Updating container"""):
-            util.execute(container,
-                         util.running_output,
-                         "psq-travis-container-create",
-                         os_container_path,
-                         "--distro=" + distro,
-                         "--release=" + distro_version,
-                         *additional_options,
-                         instant_fail=True)
+        with py_cont.activated(util):
+            with util.Task("""Updating container"""):
+                util.execute(container,
+                             util.running_output,
+                             "psq-travis-container-create",
+                             os_container_path,
+                             "--distro=" + distro,
+                             "--release=" + distro_version,
+                             *additional_options,
+                             instant_fail=True)
 
             # Store contents of REPOSITORIES and PACKAGES as they exist
             # now in the pair of updates files for this distro, release
@@ -225,6 +250,22 @@ def _update_os_container(container,
             # to these later.
             _copy_if_exists(repositories, "{}.REPOSITORIES".format(updates))
             _copy_if_exists(packages, "{}.PACKAGES".format(updates))
+
+
+def _install_psq_travis_container(cont, util, shell):
+    """Install polysquare-travis-container and return its own container."""
+    py_util = cont.fetch_and_import("python_util.py")
+    py_cont = _get_python_container(cont, util, shell)
+
+    with util.Task("""Installing polysquare-travis-container"""):
+        with py_cont.activated(util):
+            py_util.pip_install(cont,
+                                util,
+                                "requests",
+                                "polysquare-travis-container>=0.0.8",
+                                instant_fail=True)
+
+    return py_cont
 
 
 # suppress(too-many-arguments)
@@ -250,18 +291,9 @@ def run(container,
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    config_python = "setup/project/configure_python.py"
-    py_util = container.fetch_and_import("python_util.py")
-    container.fetch_and_import(config_python).run(container,
-                                                  util,
-                                                  shell,
-                                                  defaultdict(lambda: "3.4.1"))
-
-    with util.Task("""Installing polysquare-travis-container"""):
-        py_util.pip_install(container,
-                            util,
-                            "polysquare-travis-container>=0.0.8",
-                            instant_fail=True)
+    py_cont = _install_psq_travis_container(container,
+                                            util,
+                                            shell)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""
@@ -273,6 +305,7 @@ def run(container,
 
         _update_os_container(container,
                              util,
+                             py_cont,
                              os_container_path,
                              distro,
                              distro_version,

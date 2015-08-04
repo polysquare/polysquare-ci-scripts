@@ -171,8 +171,12 @@ def run(container, util, shell, ver_info, os_cont):
             os.remove(os.path.join(biicode_repo, "client", ".git"))
             os.remove(os.path.join(biicode_repo, "common", ".git"))
 
-    with util.Task("""Activating biicode"""):
-        bii_container = get(container, util, shell, ver_info)
-        bii_container.activate(util)
-        util.register_result("_POLYSQUARE_CONFIGURE_BIICODE", bii_container)
-        return bii_container
+    meta_container = util.make_meta_container((os_cont,
+                                               py_cont,
+                                               get(container,
+                                                   util,
+                                                   shell,
+                                                   ver_info)),
+                                              execute=os_cont.execute)
+    util.register_result("_POLYSQUARE_CONFIGURE_BIICODE", meta_container)
+    return meta_container

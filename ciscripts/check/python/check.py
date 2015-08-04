@@ -82,7 +82,7 @@ def run(cont, util, shell, argv=None):
     result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
-    python_ver = defaultdict(lambda: os.environ["_POLYSQUARE_PYTHON_VERSION"])
+    python_ver = defaultdict(lambda: "3.4.1")
     py_cont = cont.fetch_and_import(config_python).get(cont,
                                                        util,
                                                        shell,
@@ -97,39 +97,39 @@ def run(cont, util, shell, argv=None):
     install_log = os.path.join(cont.named_cache_dir("python-install"), "log")
 
     with util.Task("""Linting python project"""):
-        util.execute(cont,
-                     util.output_on_fail,
-                     "python",
-                     "setup.py",
-                     "polysquarelint",
-                     "--suppress-codes=LongDescription,TestSuite",
-                     ("--stamp-directory=" +
-                      cont.named_cache_dir("polysquarelint-stamp",
-                                           ephemeral=False)))
-
-    with py_cont.deactivated(util):
-        with util.Task("""Creating development installation"""):
+        with py_cont.activated(util):
             util.execute(cont,
                          util.output_on_fail,
                          "python",
                          "setup.py",
-                         "install",
-                         "--record",
-                         install_log)
+                         "polysquarelint",
+                         "--suppress-codes=LongDescription,TestSuite",
+                         ("--stamp-directory=" +
+                          cont.named_cache_dir("polysquarelint-stamp",
+                                               ephemeral=False)))
 
-        with util.Task("""Running python project tests"""):
-            _run_tests_and_coverage(cont,
-                                    util,
-                                    result.coverage_exclude or list())
+    with util.Task("""Creating development installation """):
+        util.execute(cont,
+                     util.output_on_fail,
+                     "python",
+                     "setup.py",
+                     "install",
+                     "--record",
+                     install_log)
 
-        with util.Task("""Uninstalling development installation"""):
-            with open(install_log) as install_log_file:
-                for filename in install_log_file.readlines():
-                    try:
-                        if os.path.isdir(filename):
-                            util.force_remove_tree(filename)
-                        else:
-                            os.remove(filename)
-                    # suppress(pointless-except)
-                    except (OSError, shutil.Error):
-                        pass
+    with util.Task("""Running python project tests"""):
+        _run_tests_and_coverage(cont,
+                                util,
+                                result.coverage_exclude or list())
+
+    with util.Task("""Uninstalling development installation"""):
+        with open(install_log) as install_log_file:
+            for filename in install_log_file.readlines():
+                try:
+                    if os.path.isdir(filename):
+                        util.force_remove_tree(filename)
+                    else:
+                        os.remove(filename)
+                # suppress(pointless-except)
+                except (OSError, shutil.Error):
+                    pass

@@ -324,8 +324,6 @@ def run(container, util, shell, ver_info):
                                      util,
                                      container,
                                      shell)(version)
-        with util.Task("""Activating python {0}""".format(version)):
-            python_container.activate(util)
 
         util.register_result("_POLYSQUARE_CONFIGURE_PY_" + version,
                              python_container)

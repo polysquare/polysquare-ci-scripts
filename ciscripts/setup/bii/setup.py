@@ -10,6 +10,15 @@ import os
 from collections import defaultdict
 
 
+def _get_bii_container(cont, util, shell, argv, os_cont):
+    """Get bii container to run this project in."""
+    return cont.fetch_and_import("setup/project/configure_bii.py").run(cont,
+                                                                       util,
+                                                                       shell,
+                                                                       argv,
+                                                                       os_cont)
+
+
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test and check a bii project.
 
@@ -34,13 +43,14 @@ def run(cont, util, shell, argv=None):
 
     if not os.environ.get("APPVEYOR", None):
         rb_util = cont.fetch_and_import("ruby_util.py")
-        util.where_unavailable("coveralls-lcov",
-                               rb_util.gem_install,
-                               cont,
-                               util,
-                               "coveralls-lcov",
-                               instant_fail=True,
-                               path=rb_cont.executable_path())
+        with rb_cont.activated(util):
+            util.where_unavailable("coveralls-lcov",
+                                   rb_util.gem_install,
+                                   cont,
+                                   util,
+                                   "coveralls-lcov",
+                                   instant_fail=True,
+                                   path=rb_cont.executable_path())
 
     extra_packages = defaultdict(lambda: defaultdict(lambda: []),
                                  Linux=defaultdict(lambda: [
@@ -68,11 +78,7 @@ def run(cont, util, shell, argv=None):
                                                                 extra_repos)
 
     with util.Task("""Setting up bii project"""):
-        cont.fetch_and_import("setup/project/configure_bii.py").run(cont,
-                                                                    util,
-                                                                    shell,
-                                                                    argv,
-                                                                    os_cont)
+        bii_meta = _get_bii_container(cont, util, shell, argv, os_cont)
 
-    util.register_result("_POLYSQUARE_SETUP_BII_PROJECT", os_cont)
-    return os_cont
+    util.register_result("_POLYSQUARE_SETUP_BII_PROJECT", bii_meta)
+    return bii_meta

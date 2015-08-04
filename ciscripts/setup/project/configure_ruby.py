@@ -233,8 +233,6 @@ def run(container, util, shell, ver_info):
                                         container,
                                         util,
                                         shell)(version)
-        with util.Task("""Activating ruby """ + version):
-            ruby_container.activate(util)
 
         util.register_result("_POLYSQUARE_CONFIGURE_RB_" + version,
                              ruby_container)

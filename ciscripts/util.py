@@ -754,3 +754,56 @@ def get_system_identifier(container):
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()
     return "".join([o.decode() for o in output]).strip()
+
+
+def make_meta_container(containers, **kwargs):
+    """Make a meta-container object out of containers.
+
+    Activating the meta-container activates all sub-containers.
+    Pass the names of any methods to forward and the method on the child
+    container to forward those methods.
+    """
+    class MetaContainer(object):
+
+        """A meta-container."""
+
+        def __init__(self):
+            """Initialize meta-container."""
+            super(MetaContainer, self).__init__()
+            self._sub_containers = containers
+
+        def activate(self, util):
+            """Activate all containers."""
+            for container in self._sub_containers:
+                container.activate(util)
+
+        def deactivate(self, util):
+            """Deactivate all containers."""
+            for container in self._sub_containers:
+                container.deactivate(util)
+
+        @contextmanager
+        def activated(self, util):
+            """Proceed with all containers activated."""
+            self.activate(util)
+
+            try:
+                yield
+            finally:
+                self.deactivate(util)
+
+        @contextmanager
+        def deactivated(self, util):
+            """Proceed with all containers deactivated."""
+            self.deactivate(util)
+
+            try:
+                yield
+            finally:
+                self.activate(util)
+
+    meta_container = MetaContainer()
+    for name, method in kwargs.items():
+        setattr(meta_container, name, method)
+
+    return meta_container

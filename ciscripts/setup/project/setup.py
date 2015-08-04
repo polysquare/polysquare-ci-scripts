@@ -15,30 +15,44 @@ def _prepare_project_deployment(cont, util, py_util, py_cont):
     with util.Task("""Installing version bumper"""):
         py_util.pip_install(cont, util, "travis-bump-version")
 
-        with py_cont.deactivated(util):
+        with py_cont.activated(util):
             py_util.pip_install(cont, util, "travis-bump-version")
 
 
-def _install_markdownlint(cont, util, shell):
-    """Install markdownlint into this container."""
+def _get_python_container(cont, util, shell):
+    """Get python container to install linters into."""
+    config_python = "setup/project/configure_python.py"
+    py_ver = defaultdict(lambda: "3.4.1")
+
+    return cont.fetch_and_import(config_python).run(cont,
+                                                    util,
+                                                    shell,
+                                                    py_ver)
+
+
+def _get_ruby_container(cont, util, shell):
+    """Get ruby container to run linters in."""
     config_ruby = "setup/project/configure_ruby.py"
     rb_ver = defaultdict(lambda: "2.1.5",
                          Windows="2.1.6")
+    return cont.fetch_and_import(config_ruby).run(cont,
+                                                  util,
+                                                  shell,
+                                                  rb_ver)
 
-    rb_cont = cont.fetch_and_import(config_ruby).run(cont,
-                                                     util,
-                                                     shell,
-                                                     rb_ver)
 
+def _install_markdownlint(cont, util, rb_cont):
+    """Install markdownlint into this container."""
     with util.Task("""Installing markdownlint"""):
         rb_util = cont.fetch_and_import("ruby_util.py")
-        util.where_unavailable("mdl",
-                               rb_util.gem_install,
-                               cont,
-                               util,
-                               "mdl",
-                               instant_fail=True,
-                               path=rb_cont.executable_path())
+        with rb_cont.activated(util):
+            util.where_unavailable("mdl",
+                                   rb_util.gem_install,
+                                   cont,
+                                   util,
+                                   "mdl",
+                                   instant_fail=True,
+                                   path=rb_cont.executable_path())
 
 
 def run(cont, util, shell, argv=None):
@@ -59,23 +73,19 @@ def run(cont, util, shell, argv=None):
                             action="store_true")
         parse_result, _ = parser.parse_known_args(argv or list())
 
-        config_python = "setup/project/configure_python.py"
-        py_ver = defaultdict(lambda: "3.4.1")
-
         py_util = cont.fetch_and_import("python_util.py")
-        py_cont = cont.fetch_and_import(config_python).run(cont,
-                                                           util,
-                                                           shell,
-                                                           py_ver)
+        py_cont = _get_python_container(cont, util, shell)
+        rb_cont = _get_ruby_container(cont, util, shell)
 
         if not parse_result.no_mdl:
-            _install_markdownlint(cont, util, shell)
+            _install_markdownlint(cont, util, rb_cont)
 
         with util.Task("""Installing polysquare style guide linter"""):
-            py_util.pip_install(cont,
-                                util,
-                                "polysquare-generic-file-linter>=0.1.1",
-                                instant_fail=True)
+            with py_cont.activated(util):
+                py_util.pip_install(cont,
+                                    util,
+                                    "polysquare-generic-file-linter>=0.1.1",
+                                    instant_fail=True)
 
         util.prepare_deployment(_prepare_project_deployment,
                                 cont,
@@ -83,5 +93,7 @@ def run(cont, util, shell, argv=None):
                                 py_util,
                                 py_cont)
 
-        util.register_result("_POLYSQUARE_SETUP_GENERIC_PROJECT", None)
-        return None
+        meta_container = util.make_meta_container((py_cont, rb_cont))
+        util.register_result("_POLYSQUARE_SETUP_GENERIC_PROJECT",
+                             meta_container)
+        return meta_container

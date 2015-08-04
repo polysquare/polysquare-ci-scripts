@@ -16,11 +16,13 @@ def run(cont, util, shell, argv=None):
 
     with util.Task("""Submitting coverage totals"""):
         py_ver = defaultdict(lambda: "3.4.1")
-        cont.fetch_and_import("setup/project/configure_python.py").run(cont,
-                                                                       util,
-                                                                       shell,
-                                                                       py_ver)
+        configure_python = "setup/project/configure_python.py"
+        py_cont = cont.fetch_and_import(configure_python).get(cont,
+                                                              util,
+                                                              shell,
+                                                              py_ver)
 
         if os.environ.get("CI", None) is not None:
             with util.Task("""Uploading to coveralls"""):
-                util.execute(cont, util.running_output, "coveralls",)
+                with py_cont.activated(util):
+                    util.execute(cont, util.running_output, "coveralls",)
