@@ -129,10 +129,7 @@ def run(container, util, shell, ver_info, os_cont):
     bii_dir = container.language_dir("bii")
     bii_bin = os.path.join(bii_dir, "bin")
 
-    if platform.system() == "Windows":
-        bii_script_filename = os.path.join(bii_bin, "bii.exe")
-    else:
-        bii_script_filename = os.path.join(bii_bin, "bii")
+    bii_script_filename = os.path.join(bii_bin, "bii")
 
     if not os.path.exists(bii_script_filename):
         util.force_remove_tree(bii_dir)
