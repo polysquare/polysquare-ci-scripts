@@ -33,14 +33,14 @@ def _prepare_python_deployment(cont, util, shell, py_util):
                                                                hs_ver)
 
     with util.Task("""Installing pandoc"""):
-        with hs_container.activated(util):
-            util.where_unavailable("pandoc",
-                                   hs_container.install_cabal_pkg,
-                                   cont,
-                                   "pandoc")
+        hs_container.activate(util)
+        util.where_unavailable("pandoc",
+                               hs_container.install_cabal_pkg,
+                               cont,
+                               "pandoc")
 
-    with util.Task("""Installing deploy dependencies"""):
-        py_util.pip_install_deps(cont, util, "upload")
+        with util.Task("""Installing deploy dependencies"""):
+            py_util.pip_install_deps(cont, util, "upload")
 
 
 def _upgrade_pip(cont, util):
