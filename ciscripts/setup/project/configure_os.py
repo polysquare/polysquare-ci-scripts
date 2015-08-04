@@ -262,7 +262,7 @@ def _install_psq_travis_container(cont, util, shell):
             py_util.pip_install(cont,
                                 util,
                                 "requests",
-                                "polysquare-travis-container>=0.0.8",
+                                "polysquare-travis-container>=0.0.13",
                                 instant_fail=True)
 
     return py_cont
