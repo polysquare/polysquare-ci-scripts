@@ -771,7 +771,8 @@ def _set_ci_environment_variables(parent_shell):
     """Set some influential environment variables for all CI runs."""
     variables_to_set = {
         "JOBSTAMPS_ALWAYS_USE_HASHES": "1",
-        "CLINT_FORCE_COLOR": "1"
+        "CLINT_FORCE_COLOR": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
     }
 
     for key, value in variables_to_set.items():
