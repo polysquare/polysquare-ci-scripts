@@ -586,8 +586,6 @@ class ContainerDir(ContainerBase):
 
     def clean(self, util):
         """Clean this container and all sub-containers."""
-        super(ContainerDir, self).clean(util)
-
         info = namedtuple("Info", "language version")
 
         # Having everything on one line is nice
@@ -610,6 +608,10 @@ class ContainerDir(ContainerBase):
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
                 self.delete(self._scripts_dir)
+
+        # Clean our own caches once we've cleaned caches from
+        # other containers, as they might be relying on our own cache.
+        super(ContainerDir, self).clean(util)
 
     def script_path(self, relative_path):
         """Get absolute path to script specified at relative_path.
