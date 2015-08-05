@@ -83,6 +83,7 @@ def run(cont, util, shell, argv=None):
 
     py_cont = _get_python_container(cont, util, shell)
     bii_cont = _get_bii_container(cont, util, shell)
+    bii_exe = os.path.join(bii_cont.executable_path(), "bii")
 
     def _after_lint(cont, os_cont, util, build):
         """Restore cached files and perform bii specific setup."""
@@ -94,18 +95,18 @@ def run(cont, util, shell, argv=None):
                 if not os.path.exists(os.path.join(os.getcwd(), "bii")):
                     os_cont.execute(cont,
                                     util.long_running_suppressed_output(),
-                                    "bii",
+                                    bii_exe,
                                     "init",
                                     "-l")
                 os_cont.execute(cont,
                                 util.long_running_suppressed_output(),
-                                "bii",
+                                bii_exe,
                                 "find")
 
             with util.Task("""Initializing bii block"""):
                 os_cont.execute(cont,
                                 util.running_output,
-                                "bii",
+                                bii_exe,
                                 "new",
                                 result.block)
 
@@ -139,8 +140,9 @@ def run(cont, util, shell, argv=None):
                                          kind="bii",
                                          after_lint=_after_lint,
                                          configure_context=_activate_py27,
-                                         configure_cmd=("bii", "configure"),
-                                         build_cmd=lambda _: ("bii", "build"),
-                                         test_cmd=("bii", "test"),
+                                         configure_cmd=(bii_exe, "configure"),
+                                         build_cmd=lambda _: (bii_exe,
+                                                              "build"),
+                                         test_cmd=(bii_exe, "test"),
                                          after_test=_after_test,
                                          argv=remainder)

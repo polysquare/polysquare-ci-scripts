@@ -39,10 +39,10 @@ def _format_subdir_name(distro, version, arch):
     return "{d}.{v}.{a}".format(d=distro, v=version, a=arch)
 
 
-def _get_python_container(cont, util, shell):
+def _get_python_container(cont, util, shell, py_ver_string="3.4.1"):
     """Get python container needed to run polysquare-travis-container in."""
     config_python = "setup/project/configure_python.py"
-    py_ver = defaultdict(lambda: "3.4.1")
+    py_ver = defaultdict(lambda: py_ver_string)
     return cont.fetch_and_import(config_python).run(cont,
                                                     util,
                                                     shell,
@@ -111,7 +111,7 @@ def get(container,
             """Execute command specified by argv in this OSContainer."""
             use_args = (self._container_specification_args() +
                         ["--"] +
-                        util.process_shebang(list(argv)))
+                        list(argv))
             exec_args = []
 
             # We need to construct our command line in a way that explicitly
@@ -120,12 +120,17 @@ def get(container,
             # child scripts to run under a different implementation and
             # we should respect that.
             with py_cont.activated(util):
-                # Don't explicitly specify python executable on Windows
-                # as the binary will already be frozen and have that built
-                # in for us.
-                if platform.system() != "Windows":
-                    exec_args.append(util.which("python"))
-                exec_args.append(util.which("psq-travis-container-exec"))
+                # On Windows, specify that we want the entry-point
+                # script and not the frozen binary. The frozen binary will
+                # be executed using the currently active python, which may
+                # not be the same python as where it is installed.
+                if platform.system() == "Windows":
+                    exec_script = "psq-travis-container-exec-script.py"
+                else:
+                    exec_script = "psq-travis-container-exec"
+
+                exec_args.append(util.which("python"))
+                exec_args.append(util.which(exec_script))
 
             args = exec_args + [self._installation, "--show-output"] + use_args
             return util.execute(container,
@@ -252,17 +257,17 @@ def _update_os_container(container,
             _copy_if_exists(packages, "{}.PACKAGES".format(updates))
 
 
-def _install_psq_travis_container(cont, util, shell):
+def _install_psq_travis_container(cont, util, shell, py_ver):
     """Install polysquare-travis-container and return its own container."""
     py_util = cont.fetch_and_import("python_util.py")
-    py_cont = _get_python_container(cont, util, shell)
+    py_cont = _get_python_container(cont, util, shell, py_ver)
 
     with util.Task("""Installing polysquare-travis-container"""):
         with py_cont.activated(util):
             py_util.pip_install(cont,
                                 util,
                                 "requests",
-                                "polysquare-travis-container>=0.0.8",
+                                "polysquare-travis-container>=0.0.13",
                                 instant_fail=True)
 
     return py_cont
@@ -291,9 +296,17 @@ def run(container,
     if result is not util.NOT_YET_COMPLETED:
         return result
 
+    if platform.system() == "Windows":
+        with util.Task("""Performing Windows-specific setup for Python 2"""):
+            _install_psq_travis_container(container,
+                                          util,
+                                          shell,
+                                          "2.7.9")
+
     py_cont = _install_psq_travis_container(container,
                                             util,
-                                            shell)
+                                            shell,
+                                            "3.4.1")
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""
