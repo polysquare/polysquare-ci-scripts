@@ -125,6 +125,12 @@ def run(cont, util, shell, argv=None):
                                     "*/.hive.db",
                                     "*/layout.bii"
                                 ] + cmake_check.NO_CACHE_FILE_PATTERNS)
+            util.apply_to_files(util.force_remove_tree,
+                                build,
+                                matching=[
+                                    "*/bin/*",
+                                    "*/lib/*"
+                                ])
 
     @contextmanager
     def _activate_py27(util, build):
