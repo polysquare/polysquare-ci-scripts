@@ -7,7 +7,7 @@ cache:
  - C:\container -> appveyor.yml
 
 install:
- - ps: $env:PATH="${env:PYTHON};${env:PYTHON}\\Scripts;${env:PATH};C:\MinGW\bin;C:\Python34"
+ - ps: $env:PATH="${env:PYTHON};${env:PYTHON}\\Scripts;${env:PATH};C:\\MinGW\bin;C:\\Python34;C:\\Python34\\Scripts;C:\\Ruby21\bin"
  - ps: python ciscripts/bootstrap.py -d C:/container -s container-setup.py -r $(pwd) -e powershell -p test-env.ps1 --no-mdl
  - ps: . ./test-env
 
