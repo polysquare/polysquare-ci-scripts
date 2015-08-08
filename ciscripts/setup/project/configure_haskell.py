@@ -18,13 +18,9 @@ import subprocess
 
 import tarfile
 
-from collections import namedtuple
-
 from contextlib import closing
 
 from distutils.version import LooseVersion
-
-GemDirs = namedtuple("GemDirs", "system site home")
 
 
 def _no_installer_available(installation, version):
