@@ -13,6 +13,8 @@ import os
 
 import platform
 
+import re
+
 from collections import defaultdict
 
 from contextlib import contextmanager
@@ -67,6 +69,50 @@ def _maybe_activate_python(py_cont, util):
             yield
     else:
         yield
+
+
+def _bii_run_build(util, bii_exe):
+    """Return function to build a bii project."""
+    def _win_safe_abs(path):
+        """Get absolute path to file, but escape drive letters."""
+        abs_path = os.path.abspath(path)
+        if platform.system() == "Windows":
+            abs_path = re.sub(r"([: ])", r"$\1", abs_path)
+            abs_path = re.sub(r"\\", r"/", abs_path)
+
+        return abs_path
+
+    def _run_build_func(build):
+        """Build the source code.
+
+        At the moment, this involves a temporary hack on the ninja
+        build file to remove all relative paths from targets.
+        """
+        del build
+
+        bii_build = os.path.join(os.getcwd(), "bii", "build")
+        ninja_file_path = os.path.join(bii_build, "build.ninja")
+        if os.path.exists(ninja_file_path):
+            with util.in_dir(bii_build):
+                if os.path.exists(ninja_file_path):
+                    with open(ninja_file_path, "r") as ninja_file:
+                        ninja_contents = ninja_file.read()
+                    write_lines = []
+                    for line in ninja_contents.splitlines():
+                        if line.startswith("build ../"):
+                            parts = (len("build "), line.find(": C"))
+                            line = (line[:parts[0]] +
+                                    _win_safe_abs(line[parts[0]:parts[1]]) +
+                                    line[parts[1]:])
+                        write_lines.append(line)
+
+                    with open(ninja_file_path, "w") as ninja_file:
+                        ninja_file.write("\n".join(write_lines))
+                        ninja_file.write("\n")
+
+        return (bii_exe, "build")
+
+    return _run_build_func
 
 
 def run(cont, util, shell, argv=None):
@@ -141,8 +187,8 @@ def run(cont, util, shell, argv=None):
                                          after_lint=_after_lint,
                                          configure_context=_activate_py27,
                                          configure_cmd=(bii_exe, "configure"),
-                                         build_cmd=lambda _: (bii_exe,
-                                                              "build"),
+                                         build_cmd=_bii_run_build(util,
+                                                                  bii_exe),
                                          test_cmd=(bii_exe, "test"),
                                          after_test=_after_test,
                                          argv=remainder)

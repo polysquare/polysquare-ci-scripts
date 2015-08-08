@@ -180,7 +180,6 @@ def get(container, util, shell, ver_info):
             py_path = PythonContainer._get_py_path_from(self._installation)
             exec_path = PythonContainer._get_exec_path_from(self._installation)
             env_to_overwrite = {
-                "PYTHONDONTWRITEBYTECODE": 1,
                 "PYTHONPATH": os.path.join(py_path, "site-packages"),
                 "VIRTUAL_ENV": self._installation
             }

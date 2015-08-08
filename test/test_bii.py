@@ -69,6 +69,22 @@ class TestBiiContainerSetup(acceptance_test_for("bii", REQ_PROGRAMS)):
                                           "--block",
                                           "polysquare/test"))
 
+    def test_run_check_builds_cmake_project_success_ninja(self):
+        """Running check script with ninja generator builds bii project."""
+        if platform.system() == "Windows" and os.environ.get("APPVEYOR",
+                                                             None):
+            self.skipTest("""Building ninja projects hangs on Windows""")
+
+        self.assertThat("check/bii/check.py",
+                        CIScriptExitsWith(0,
+                                          self.__class__.container,
+                                          self.__class__.util,
+                                          "--no-mdl",
+                                          "--block",
+                                          "polysquare/test",
+                                          "--generator",
+                                          "Ninja"))
+
     def test_run_check_has_cmake_artifacts(self):
         """After running check, artifacts are present."""
         with CapturedOutput():
