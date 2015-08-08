@@ -368,7 +368,7 @@ class TestExecute(TestCase):
 
         self.assertThat(captured_output.stderr,
                         DocTestMatches(".../does-not-exist... "
-                                       "!!! Process python\n"
+                                       "!!! Process ...python\n"
                                        "!!!         /does-not-exist\n"
                                        "!!! failed with ...",
                                        doctest.ELLIPSIS |
@@ -503,6 +503,14 @@ class TestExecute(TestCase):
                                    Equals("...")))  # suppress(PYC90)
 
 
+def _full_path_if_exists(path):
+    """Return absolute path if it exists, otherwise return basename."""
+    if os.path.exists(path):
+        return path
+    else:
+        return os.path.basename(path)
+
+
 class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
 
     """Test cases for executable path functions (util.which)."""
@@ -575,7 +583,9 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
 
             cmdline = util.process_shebang([temp_file.name])
             self.assertEqual(cmdline,
-                             ["env", "python", temp_file.name])
+                             [_full_path_if_exists("/usr/bin/env"),
+                              "python",
+                              temp_file.name])
 
     def test_ignore_shebang_when_in_pathext(self):
         """Ignore shebang when extension is in PATHEXT."""

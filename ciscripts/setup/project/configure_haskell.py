@@ -20,7 +20,7 @@ import tarfile
 
 from contextlib import closing
 
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion  # suppress(import-error)
 
 
 def _no_installer_available(installation, version):

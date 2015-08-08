@@ -463,8 +463,12 @@ def process_shebang(args):
             if exec_file.read(2) == "#!":
                 shebang = exec_file.readline().strip().replace("\n", "")
                 shebang_args = shebang.split(" ")
-                shebang_args = ([os.path.basename(shebang_args[0])] +
-                                shebang_args[1:])
+
+                # Try to handle the case where the shebang executable
+                # does not exist by taking the basename.
+                if not os.path.exists(shebang_args[0]):
+                    shebang_args[0] = os.path.basename(shebang_args[0])
+
                 return shebang_args + [path_to_exec] + list(args[1:])
     # If we couldn't decode the file, it is probably a binary file, so
     # just execute it directly.
@@ -540,8 +544,8 @@ def execute(container, output_strategy, *args, **kwargs):
         instant_fail = kwargs.get("instant_fail") or False
 
         if status != 0:
-            IndentedLogger.message(u"""!!! Process {0}\n""".format(args[0]))
-            for arg in args[1:]:
+            IndentedLogger.message(u"""!!! Process {0}\n""".format(cmd[0]))
+            for arg in cmd[1:]:
                 IndentedLogger.message(u"""!!!         {0}\n""".format(arg))
             IndentedLogger.message(u"""!!! failed with {0}\n""".format(status))
             if not kwargs.get("allow_failure", None):

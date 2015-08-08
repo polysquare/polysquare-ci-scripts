@@ -5,11 +5,9 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a python project."""
 
-import platform
-
 from collections import defaultdict
 
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion  # suppress(import-error)
 
 
 def _install_test_dependencies(cont, util, py_util, *args):
@@ -81,15 +79,11 @@ def run(cont, util, shell, argv=None):
                                                               shell,
                                                               py_ver)
 
-        # Upgrading pip on Windows fails with permission
-        # errors when attempting to remove the old version of
-        # pip, so don't perform, the upgrade on Windows
-        if platform.system() != "Windows":
-            with util.Task("""Ensuring that pip is up to date"""):
-                with py_cont.activated(util):
-                    _upgrade_pip(cont, util)
-
+        with util.Task("""Ensuring that pip is up to date"""):
+            with py_cont.activated(util):
                 _upgrade_pip(cont, util)
+
+            _upgrade_pip(cont, util)
 
         with util.Task("""Installing python linters"""):
             with py_cont.activated(util):
