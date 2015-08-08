@@ -273,19 +273,21 @@ def pre_existing_python(lang_dir, python_executable, util, container, shell):
                              os.path.join(lang_dir, version))
 
                 if platform.system() == "Windows":
-                    pip_location = os.path.join(lang_dir,
-                                                version,
-                                                "Scripts",
-                                                "pip")
+                    python_location = os.path.join(lang_dir,
+                                                   version,
+                                                   "Scripts",
+                                                   "python")
                 else:
-                    pip_location = os.path.join(lang_dir,
-                                                version,
-                                                "bin",
-                                                "pip")
+                    python_location = os.path.join(lang_dir,
+                                                   version,
+                                                   "bin",
+                                                   "python")
 
                 util.execute(container,
                              util.long_running_suppressed_output(),
-                             pip_location,
+                             python_location,
+                             "-m",
+                             "pip",
                              "install",
                              "--upgrade",
                              "pip")

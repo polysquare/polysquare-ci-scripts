@@ -48,6 +48,8 @@ def _upgrade_pip(cont, util):
     if LooseVersion(pip.__version__) < LooseVersion("7.1.0"):
         util.execute(cont,
                      util.long_running_suppressed_output(),
+                     "python",
+                     "-m",
                      "pip",
                      "install",
                      "--upgrade",
