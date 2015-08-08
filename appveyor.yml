@@ -8,7 +8,6 @@ cache:
 
 install:
  - ps: $env:PATH="${env:PYTHON};${env:PYTHON}\\Scripts;${env:PATH};C:\MinGW\bin;C:\Python34"
- - ps: $env:POLYSQUARE_PREINSTALLED_RUBY="C:/Ruby21"
  - ps: python ciscripts/bootstrap.py -d C:/container -s container-setup.py -r $(pwd) -e powershell -p test-env.ps1 --no-mdl
  - ps: . ./test-env
 
