@@ -191,4 +191,5 @@ def run(cont, util, shell, argv=None):
                                                                   bii_exe),
                                          test_cmd=(bii_exe, "test"),
                                          after_test=_after_test,
-                                         argv=remainder)
+                                         argv=(remainder +
+                                               ["--lint-exclude", "*/bii/*"]))
