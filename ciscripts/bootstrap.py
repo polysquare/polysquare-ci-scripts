@@ -304,16 +304,19 @@ class ContainerBase(object):
             self.delete(path)
 
 ActivationKeys = namedtuple("ActivationKeys",
-                            "activated version deactivate inserted")
+                            "activated deactivate inserted")
 
 
-def _keys_for_activation(language):
+def _keys_for_activation(language, version):
     """Get environment variable keys for activating language."""
-    language_upper = language.upper()
-    return ActivationKeys("_POLYSQUARE_ACTIVATED_{0}".format(language_upper),
-                          "_POLYSQUARE_{0}_VERSION".format(language_upper),
-                          "_POLYSQUARE_DEACTIVATED_%s_{key}" % language_upper,
-                          "_POLYSQUARE_INSERTED_%s_{key}" % language_upper)
+    language = language.upper()
+    version = version.upper().replace(".", "_")
+    return ActivationKeys("_POLYSQUARE_ACTIVATED_{}_{}".format(language,
+                                                               version),
+                          "_POLYSQUARE_DEACTIVATED_%s_%s_{key}" % (language,
+                                                                   version),
+                          "_POLYSQUARE_INSERTED_%s_%s_{key}" % (language,
+                                                                version))
 
 ActiveEnvironment = namedtuple("ActiveEnvironment", "overwrite prepend")
 
@@ -350,8 +353,8 @@ class LanguageBase(ContainerBase):
         be deactivated later.
         """
         # Skip if this container has already been activated
-        activation_keys = _keys_for_activation(self._language)
-        if os.environ.get(activation_keys.version, None) == self._version:
+        activation_keys = _keys_for_activation(self._language, self._version)
+        if os.environ.get(activation_keys.activated, None):
             return False
 
         shell = self._parent_shell if persist else None
@@ -374,9 +377,6 @@ class LanguageBase(ContainerBase):
         util.overwrite_environment_variable(shell,
                                             activation_keys.activated,
                                             "1")
-        util.overwrite_environment_variable(shell,
-                                            activation_keys.version,
-                                            self._version)
 
         return True
 
@@ -387,8 +387,8 @@ class LanguageBase(ContainerBase):
         retrieve backups and restore them, effectively deactivating the
         container.
         """
-        activation_keys = _keys_for_activation(self._language)
-        if os.environ.get(activation_keys.version, None) != self._version:
+        activation_keys = _keys_for_activation(self._language, self._version)
+        if not os.environ.get(activation_keys.activated, None):
             return False
 
         shell = self._parent_shell if persist else None
@@ -416,9 +416,6 @@ class LanguageBase(ContainerBase):
 
         util.overwrite_environment_variable(shell,
                                             activation_keys.activated,
-                                            None)
-        util.overwrite_environment_variable(shell,
-                                            activation_keys.version,
                                             None)
 
         return True
