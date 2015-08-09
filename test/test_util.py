@@ -366,14 +366,8 @@ class TestExecute(TestCase):
                          "python",
                          "/does-not-exist")
 
-        self.assertThat(captured_output.stderr,
-                        DocTestMatches(".../does-not-exist... "
-                                       "!!! Process ...python\n"
-                                       "!!!         /does-not-exist\n"
-                                       "!!! failed with ...",
-                                       doctest.ELLIPSIS |
-                                       doctest.NORMALIZE_WHITESPACE |
-                                       doctest.REPORT_NDIFF))
+        self.assertThat(captured_output.stderr.strip(),
+                        Contains("/does-not-exist"))
 
     def test_override_suppressed_output(self):
         """Override suppressed output with environment variable."""
