@@ -23,12 +23,14 @@ def _get_python_container(cont, util, shell):
 def _get_ruby_container(cont, util, shell):
     """Get ruby container to run linters in."""
     config_ruby = "setup/project/configure_ruby.py"
-    rb_ver = defaultdict(lambda: "2.1.5",
-                         Windows="2.1.6")
+    ruby_version = defaultdict(lambda: "2.1.5",
+                               Linux="2.1.5",
+                               Windows="2.1.6",
+                               Darwin="2.0.0")
     return cont.fetch_and_import(config_ruby).get(cont,
                                                   util,
                                                   shell,
-                                                  rb_ver)
+                                                  ruby_version)
 
 
 def run(cont,  # suppress(too-many-arguments)

@@ -443,28 +443,15 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                 self.assertFalse(language_container.deactivate(self._util))
 
     def test_activated_container_sets_language_verison_var(self):
-        """Activating a container set _POLYSQUARE_LANGUAGE_VERSION."""
-        with self.activated_local_envion("language") as env:
+        """Activating a container sets _POLYSQUARE_ACTIVATED_LANG_0_0."""
+        with self.activated_local_envion("lang") as env:
             self.assertThat(env,
-                            Contains("_POLYSQUARE_LANGUAGE_VERSION"))
-
-    def test_activated_container_sets_language_version_parent(self):
-        """Activating a container exports _POLYSQUARE_LANGUAGE_VERSION."""
-        with self.active_parent_env("language") as out:
-            env = "_POLYSQUARE_LANGUAGE_VERSION"
-            self.assertEqual(_parent_env(out, env),
-                             "0.0")
-
-    def test_activated_container_sets_polysquare_active_env_var(self):
-        """Activating a container sets _POLYSQUARE_ACTIVATED_LANGUAGE."""
-        with self.activated_local_envion("language") as env:
-            self.assertThat(env,
-                            Contains("_POLYSQUARE_ACTIVATED_LANGUAGE"))
+                            Contains("_POLYSQUARE_ACTIVATED_LANG_0_0"))
 
     def test_activated_container_sets_polysquare_active_env_var_parent(self):
-        """Activating a container exports _POLYSQUARE_ACTIVATED_LANGUAGE."""
-        with self.active_parent_env("language") as out:
-            env = "_POLYSQUARE_ACTIVATED_LANGUAGE"
+        """Activating a container exports _POLYSQUARE_ACTIVATED_LANG_0_0."""
+        with self.active_parent_env("lang") as out:
+            env = "_POLYSQUARE_ACTIVATED_LANG_0_0"
             self.assertEqual(_parent_env(out, env),
                              "1")
 

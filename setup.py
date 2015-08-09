@@ -28,6 +28,9 @@ setup(name="polysquare-ci-scripts",
       license="MIT",
       keywords="development linters",
       packages=find_packages(exclude=["test"]),
+      requires=[
+          "setuptools"
+      ],
       extras_require={
           "green": [
               "nose",

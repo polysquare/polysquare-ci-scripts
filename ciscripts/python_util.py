@@ -10,6 +10,8 @@
 # See /LICENCE.md for Copyright information
 """Python related utility functions."""
 
+import fnmatch
+
 import hashlib
 
 import json
@@ -22,9 +24,67 @@ import subprocess
 
 from collections import defaultdict
 
-from distutils.version import LooseVersion
+from distutils.version import LooseVersion   # suppress(import-error)
 
 from itertools import chain
+
+
+_KNOWN_PYTHON_INSTALLATIONS = dict()
+
+
+# suppress(invalid-name)
+def _get_python_version_from_specified(python_executable, precision):
+    """Get python version at precision from specified python_executable."""
+    output = subprocess.Popen([python_executable, "--version"],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE).communicate()
+    version = "".join([o.decode() for o in output])
+    return ".".join(version.split(" ")[1].split(".")[0:precision]).strip()
+
+
+def get_python_version(util, precision):  # suppress(unused-function)
+    """Get python version at precision.
+
+    1 gets the major version, 2 gets major and minor, 3 gets the patch version.
+    Use distutils' version comparison functions to compare between versions.
+
+    Note that on some implementations of python the version output comes
+    through on stdout, on others it comes through on stderr. Just join them
+    both and parse the whole string.
+    """
+    return _get_python_version_from_specified(util.which("python"), precision)
+
+
+def discover_pythons():
+    """Search PATH for python installations and return as dictionary.
+
+    Each key is a python version and the value corresponds to the location
+    of that python installation on disk.
+    """
+    if len(_KNOWN_PYTHON_INSTALLATIONS.keys()):
+        return _KNOWN_PYTHON_INSTALLATIONS
+
+    for path_component in os.environ.get("PATH", "").split(os.pathsep):
+        try:
+            dir_contents = os.listdir(path_component)
+        except OSError:
+            continue
+
+        candidates = set()
+        candidates |= set(fnmatch.filter(dir_contents, "python"))
+        candidates |= set(fnmatch.filter(dir_contents, "python.exe"))
+        candidates |= set(fnmatch.filter(dir_contents, "python[23]"))
+        candidates |= set(fnmatch.filter(dir_contents, "python*.[0123456789]"))
+
+        # Make everything absolute again, remove symlinks
+        candidates = set([os.path.join(path_component, c) for c in candidates])
+        candidates = set([p for p in candidates if not os.path.islink(p)])
+
+        _KNOWN_PYTHON_INSTALLATIONS.update({
+            _get_python_version_from_specified(p, 3): p for p in candidates
+        })
+
+    return _KNOWN_PYTHON_INSTALLATIONS
 
 
 def fetch_packages_in_active_python():
@@ -39,23 +99,6 @@ def fetch_packages_in_active_python():
 
 _PACKAGES_FOR_PYTHON = defaultdict(fetch_packages_in_active_python)
 _PARSED_SETUP_FILES = dict()
-
-
-def get_python_version(util, precision):  # suppress(unused-function)
-    """Get python version at precision.
-
-    1 gets the major version, 2 gets major and minor, 3 gets the patch version.
-    Use distutils' version comparison functions to compare between versions.
-
-    Note that on some implementations of python the version output comes
-    through on stdout, on others it comes through on stderr. Just join them
-    both and parse the whole string.
-    """
-    output = subprocess.Popen([util.which("python"), "--version"],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE).communicate()
-    version = "".join([o.decode() for o in output])
-    return ".".join(version.split(" ")[1].split(".")[0:precision]).strip()
 
 
 def python_module_available(mod):

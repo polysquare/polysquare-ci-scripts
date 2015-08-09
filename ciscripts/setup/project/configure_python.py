@@ -16,54 +16,28 @@ import platform
 
 from collections import defaultdict
 
-from contextlib import closing, contextmanager
+from contextlib import closing
 
 
-@contextmanager
-def _as_path(path):
-    """Execute with path replaced with PATH."""
-    last_path = os.environ["PATH"]
-    try:
-        os.environ["PATH"] = path
-        yield
-    finally:
-        os.environ["PATH"] = last_path
-
-
-def _python_version_matches(util, py_util, python_executable_path, version):
-    """True if python at python_executable_path has matching version."""
-    with _as_path(python_executable_path):
-        python_version = py_util.get_python_version(util, 2)
-        requested_version = ".".join(version.split(".")[:2])
-        return python_version == requested_version
-
-
-def _usable_preinstalled_python(container, util, version):
+def _usable_preinstalled_python(container, version):
     """Return any pre-installed python matching version that we can use."""
     py_util = container.fetch_and_import("python_util.py")
-    preinstalled_pythons = os.environ.get("POLYSQUARE_PREINSTALLED_PYTHONS",
-                                          "")
+    preinstalled_pythons = py_util.discover_pythons()
+    requested_components = version.count(".") + 1
 
-    for preinstalled_python in preinstalled_pythons.split(os.pathsep):
-        if (preinstalled_python and
-                os.path.exists(preinstalled_python) and
-                _python_version_matches(util,
-                                        py_util,
-                                        preinstalled_python,
-                                        version)):
-            return preinstalled_python
-
-    return None
+    for candidate_version, candidate_path in preinstalled_pythons.items():
+        cand = ".".join(candidate_version.split(".")[:requested_components])
+        if cand == version:
+            return candidate_path
 
 
 def get(container, util, shell, ver_info):
     """Return a PythonContainer for an installed python in container."""
-    version = ver_info[platform.system()]
-    container_path = _usable_preinstalled_python(container, util, version)
+    del util
 
-    if not container_path:
-        container_path = os.path.join(container.language_dir("python"),
-                                      version)
+    version = ver_info[platform.system()]
+    container_path = os.path.join(container.language_dir("python"),
+                                  version)
 
     # This class is intended to be used through LanguageBase, so
     # most of its methods are private
@@ -283,14 +257,41 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
     return install
 
 
-def pre_existing_python(lang_dir, python_build_dir, util, container, shell):
+def pre_existing_python(lang_dir, python_executable, util, container, shell):
     """Use pre-installed python."""
-    del python_build_dir
-    del lang_dir
-
     def install(version):
         """Use system installation directory."""
         with util.Task("Using system installation"):
+            # Use virtualenv (assumed to be installed) to create a virtual
+            # python environment at lang_dir.
+            python_virtualenv = os.path.join(lang_dir, version)
+            if not os.path.exists(python_virtualenv):
+                util.execute(container,
+                             util.long_running_suppressed_output(),
+                             "virtualenv",
+                             "--python=" + python_executable,
+                             os.path.join(lang_dir, version))
+
+                if platform.system() == "Windows":
+                    python_location = os.path.join(lang_dir,
+                                                   version,
+                                                   "Scripts",
+                                                   "python")
+                else:
+                    python_location = os.path.join(lang_dir,
+                                                   version,
+                                                   "bin",
+                                                   "python")
+
+                util.execute(container,
+                             util.long_running_suppressed_output(),
+                             python_location,
+                             "-m",
+                             "pip",
+                             "install",
+                             "--upgrade",
+                             "pip")
+
             return get(container, util, shell, defaultdict(lambda: version))
 
     return install
@@ -309,9 +310,13 @@ def run(container, util, shell, ver_info):
 
     lang_dir = container.language_dir("python")
     python_build_dir = os.path.join(lang_dir, "build")
+    usable = _usable_preinstalled_python(container,
+                                         ".".join(version.split(".")[:2]))
 
-    if _usable_preinstalled_python(container, util, version):
+    if usable and util.which("virtualenv"):
+        # Pass the usable python as the build directory to pre_existing_python
         installer = pre_existing_python
+        python_build_dir = usable
     elif platform.system() in ("Linux", "Darwin"):
         installer = posix_installer
     elif platform.system() == "Windows":

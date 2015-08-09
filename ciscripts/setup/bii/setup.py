@@ -35,7 +35,10 @@ def run(cont, util, shell, argv=None):
                                                         shell,
                                                         argv)
     configure_ruby = "setup/project/configure_ruby.py"
-    ruby_version = defaultdict(lambda: "2.1.5")
+    ruby_version = defaultdict(lambda: "2.1.5",
+                               Linux="2.1.5",
+                               Windows="2.1.6",
+                               Darwin="2.0.0")
     rb_cont = cont.fetch_and_import(configure_ruby).get(cont,
                                                         util,
                                                         shell,
@@ -47,6 +50,7 @@ def run(cont, util, shell, argv=None):
             util.where_unavailable("coveralls-lcov",
                                    rb_util.gem_install,
                                    cont,
+                                   rb_cont,
                                    util,
                                    "coveralls-lcov",
                                    instant_fail=True,

@@ -97,7 +97,6 @@ def _setup_python_if_necessary(container, util, shell):
                                                             util,
                                                             shell,
                                                             py_ver)
-    py_cont.deactivate(util)
     return py_cont
 
 
