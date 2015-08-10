@@ -19,6 +19,9 @@ import tempfile
 
 from contextlib import contextmanager
 
+# We depend on the implicit setting of
+# util._NO_TASK_CACHING as a side-effect
+# of importing this module.
 from test import testutil
 
 import ciscripts.bootstrap as bootstrap
@@ -333,7 +336,6 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
                                                  directory=container_dir,
                                                  stale_check=None)
         self._util = self._container.fetch_and_import("util.py")
-        self.addCleanup(self._util.clear_completed_tasks)
         self.note_loaded_module_path(self._container, "util.py")
 
     def _get_lang_container(self, language, override=None, prepend=None):

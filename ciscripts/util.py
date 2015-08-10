@@ -58,6 +58,7 @@ def print_message(message):
 
 _COMPLETED_TASKS = dict()
 NOT_YET_COMPLETED = object()
+_NO_TASK_CACHING = False
 
 
 def already_completed(name):
@@ -65,6 +66,9 @@ def already_completed(name):
 
     Otherwise return NOT_YET_COMPLETED. This allows us to return None.
     """
+    if _NO_TASK_CACHING:
+        return NOT_YET_COMPLETED
+
     try:
         return _COMPLETED_TASKS[name]
     except KeyError:
@@ -77,16 +81,10 @@ def register_result(name, result):
     It will be automatically returned again later if
     already_completed is called with :name:.
     """
+    if _NO_TASK_CACHING:
+        return
+
     _COMPLETED_TASKS[name] = result
-
-
-def clear_completed_tasks():  # suppress(unused-function)
-    """Clear out completed tasks.
-
-    This function is intended to be used by tests who need to run
-    tasks more than once.
-    """
-    _COMPLETED_TASKS.clear()
 
 
 def overwrite_environment_variable(parent, key, value):

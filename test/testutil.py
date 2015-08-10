@@ -37,6 +37,13 @@ from testtools.matchers import Mismatch
 __file__ = os.path.abspath(__file__)
 
 
+# Disabled task caching in the util module - if these tests
+# are run in parallel we don't want other tests to cause our
+# tests to skip certain (important!) tasks or return the
+# wrong container dir.
+setattr(util, "_NO_TASK_CACHING", True)
+
+
 class CapturedOutput(object):  # suppress(too-few-public-methods)
 
     """Represents the captured contents of stdout and stderr."""
@@ -529,7 +536,6 @@ def acceptance_test_for(project_type, expected_programs):
             """Remove container."""
             os.environ = cls._environ_backup
             util.force_remove_tree(cls.container_temp_dir)
-            cls.util.clear_completed_tasks()
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
