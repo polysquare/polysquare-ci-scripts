@@ -133,8 +133,11 @@ def run(cont, util, shell, argv=None):
 
     def _after_lint(cont, os_cont, util, build):
         """Restore cached files and perform bii specific setup."""
-        with util.Task("""Restoring cached files to build tree"""):
-            _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
+        if not os.environ.get("POLYSQUARE_KEEP_BII_CACHE", None):
+            with util.Task("""Restoring cached files to build tree"""):
+                _move_directories_ignore_errors(_BII_LAYOUT,
+                                                build,
+                                                os.getcwd())
 
         with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
             with util.Task("""Downloading dependencies"""):
@@ -160,9 +163,12 @@ def run(cont, util, shell, argv=None):
         """Restore build tree from bii layout to container caches."""
         del cont
 
-        with util.Task("""Moving bii layout to cache"""):
-            util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
-            _move_directories_ignore_errors(_BII_LAYOUT, os.getcwd(), build)
+        if not os.environ.get("POLYSQUARE_KEEP_BII_CACHE", None):
+            with util.Task("""Moving bii layout to cache"""):
+                util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
+                _move_directories_ignore_errors(_BII_LAYOUT,
+                                                os.getcwd(),
+                                                build)
 
         with util.Task("""Performing cleanup on cache"""):
             util.apply_to_files(cmake_check.reset_mtime,
