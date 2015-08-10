@@ -467,6 +467,44 @@ def acceptance_test_for(project_type, expected_programs):
             return "setup/cmake/setup.py"
 
         @classmethod
+        def _setup_container(cls,
+                             container_temp_dir,
+                             scripts_dir):
+            """Create a container and return it and its util module."""
+            if platform.system() == "Windows":
+                shell = bootstrap.construct_parent_shell("powershell",
+                                                         sys.stdout)
+            else:
+                shell = bootstrap.construct_parent_shell("bash",
+                                                         sys.stdout)
+
+            container = bootstrap.ContainerDir(shell,
+                                               container_temp_dir,
+                                               scripts_directory=scripts_dir)
+            util_mod = container.fetch_and_import("util.py")
+
+            # Look up where to print messages to at the time messages
+            # are printed, such that we get the redirected messages
+            # from sys.stderr
+            util_mod.PRINT_MESSAGES_TO = None
+
+            return (container, util_mod, shell)
+
+        @classmethod
+        def maybe_copy_from_existing_container(cls, target):
+            """Copy from an any pre-existing container if we have one."""
+            if os.environ.get("CONTAINER_DIR"):
+                container_dir = os.environ["CONTAINER_DIR"]
+                util.force_remove_tree(target)
+                _copytree_ignore_notfound(container_dir, target)
+
+                # Delete ciscripts in the copied container
+                try:
+                    util.force_remove_tree(os.path.join(target, "_scripts"))
+                except (shutil.Error, OSError):  # suppress(pointless-except)
+                    pass
+
+        @classmethod
         def setUpClass(cls):  # suppress(N802)
             """Call container setup script."""
             temp_dir_prefix = "{}_acceptance_test".format(project_type)
@@ -474,19 +512,7 @@ def acceptance_test_for(project_type, expected_programs):
                                                       prefix=temp_dir_prefix)
             atexit.register(util.force_remove_tree, cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
-
-            if os.environ.get("CONTAINER_DIR"):
-                container_dir = os.environ["CONTAINER_DIR"]
-                util.force_remove_tree(cls.container_temp_dir)
-                _copytree_ignore_notfound(container_dir,
-                                          cls.container_temp_dir)
-
-                # Delete ciscripts in the copied container
-                try:
-                    util.force_remove_tree(os.path.join(cls.container_temp_dir,
-                                                        "_scripts"))
-                except (shutil.Error, OSError):  # suppress(pointless-except)
-                    pass
+            cls.maybe_copy_from_existing_container(cls.container_temp_dir)
 
             scripts_directory = os.path.join(cls.container_temp_dir,
                                              "_scripts")
@@ -495,41 +521,36 @@ def acceptance_test_for(project_type, expected_programs):
             setup_script = "setup/{type}/setup.py".format(type=project_type)
             cls.setup_container_output = CapturedOutput()
 
-            extra_args = list()
+            try:
+                with cls.setup_container_output:
+                    (cls.container,
+                     cls.util,
+                     shell) = cls._setup_container(cls.container_temp_dir,
+                                                   scripts_directory)
+                    extra_args = list()
 
-            # Don't install mdl on AppVeyor - installing any gem is far
-            # too slow and will cause the job to time out.
-            if os.environ.get("APPVEYOR", None):
-                extra_args.append("--no-mdl")
+                    # Don't install mdl on AppVeyor - installing any gem is
+                    # far too slow and will cause the job to time out.
+                    if os.environ.get("APPVEYOR", None):
+                        extra_args.append("--no-mdl")
 
-            with cls.setup_container_output:
-                if platform.system() == "Windows":
-                    shell = bootstrap.construct_parent_shell("powershell",
-                                                             sys.stdout)
-                else:
-                    shell = bootstrap.construct_parent_shell("bash",
-                                                             sys.stdout)
+                    setup_module = cls.container.fetch_and_import(setup_script)
 
-                kwargs = {
-                    "scripts_directory": scripts_directory
-                }
-                cls.container = bootstrap.ContainerDir(shell,
-                                                       cls.container_temp_dir,
-                                                       **kwargs)
-                cls.util = cls.container.fetch_and_import("util.py")
+                    cls.lang_container = setup_module.run(cls.container,
+                                                          util,
+                                                          shell,
+                                                          extra_args)
 
-                # Look up where to print messages to at the time messages
-                # are printed, such that we get the redirected messages
-                # from sys.stderr
-                cls.util.PRINT_MESSAGES_TO = None
-
-                setup_module = cls.container.fetch_and_import(setup_script)
-                cls.lang_container = setup_module.run(cls.container,
-                                                      util,
-                                                      shell,
-                                                      extra_args)
-
-                assert cls.container.return_code() == 0
+                    assert cls.container.return_code() == 0
+            except:  # suppress(blind-except,B901)
+                stdout = cls.setup_container_output.stdout.read()
+                stderr = cls.setup_container_output.stderr.read()
+                msg = ("""Exception occurred: {}\n"""
+                       """Output\n======\n{}\n\n"""
+                       """Errors\n======\n{}\n\n""").format(sys.exc_info()[0],
+                                                            stdout,
+                                                            stderr)
+                raise RuntimeError(msg)
 
         @classmethod
         def tearDownClass(cls):  # suppress(N802)
