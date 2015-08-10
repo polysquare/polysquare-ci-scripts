@@ -58,6 +58,7 @@ def print_message(message):
 
 _COMPLETED_TASKS = dict()
 NOT_YET_COMPLETED = object()
+_NO_TASK_CACHING = False
 
 
 def already_completed(name):
@@ -65,6 +66,9 @@ def already_completed(name):
 
     Otherwise return NOT_YET_COMPLETED. This allows us to return None.
     """
+    if _NO_TASK_CACHING:
+        return NOT_YET_COMPLETED
+
     try:
         return _COMPLETED_TASKS[name]
     except KeyError:
@@ -77,16 +81,10 @@ def register_result(name, result):
     It will be automatically returned again later if
     already_completed is called with :name:.
     """
+    if _NO_TASK_CACHING:
+        return
+
     _COMPLETED_TASKS[name] = result
-
-
-def clear_completed_tasks():  # suppress(unused-function)
-    """Clear out completed tasks.
-
-    This function is intended to be used by tests who need to run
-    tasks more than once.
-    """
-    _COMPLETED_TASKS.clear()
 
 
 def overwrite_environment_variable(parent, key, value):
@@ -529,6 +527,16 @@ def execute(container, output_strategy, *args, **kwargs):
         if not os.path.exists(cmd[0]):
             cmd[0] = which(cmd[0])
             assert cmd[0] is not None
+
+        # Sanity-check for non-unicode environment
+        # variables and print the name of the
+        # variable and its value/type on error.
+        for key, value in env.items():
+            if not isinstance(value, str):
+                raise RuntimeError("""{}'s value {} is not a """
+                                   """str but a {}""".format(key,
+                                                             repr(value),
+                                                             type(value)))
 
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,

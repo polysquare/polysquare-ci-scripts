@@ -11,7 +11,15 @@ import os
 
 import platform
 
+import shutil
+
+import subprocess
+
+import tempfile
+
 from collections import defaultdict
+
+from contextlib import contextmanager
 
 
 def _get_python_container(cont, util, shell):
@@ -153,7 +161,92 @@ def _parse_args(kind, argv):
     return parser.parse_known_args(argv or list())[0]
 
 
-def check_cmake_like_project(cont,  # suppress(too-many-arguments)
+@contextmanager
+def in_temp_dir():
+    """Enter temporary directory."""
+    current_dir = os.getcwd()
+    temp_dir = tempfile.mkdtemp()
+    try:
+        os.chdir(temp_dir)
+        yield
+    finally:
+        os.chdir(current_dir)
+        shutil.rmtree(temp_dir)
+
+
+def _get_variables_for_vs_path(path):
+    """Get environment variables corresponding to Visual Studio install."""
+    with in_temp_dir():
+        print_vs_vars_filename = os.path.join(os.getcwd(),
+                                              "print_vs_vars.bat")
+        with open(print_vs_vars_filename, "w") as print_vs_vars:
+            script = ("@call \"{}\"\n"
+                      "@echo PATH=%PATH%\n"
+                      "@echo INCLUDE=%INCLUDE%\n"
+                      "@echo LIB=%LIB%\n"
+                      "@echo LIBPATH=%LIBPATH%\n").format(path)
+            print_vs_vars.write(script)
+
+        # stdout.decode needs to be explicitly converted
+        # to str from unicode, as we pass it to subprocess
+        # later and unicode is an invalid value type there.
+        stdout = subprocess.check_output(["cmd",
+                                          "/c",
+                                          print_vs_vars_filename])
+        return dict([tuple(l.split("="))
+                     for l in str(stdout.decode()).splitlines()
+                     if "=" in l])
+
+
+def get_variables_for_vs_version(version):
+    """Get environment variables corresponding to Visual Studio version."""
+    base = "C:/{}/Microsoft Visual Studio {}/Common7/Tools/vsvars32.bat"
+    candidates = (base.format("Program Files (x86)", version),
+                  base.format("Program Files", version))
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return _get_variables_for_vs_path(candidate)
+
+    raise RuntimeError("""Visual Studio version {} """
+                       """is not installed""".format(version))
+
+
+@contextmanager
+def _cmake_generator_context(user_configure_context,
+                             util,
+                             build,
+                             generator):
+    """Set up environment variables to configure, build and test project."""
+    generator_environments = {
+        "Visual Studio 14 2015": lambda: get_variables_for_vs_version("14.0"),
+        "Visual Studio 12 2013": lambda: get_variables_for_vs_version("12.0"),
+        "Visual Studio 11 2012": lambda: get_variables_for_vs_version("11.0"),
+        "Visual Studio 10 2010": lambda: get_variables_for_vs_version("10.0"),
+        "NMake Makefiles": lambda: get_variables_for_vs_version("12.0")
+    }
+
+    with user_configure_context(util, build):
+        if platform.system() == "Windows" and util.which("sh"):
+            # If /sh.exe is installed on Windows, then default to
+            # VS 2013, since MinGW Makefiles are broken where
+            # sh is in the PATH.
+            generator = "Visual Studio 12 2013"
+
+        try:
+            update_variables = generator_environments[generator]()
+        except KeyError:
+            update_variables = dict()
+
+        environ_copy = os.environ.copy()
+        try:
+            os.environ.update(update_variables)
+            yield generator
+        finally:
+            os.environ = environ_copy
+
+
+# suppress(too-many-arguments,too-many-locals)
+def check_cmake_like_project(cont,
                              util,
                              shell,
                              kind="cmake",
@@ -203,7 +296,10 @@ def check_cmake_like_project(cont,  # suppress(too-many-arguments)
 
     after_lint(cont, os_cont, util, build_dir)
 
-    with configure_context(util, build_dir):
+    with _cmake_generator_context(configure_context,
+                                  util,
+                                  build_dir,
+                                  result.generator) as generator:
         with util.Task("""Configuring {} project""".format(kind)):
             _configure_cmake_project(cont,
                                      util,
@@ -211,7 +307,7 @@ def check_cmake_like_project(cont,  # suppress(too-many-arguments)
                                      project_dir,
                                      build_dir,
                                      configure_cmd,
-                                     result.generator,
+                                     generator,
                                      result.use_cmake_coverage)
 
         with util.Task("""Building {} project""".format(kind)):
