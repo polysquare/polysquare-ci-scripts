@@ -528,6 +528,16 @@ def execute(container, output_strategy, *args, **kwargs):
             cmd[0] = which(cmd[0])
             assert cmd[0] is not None
 
+        # Sanity-check for non-unicode environment
+        # variables and print the name of the
+        # variable and its value/type on error.
+        for key, value in env.items():
+            if not isinstance(value, str):
+                raise RuntimeError("""{}'s value {} is not a """
+                                   """str but a {}""".format(key,
+                                                             repr(value),
+                                                             type(value)))
+
         process = subprocess.Popen(cmd,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,

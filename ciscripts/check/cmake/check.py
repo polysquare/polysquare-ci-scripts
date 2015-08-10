@@ -187,11 +187,14 @@ def _get_variables_for_vs_path(path):
                       "@echo LIBPATH=%LIBPATH%\n").format(path)
             print_vs_vars.write(script)
 
+        # stdout.decode needs to be explicitly converted
+        # to str from unicode, as we pass it to subprocess
+        # later and unicode is an invalid value type there.
         stdout = subprocess.check_output(["cmd",
                                           "/c",
                                           print_vs_vars_filename])
         return dict([tuple(l.split("="))
-                     for l in stdout.decode().splitlines()
+                     for l in str(stdout.decode()).splitlines()
                      if "=" in l])
 
 
