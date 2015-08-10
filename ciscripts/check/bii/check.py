@@ -122,6 +122,10 @@ def run(cont, util, shell, argv=None):
                         help="""Block name""",
                         type=str,
                         required=True)
+    parser.add_argument("--lint-exclude",
+                        nargs="*",
+                        type=str,
+                        help="""Patterns of files to exclude from linting""")
     result, remainder = parser.parse_known_args(argv or list())
 
     cmake_check_script = "check/cmake/check.py"
@@ -198,4 +202,6 @@ def run(cont, util, shell, argv=None):
                                          test_cmd=(bii_exe, "test"),
                                          after_test=_after_test,
                                          argv=(remainder +
-                                               ["--lint-exclude", "*/bii/*"]))
+                                               ["--lint-exclude",
+                                                "*/bii/*"] +
+                                               (result.lint_exclude or [])))
