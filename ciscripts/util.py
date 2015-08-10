@@ -157,8 +157,8 @@ def apply_to_files(func, tree_node, matching=None, not_matching=None):
     will not be applied to any file matching matching 'not_matching'.
     """
     result = []
-    matching = matching or list()
-    not_matching = not_matching or list()
+    matching = [os.path.normcase(m) for m in matching or list()]
+    not_matching = [os.path.normcase(m) for m in not_matching or list()]
     for root, _, filenames in os.walk(tree_node):
         abs_files = [os.path.join(root, f) for f in filenames]
         result.extend([func(f) for f in abs_files if _match_all(f,
@@ -175,8 +175,8 @@ def apply_to_directories(func, tree_node, matching=None, not_matching=None):
     will not be applied to any file matching matching 'not_matching'.
     """
     result = []
-    matching = matching or list()
-    not_matching = not_matching or list()
+    matching = [os.path.normcase(m) for m in matching or list()]
+    not_matching = [os.path.normcase(m) for m in not_matching or list()]
     for root, directories, _, in os.walk(tree_node):
         abs_dirs = [os.path.join(root, d) for d in directories]
         result.extend([func(d) for d in abs_dirs if _match_all(d,
