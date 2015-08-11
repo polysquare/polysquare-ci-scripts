@@ -8,6 +8,21 @@
 import os
 
 
+def _submit_totals(cont, util):
+    """Submit coverage totals."""
+    lcov_output = os.path.join(os.getcwd(), "coverage.info")
+    if os.path.exists(lcov_output):
+        with util.Task("""Submitting coverage totals to coveralls"""):
+            util.execute(cont,
+                         util.running_output,
+                         "coveralls-lcov",
+                         lcov_output)
+    else:
+        with util.Task("""Not submitting coverage totals as """
+                       """/coverage.info does not exist"""):
+            pass
+
+
 def run(cont, util, shell, argv=None):
     """Submit coverage total to coveralls."""
     del argv
@@ -36,10 +51,5 @@ def run(cont, util, shell, argv=None):
                             "-P",
                             converter)
 
-    with util.Task("""Submitting coverage totals"""):
-        if os.environ.get("CI", None) is not None:
-            with util.Task("""Uploading to coveralls"""):
-                util.execute(cont,
-                             util.running_output,
-                             "coveralls-lcov",
-                             lcov_output)
+    if os.environ.get("CI", None) is not None:
+        _submit_totals(cont, util)
