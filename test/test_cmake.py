@@ -82,7 +82,7 @@ class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
                       ["--no-mdl"])
 
         build = self.__class__.container.named_cache_dir("cmake-build")
-        components = [build]
+        components = [build, "build"]
 
         # On Windows built binaries go into CMAKE_CFG_INTDIR, which
         # will be Debug in our case.
