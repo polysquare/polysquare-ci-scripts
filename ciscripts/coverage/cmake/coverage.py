@@ -7,16 +7,39 @@
 
 import os
 
+from collections import defaultdict
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def _activated_ruby_container(cont, util):
+    """Activate ruby container so we can run LCOV report generator."""
+    ruby_version = defaultdict(lambda: "2.1.5",
+                               Linux="2.1.5",
+                               Windows="2.1.6",
+                               Darwin="2.0.0")
+
+    configure_ruby = "setup/project/configure_ruby.py"
+    rb_cont = cont.fetch_and_import(configure_ruby).run(cont,
+                                                        util,
+                                                        None,
+                                                        ruby_version)
+
+    with rb_cont.activated(util):
+        yield
+
 
 def _submit_totals(cont, util):
     """Submit coverage totals."""
     lcov_output = os.path.join(os.getcwd(), "coverage.info")
     if os.path.exists(lcov_output):
         with util.Task("""Submitting coverage totals to coveralls"""):
-            util.execute(cont,
-                         util.running_output,
-                         "coveralls-lcov",
-                         lcov_output)
+            with _activated_ruby_container(cont, util):
+                util.execute(cont,
+                             util.running_output,
+                             "coveralls-lcov",
+                             lcov_output)
     else:
         with util.Task("""Not submitting coverage totals as """
                        """/coverage.info does not exist"""):

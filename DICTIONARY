@@ -13,6 +13,7 @@ EOF
 FIELD
 LanguageBase
 LanguageContainer
+LCOV
 _NO_TASK_CACHING
 Makefiles
 MinGW

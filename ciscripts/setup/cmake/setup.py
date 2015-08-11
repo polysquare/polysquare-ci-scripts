@@ -211,6 +211,31 @@ def _install_cmake_linters(cont, util, shell):
                                    path=py_cont.executable_path())
 
 
+def _install_coveralls_lcov(cont, util, shell):
+    """Install LCOV reporter for coveralls."""
+    configure_ruby = "setup/project/configure_ruby.py"
+    ruby_version = defaultdict(lambda: "2.1.5",
+                               Linux="2.1.5",
+                               Windows="2.1.6",
+                               Darwin="2.0.0")
+
+    if not os.environ.get("APPVEYOR", None):
+        rb_cont = cont.fetch_and_import(configure_ruby).run(cont,
+                                                            util,
+                                                            shell,
+                                                            ruby_version)
+        rb_util = cont.fetch_and_import("ruby_util.py")
+        with rb_cont.activated(util):
+            util.where_unavailable("coveralls-lcov",
+                                   rb_util.gem_install,
+                                   cont,
+                                   rb_cont,
+                                   util,
+                                   "coveralls-lcov",
+                                   instant_fail=True,
+                                   path=rb_cont.executable_path())
+
+
 def _parse_arguments(argv):
     """Parse arguments to run."""
     parser = argparse.ArgumentParser(description="""Set up cmake project""")
@@ -246,6 +271,7 @@ def run(cont,  # suppress(too-many-arguments)
 
     with util.Task("""Setting up cmake project"""):
         _install_cmake_linters(cont, util, shell)
+        _install_coveralls_lcov(cont, util, shell)
 
         container_config = cont.named_cache_dir("container-config")
 
