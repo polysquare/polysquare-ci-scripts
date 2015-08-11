@@ -40,5 +40,5 @@ def run(cont, util, shell, argv=None):
 
     with util.Task("""Preparing for deployment to biicode"""):
         if os.environ.get("CI", None):
-            build = cont.named_cache_dir("cmake-build")
+            build = cont.named_cache_dir("cmake-build", ephemeral=False)
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
