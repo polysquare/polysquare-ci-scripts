@@ -7,11 +7,15 @@
 
 import argparse
 
+import errno
+
 import os
 
 import platform
 
 import shutil
+
+import string
 
 import subprocess
 
@@ -20,6 +24,17 @@ import tempfile
 from collections import defaultdict
 
 from contextlib import contextmanager
+
+
+def _move_directories_ignore_errors(directories, src, dst):
+    """Move specified directories from :src: to :dst: ignoring errors."""
+    for name in directories:
+        try:
+            os.rename(os.path.join(src, name),
+                      os.path.join(dst, name))
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise error
 
 
 def _get_python_container(cont, util, shell):
@@ -212,10 +227,50 @@ def get_variables_for_vs_version(version):
 
 
 @contextmanager
-def _cmake_generator_context(user_configure_context,
-                             util,
-                             build,
-                             generator):
+def _maybe_map_to_drive_letter(project_dir):
+    """Map current directory to drive letter."""
+    if platform.system() == "Windows":
+        # Get all uppercase letters in reverse and try to
+        # substitute the current directory for each of them,
+        # stopping when we find one that works.
+        #
+        # Note that we need to map the parent directory of
+        # the source directory to a drive letter - there
+        # are some tools that depend on having the name
+        # of the source directory which won't work if
+        # we're in some sort of file system root.
+        project_dir_name = os.path.basename(project_dir)
+        project_dir_parent = os.path.abspath(os.path.join(project_dir, ".."))
+        letters = [a for a in string.ascii_uppercase[::-1]]
+        index = 0
+        with open(os.devnull, "w") as devnull:
+            while True:
+                if subprocess.call(["subst",
+                                    letters[index] + ":",
+                                    project_dir_parent],
+                                   stdout=devnull,
+                                   stderr=devnull) == 0:
+                    break
+
+                index += 1
+
+            os.chdir(letters[index] + ":/" + project_dir_name)
+
+            try:
+                yield os.getcwd()
+            finally:
+                os.chdir(project_dir)
+                subprocess.check_call(["subst",
+                                       "/D",
+                                       letters[index] + ":"],
+                                      stdout=devnull,
+                                      stderr=devnull)
+    else:
+        yield os.getcwd()
+
+
+@contextmanager
+def _cmake_generator_context(util, generator):
     """Set up environment variables to configure, build and test project."""
     generator_environments = {
         "Visual Studio 14 2015": lambda: get_variables_for_vs_version("14.0"),
@@ -225,24 +280,42 @@ def _cmake_generator_context(user_configure_context,
         "NMake Makefiles": lambda: get_variables_for_vs_version("12.0")
     }
 
-    with user_configure_context(util, build):
-        if platform.system() == "Windows" and util.which("sh"):
-            # If /sh.exe is installed on Windows, then default to
-            # VS 2013, since MinGW Makefiles are broken where
-            # sh is in the PATH.
-            generator = "Visual Studio 12 2013"
+    if platform.system() == "Windows" and util.which("sh"):
+        # If /sh.exe is installed on Windows, then default to
+        # VS 2013, since MinGW Makefiles are broken where
+        # sh is in the PATH.
+        generator = "Visual Studio 12 2013"
 
-        try:
-            update_variables = generator_environments[generator]()
-        except KeyError:
-            update_variables = dict()
+    try:
+        update_variables = generator_environments[generator]()
+    except KeyError:
+        update_variables = dict()
 
-        environ_copy = os.environ.copy()
-        try:
-            os.environ.update(update_variables)
-            yield generator
-        finally:
-            os.environ = environ_copy
+    environ_copy = os.environ.copy()
+    try:
+        os.environ.update(update_variables)
+        yield generator
+    finally:
+        os.environ = environ_copy
+
+
+@contextmanager
+def _cmake_only_configure_context(util):
+    """Enter real build directory."""
+    build_dir = os.path.join(os.getcwd(), "build")
+    try:
+        os.makedirs(build_dir)
+    except OSError as error:
+        if error.errno != errno.EEXIST:
+            raise error
+
+    with util.in_dir(build_dir):
+        yield
+
+
+def _cmake_only_build_command(build):
+    """Build command for a cmake-only project."""
+    return ("cmake", "--build", os.path.join(build, "build"))
 
 
 # suppress(too-many-arguments,too-many-locals)
@@ -250,11 +323,12 @@ def check_cmake_like_project(cont,
                              util,
                              shell,
                              kind="cmake",
-                             after_lint=lambda cont, osc, util, build: None,
-                             configure_context=lambda u, b: u.in_dir(b),
+                             after_lint=lambda cont, osc, util: None,
+                             build_tree=None,
+                             configure_context=_cmake_only_configure_context,
                              configure_cmd=("cmake", ),
                              test_cmd=("ctest", ),
-                             build_cmd=lambda b: ("cmake", "--build", b),
+                             build_cmd=_cmake_only_build_command,
                              after_test=lambda cont, util, build: None,
                              argv=None):
     """Run tests and static analysis checks on this cmake project.
@@ -272,6 +346,9 @@ def check_cmake_like_project(cont,
     Pass --lint-exclude to exclude certain files from being statically
     analyzed.
     """
+    if not build_tree:
+        build_tree = ["build"]
+
     result = _parse_args(kind, argv)
     os_cont = cont.fetch_and_import("setup/project/configure_os.py").get(cont,
                                                                          util,
@@ -294,37 +371,49 @@ def check_cmake_like_project(cont,
     build_dir = cont.named_cache_dir("cmake-build", ephemeral=False)
     project_dir = os.getcwd()
 
-    after_lint(cont, os_cont, util, build_dir)
+    if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
+        with util.Task("""Restoring cached files to build tree"""):
+            _move_directories_ignore_errors(build_tree,
+                                            build_dir,
+                                            project_dir)
 
-    with _cmake_generator_context(configure_context,
-                                  util,
-                                  build_dir,
-                                  result.generator) as generator:
-        with util.Task("""Configuring {} project""".format(kind)):
-            _configure_cmake_project(cont,
-                                     util,
-                                     os_cont,
-                                     project_dir,
-                                     build_dir,
-                                     configure_cmd,
-                                     generator,
-                                     result.use_cmake_coverage)
+    with _maybe_map_to_drive_letter(project_dir) as mapped_project_dir:
+        after_lint(cont, os_cont, util)
 
-        with util.Task("""Building {} project""".format(kind)):
-            os_cont.execute(cont,
-                            util.running_output,
-                            *(build_cmd(build_dir)))
+        with configure_context(util):
+            with _cmake_generator_context(util,
+                                          result.generator) as generator:
+                with util.Task("""Configuring {} project""".format(kind)):
+                    _configure_cmake_project(cont,
+                                             util,
+                                             os_cont,
+                                             mapped_project_dir,
+                                             build_dir,
+                                             configure_cmd,
+                                             generator,
+                                             result.use_cmake_coverage)
 
-        with util.Task("""Testing {} project""".format(kind)):
-            os_cont.execute(cont,
-                            util.running_output,
-                            *(tuple(list(test_cmd) + [
-                                "--output-on-failure",
-                                "-C",
-                                "Debug"
-                            ])))
+                with util.Task("""Building {} project""".format(kind)):
+                    os_cont.execute(cont,
+                                    util.running_output,
+                                    *(build_cmd(mapped_project_dir)))
 
-        after_test(cont, util, build_dir)
+                with util.Task("""Testing {} project""".format(kind)):
+                    os_cont.execute(cont,
+                                    util.running_output,
+                                    *(tuple(list(test_cmd) + [
+                                        "--output-on-failure",
+                                        "-C",
+                                        "Debug"
+                                    ])))
+
+    if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
+        with util.Task("""Moving build tree to cache"""):
+            _move_directories_ignore_errors(build_tree,
+                                            project_dir,
+                                            build_dir)
+
+    after_test(cont, util, build_dir)
 
 
 NO_CACHE_FILE_PATTERNS = [

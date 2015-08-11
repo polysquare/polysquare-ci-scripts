@@ -7,8 +7,6 @@
 
 import argparse
 
-import errno
-
 import os
 
 import platform
@@ -39,17 +37,6 @@ def _get_bii_container(cont, util, shell):
                                                                        util,
                                                                        shell,
                                                                        None)
-
-
-def _move_directories_ignore_errors(directories, src, dst):
-    """Move specified directories from :src: to :dst: ignoring errors."""
-    for name in directories:
-        try:
-            os.rename(os.path.join(src, name),
-                      os.path.join(dst, name))
-        except OSError as error:
-            if error.errno != errno.ENOENT:
-                raise error
 
 
 _BII_LAYOUT = [
@@ -135,14 +122,8 @@ def run(cont, util, shell, argv=None):
     bii_cont = _get_bii_container(cont, util, shell)
     bii_exe = os.path.join(bii_cont.executable_path(), "bii")
 
-    def _after_lint(cont, os_cont, util, build):
-        """Restore cached files and perform bii specific setup."""
-        if not os.environ.get("POLYSQUARE_KEEP_BII_CACHE", None):
-            with util.Task("""Restoring cached files to build tree"""):
-                _move_directories_ignore_errors(_BII_LAYOUT,
-                                                build,
-                                                os.getcwd())
-
+    def _after_lint(cont, os_cont, util):
+        """Perform bii specific setup."""
         with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
             with util.Task("""Downloading dependencies"""):
                 if not os.path.exists(os.path.join(os.getcwd(), "bii")):
@@ -164,17 +145,12 @@ def run(cont, util, shell, argv=None):
                                 result.block)
 
     def _after_test(cont, util, build):
-        """Restore build tree from bii layout to container caches."""
+        """Cleanup bii files in build caches."""
         del cont
 
-        if not os.environ.get("POLYSQUARE_KEEP_BII_CACHE", None):
-            with util.Task("""Moving bii layout to cache"""):
-                util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
-                _move_directories_ignore_errors(_BII_LAYOUT,
-                                                os.getcwd(),
-                                                build)
-
         with util.Task("""Performing cleanup on cache"""):
+            if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
+                util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
             util.apply_to_files(cmake_check.reset_mtime,
                                 build,
                                 matching=[
@@ -183,10 +159,8 @@ def run(cont, util, shell, argv=None):
                                 ] + cmake_check.NO_CACHE_FILE_PATTERNS)
 
     @contextmanager
-    def _activate_py27(util, build):
+    def _activate_py27(util):
         """Stay in current directory."""
-        del build
-
         with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
             yield
 
@@ -194,6 +168,7 @@ def run(cont, util, shell, argv=None):
                                          util,
                                          shell,
                                          kind="bii",
+                                         build_tree=_BII_LAYOUT,
                                          after_lint=_after_lint,
                                          configure_context=_activate_py27,
                                          configure_cmd=(bii_exe, "configure"),
