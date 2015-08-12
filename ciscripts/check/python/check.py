@@ -11,8 +11,6 @@ import os
 
 import shutil
 
-from collections import defaultdict
-
 
 def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
     """Run /ciscripts/check/project/lint.py on this python project."""
@@ -82,11 +80,11 @@ def run(cont, util, shell, argv=None):
     result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
-    python_ver = defaultdict(lambda: "3.4.1")
+    py_ver = util.language_version("python3")
     py_cont = cont.fetch_and_import(config_python).get(cont,
                                                        util,
                                                        shell,
-                                                       python_ver)
+                                                       py_ver)
 
     with util.Task("""Checking python project style guide compliance"""):
         _run_style_guide_lint(cont,

@@ -30,7 +30,7 @@ def run(cont, util, shell, argv=None):
     api_key = os.environ.get("REPO_API_KEY", None)
     job_slug = os.environ.get("TRAVIS_REPO_SLUG", None)
 
-    if api_key and job_slug:
+    if api_key and job_slug and result.bump_version_on:
         with util.Task("""Pushing version bump to """ + job_slug):
             util.execute(cont,
                          util.running_output,

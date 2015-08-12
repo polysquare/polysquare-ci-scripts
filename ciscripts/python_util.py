@@ -74,7 +74,10 @@ def discover_pythons():
         candidates |= set(fnmatch.filter(dir_contents, "python"))
         candidates |= set(fnmatch.filter(dir_contents, "python.exe"))
         candidates |= set(fnmatch.filter(dir_contents, "python[23]"))
-        candidates |= set(fnmatch.filter(dir_contents, "python*.[0123456789]"))
+        candidates |= set(fnmatch.filter(dir_contents,
+                                         "python*[0123456789]"))
+        candidates |= set(fnmatch.filter(dir_contents,
+                                         "python*[0123456789]*[mud]"))
 
         # Make everything absolute again, remove symlinks
         candidates = set([os.path.join(path_component, c) for c in candidates])

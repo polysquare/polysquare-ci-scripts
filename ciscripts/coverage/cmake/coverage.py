@@ -7,24 +7,18 @@
 
 import os
 
-from collections import defaultdict
-
 from contextlib import contextmanager
 
 
 @contextmanager
 def _activated_ruby_container(cont, util):
     """Activate ruby container so we can run LCOV report generator."""
-    ruby_version = defaultdict(lambda: "2.1.5",
-                               Linux="2.1.5",
-                               Windows="2.1.6",
-                               Darwin="2.0.0")
-
+    rb_ver = util.language_version("ruby")
     configure_ruby = "setup/project/configure_ruby.py"
     rb_cont = cont.fetch_and_import(configure_ruby).run(cont,
                                                         util,
                                                         None,
-                                                        ruby_version)
+                                                        rb_ver)
 
     with rb_cont.activated(util):
         yield

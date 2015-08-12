@@ -187,7 +187,7 @@ def _prepare_for_os_cont_setup(container_config,
 
 def _install_cmake_linters(cont, util, shell):
     """Install cmake linters."""
-    py_ver = defaultdict(lambda: "3.4.1")
+    py_ver = util.language_version("python3")
     py_config_script = "setup/project/configure_python.py"
     py_util = cont.fetch_and_import("python_util.py")
     py_cont = cont.fetch_and_import(py_config_script).run(cont,
@@ -214,16 +214,13 @@ def _install_cmake_linters(cont, util, shell):
 def _install_coveralls_lcov(cont, util, shell):
     """Install LCOV reporter for coveralls."""
     configure_ruby = "setup/project/configure_ruby.py"
-    ruby_version = defaultdict(lambda: "2.1.5",
-                               Linux="2.1.5",
-                               Windows="2.1.6",
-                               Darwin="2.0.0")
+    rb_ver = util.language_version("ruby")
 
     if not os.environ.get("APPVEYOR", None):
         rb_cont = cont.fetch_and_import(configure_ruby).run(cont,
                                                             util,
                                                             shell,
-                                                            ruby_version)
+                                                            rb_ver)
         rb_util = cont.fetch_and_import("ruby_util.py")
         with rb_cont.activated(util):
             util.where_unavailable("coveralls-lcov",

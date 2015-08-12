@@ -45,6 +45,7 @@ def discover_rubies():
 
         candidates = set()
         candidates |= set(fnmatch.filter(dir_contents, "ruby"))
+        candidates |= set(fnmatch.filter(dir_contents, "ruby*[0123456789]"))
         candidates |= set(fnmatch.filter(dir_contents, "ruby.exe"))
 
         # Make everything absolute again, remove symlinks

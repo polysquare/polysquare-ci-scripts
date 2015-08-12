@@ -7,13 +7,11 @@
 # See /LICENCE.md for Copyright information
 """Initial setup script specific to polysquare-ci-scripts."""
 
-from collections import defaultdict
-
 
 def run(cont, util, shell, argv=None):
     """Set up language runtimes and pass control to python project script."""
     with util.Task("""Installing all necessary language runtimes"""):
-        hs_ver = defaultdict(lambda: "7.8.4")
+        hs_ver = util.language_version("haskell")
         configure_haskell = "setup/project/configure_haskell.py"
 
         cont.fetch_and_import(configure_haskell).run(cont, util, shell, hs_ver)

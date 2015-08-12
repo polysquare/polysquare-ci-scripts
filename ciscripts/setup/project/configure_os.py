@@ -18,8 +18,6 @@ import shutil
 
 import subprocess
 
-from collections import defaultdict
-
 
 DEFAULT_DISTRO_FOR_SYSTEM = {
     "Linux": "Ubuntu",
@@ -39,10 +37,10 @@ def _format_subdir_name(distro, version, arch):
     return "{d}.{v}.{a}".format(d=distro, v=version, a=arch)
 
 
-def _get_python_container(cont, util, shell, py_ver_string="3.4.1"):
+def _get_python_container(cont, util, shell, py_ver_key="python3"):
     """Get python container needed to run polysquare-travis-container in."""
     config_python = "setup/project/configure_python.py"
-    py_ver = defaultdict(lambda: py_ver_string)
+    py_ver = util.language_version(py_ver_key)
     return cont.fetch_and_import(config_python).run(cont,
                                                     util,
                                                     shell,
@@ -257,17 +255,20 @@ def _update_os_container(container,
             _copy_if_exists(packages, "{}.PACKAGES".format(updates))
 
 
-def _install_psq_travis_container(cont, util, shell, py_ver):
+def _install_psq_travis_container(cont,
+                                  util,
+                                  shell,
+                                  py_ver_key="python3"):
     """Install polysquare-travis-container and return its own container."""
     py_util = cont.fetch_and_import("python_util.py")
-    py_cont = _get_python_container(cont, util, shell, py_ver)
+    py_cont = _get_python_container(cont, util, shell, py_ver_key=py_ver_key)
 
     with util.Task("""Installing polysquare-travis-container"""):
         with py_cont.activated(util):
             py_util.pip_install(cont,
                                 util,
                                 "requests",
-                                "polysquare-travis-container>=0.0.13",
+                                "polysquare-travis-container>=0.0.15",
                                 instant_fail=True)
 
     return py_cont
@@ -301,12 +302,11 @@ def run(container,
             _install_psq_travis_container(container,
                                           util,
                                           shell,
-                                          "2.7.9")
+                                          py_ver_key="python2")
 
     py_cont = _install_psq_travis_container(container,
                                             util,
-                                            shell,
-                                            "3.4.1")
+                                            shell)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""

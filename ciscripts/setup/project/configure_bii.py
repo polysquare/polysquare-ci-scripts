@@ -10,8 +10,6 @@ import os.path
 
 import platform
 
-from collections import defaultdict
-
 from contextlib import contextmanager
 
 
@@ -82,7 +80,7 @@ def _write_bii_script(util, bii_bin, bii_dir, bii_script_filename):
 
 
 def _setup_python_if_necessary(container, util, shell):
-    """Install python 2.7.3 if necessary.
+    """Install python 2.7 if necessary.
 
     This will be for platforms where python will not be installed into
     the OS container.
@@ -92,7 +90,7 @@ def _setup_python_if_necessary(container, util, shell):
 
     config_python = "setup/project/configure_python.py"
 
-    py_ver = defaultdict(lambda: "2.7.9")
+    py_ver = util.language_version("python2")
     py_cont = container.fetch_and_import(config_python).run(container,
                                                             util,
                                                             shell,
