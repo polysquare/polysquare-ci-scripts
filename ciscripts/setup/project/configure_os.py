@@ -39,10 +39,15 @@ def _format_subdir_name(distro, version, arch):
     return "{d}.{v}.{a}".format(d=distro, v=version, a=arch)
 
 
-def _get_python_container(cont, util, shell, py_ver_string="3.4.1"):
+_DEFAULT_PYTHON_VERSION = defaultdict(lambda: "3.4.1",
+                                      Linux="3.2.3",
+                                      Windows="3.4.1",
+                                      Darwin="3.4.2")
+
+
+def _get_python_container(cont, util, shell, py_ver=_DEFAULT_PYTHON_VERSION):
     """Get python container needed to run polysquare-travis-container in."""
     config_python = "setup/project/configure_python.py"
-    py_ver = defaultdict(lambda: py_ver_string)
     return cont.fetch_and_import(config_python).run(cont,
                                                     util,
                                                     shell,
@@ -257,7 +262,10 @@ def _update_os_container(container,
             _copy_if_exists(packages, "{}.PACKAGES".format(updates))
 
 
-def _install_psq_travis_container(cont, util, shell, py_ver):
+def _install_psq_travis_container(cont,
+                                  util,
+                                  shell,
+                                  py_ver=_DEFAULT_PYTHON_VERSION):
     """Install polysquare-travis-container and return its own container."""
     py_util = cont.fetch_and_import("python_util.py")
     py_cont = _get_python_container(cont, util, shell, py_ver)
@@ -301,12 +309,11 @@ def run(container,
             _install_psq_travis_container(container,
                                           util,
                                           shell,
-                                          "2.7.9")
+                                          defaultdict(lambda: "2.7.9"))
 
     py_cont = _install_psq_travis_container(container,
                                             util,
-                                            shell,
-                                            "3.4.1")
+                                            shell)
 
     def install(distro, distro_version, distro_arch):
         """Install distribution specified in configuration."""

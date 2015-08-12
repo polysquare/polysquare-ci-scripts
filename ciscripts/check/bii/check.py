@@ -23,7 +23,10 @@ def _get_python_container(cont, util, shell):
     if platform.system() == "Linux":
         return None
 
-    py_ver = defaultdict(lambda: "2.7.9")
+    py_ver = defaultdict(lambda: "2.7.9",
+                         Linux="2.7.3",
+                         Darwin="2.7.6",
+                         Windows="2.7.9")
     config_python = "setup/project/configure_python.py"
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,

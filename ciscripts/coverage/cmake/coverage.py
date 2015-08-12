@@ -15,8 +15,8 @@ from contextlib import contextmanager
 @contextmanager
 def _activated_ruby_container(cont, util):
     """Activate ruby container so we can run LCOV report generator."""
-    ruby_version = defaultdict(lambda: "2.1.5",
-                               Linux="2.1.5",
+    ruby_version = defaultdict(lambda: "1.9.3",
+                               Linux="1.9.3",
                                Windows="2.1.6",
                                Darwin="2.0.0")
 

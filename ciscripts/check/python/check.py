@@ -82,11 +82,14 @@ def run(cont, util, shell, argv=None):
     result = parser.parse_args(argv or list())
 
     config_python = "setup/project/configure_python.py"
-    python_ver = defaultdict(lambda: "3.4.1")
+    py_ver = defaultdict(lambda: "3.4.1",
+                         Linux="3.2.3",
+                         Windows="3.4.1",
+                         Darwin="3.4.2")
     py_cont = cont.fetch_and_import(config_python).get(cont,
                                                        util,
                                                        shell,
-                                                       python_ver)
+                                                       py_ver)
 
     with util.Task("""Checking python project style guide compliance"""):
         _run_style_guide_lint(cont,

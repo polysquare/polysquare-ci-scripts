@@ -22,7 +22,10 @@ def _prepare_project_deployment(cont, util, py_util, py_cont):
 def _get_python_container(cont, util, shell):
     """Get python container to install linters into."""
     config_python = "setup/project/configure_python.py"
-    py_ver = defaultdict(lambda: "3.4.1")
+    py_ver = defaultdict(lambda: "3.4.1",
+                         Linux="3.2.3",
+                         Windows="3.4.1",
+                         Darwin="3.4.2")
 
     return cont.fetch_and_import(config_python).run(cont,
                                                     util,
@@ -33,8 +36,8 @@ def _get_python_container(cont, util, shell):
 def _get_ruby_container(cont, util, shell):
     """Get ruby container to run linters in."""
     config_ruby = "setup/project/configure_ruby.py"
-    ruby_version = defaultdict(lambda: "2.1.5",
-                               Linux="2.1.5",
+    ruby_version = defaultdict(lambda: "1.9.3",
+                               Linux="1.9.3",
                                Windows="2.1.6",
                                Darwin="2.0.0")
     return cont.fetch_and_import(config_ruby).run(cont,

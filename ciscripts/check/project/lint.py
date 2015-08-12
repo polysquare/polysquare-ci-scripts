@@ -13,18 +13,21 @@ from collections import defaultdict
 def _get_python_container(cont, util, shell):
     """Get python container to run linters in."""
     config_python = "setup/project/configure_python.py"
-    python_ver = defaultdict(lambda: "3.4.1")
+    py_ver = defaultdict(lambda: "3.4.1",
+                         Linux="3.2.3",
+                         Windows="3.4.1",
+                         Darwin="3.4.2")
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,
                                                     shell,
-                                                    python_ver)
+                                                    py_ver)
 
 
 def _get_ruby_container(cont, util, shell):
     """Get ruby container to run linters in."""
     config_ruby = "setup/project/configure_ruby.py"
-    ruby_version = defaultdict(lambda: "2.1.5",
-                               Linux="2.1.5",
+    ruby_version = defaultdict(lambda: "1.9.3",
+                               Linux="1.9.3",
                                Windows="2.1.6",
                                Darwin="2.0.0")
     return cont.fetch_and_import(config_ruby).get(cont,
