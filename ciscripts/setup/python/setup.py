@@ -5,8 +5,6 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a python project."""
 
-from collections import defaultdict
-
 from distutils.version import LooseVersion  # suppress(import-error)
 
 
@@ -23,7 +21,7 @@ def _install_test_dependencies(cont, util, py_util, *args):
 
 def _prepare_python_deployment(cont, util, shell, py_util):
     """Install dependencies required to deploy python project."""
-    hs_ver = defaultdict(lambda: "7.8.4")
+    hs_ver = util.language_version("haskell")
     hs_config_script = "setup/project/configure_haskell.py"
     hs_container = cont.fetch_and_import(hs_config_script).run(cont,
                                                                util,
@@ -73,10 +71,7 @@ def run(cont, util, shell, argv=None):
                                                                     argv)
 
     with util.Task("""Setting up python project"""):
-        py_ver = defaultdict(lambda: "3.4.1",
-                             Linux="3.2.3",
-                             Windows="3.4.1",
-                             Darwin="3.4.2")
+        py_ver = util.language_version("python3")
         py_config_script = "setup/project/configure_python.py"
         py_util = cont.fetch_and_import("python_util.py")
         py_cont = cont.fetch_and_import(py_config_script).run(cont,

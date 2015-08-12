@@ -18,8 +18,6 @@ import shutil
 
 import subprocess
 
-from collections import defaultdict
-
 
 DEFAULT_DISTRO_FOR_SYSTEM = {
     "Linux": "Ubuntu",
@@ -39,15 +37,10 @@ def _format_subdir_name(distro, version, arch):
     return "{d}.{v}.{a}".format(d=distro, v=version, a=arch)
 
 
-_DEFAULT_PYTHON_VERSION = defaultdict(lambda: "3.4.1",
-                                      Linux="3.2.3",
-                                      Windows="3.4.1",
-                                      Darwin="3.4.2")
-
-
-def _get_python_container(cont, util, shell, py_ver=_DEFAULT_PYTHON_VERSION):
+def _get_python_container(cont, util, shell, py_ver_key="python3"):
     """Get python container needed to run polysquare-travis-container in."""
     config_python = "setup/project/configure_python.py"
+    py_ver = util.language_version(py_ver_key)
     return cont.fetch_and_import(config_python).run(cont,
                                                     util,
                                                     shell,
@@ -265,10 +258,10 @@ def _update_os_container(container,
 def _install_psq_travis_container(cont,
                                   util,
                                   shell,
-                                  py_ver=_DEFAULT_PYTHON_VERSION):
+                                  py_ver_key="python3"):
     """Install polysquare-travis-container and return its own container."""
     py_util = cont.fetch_and_import("python_util.py")
-    py_cont = _get_python_container(cont, util, shell, py_ver)
+    py_cont = _get_python_container(cont, util, shell, py_ver_key=py_ver_key)
 
     with util.Task("""Installing polysquare-travis-container"""):
         with py_cont.activated(util):
@@ -309,7 +302,7 @@ def run(container,
             _install_psq_travis_container(container,
                                           util,
                                           shell,
-                                          defaultdict(lambda: "2.7.9"))
+                                          py_ver_key="python2")
 
     py_cont = _install_psq_travis_container(container,
                                             util,

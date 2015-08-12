@@ -10,8 +10,6 @@ import os.path
 
 import platform
 
-from collections import defaultdict
-
 from contextlib import contextmanager
 
 
@@ -92,10 +90,7 @@ def _setup_python_if_necessary(container, util, shell):
 
     config_python = "setup/project/configure_python.py"
 
-    py_ver = defaultdict(lambda: "2.7.9",
-                         Linux="2.7.3",
-                         Darwin="2.7.6",
-                         Windows="2.7.9")
+    py_ver = util.language_version("python2")
     py_cont = container.fetch_and_import(config_python).run(container,
                                                             util,
                                                             shell,

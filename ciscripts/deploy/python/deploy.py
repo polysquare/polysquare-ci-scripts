@@ -10,8 +10,6 @@ import os
 
 import shutil
 
-from collections import defaultdict
-
 
 def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
@@ -64,7 +62,7 @@ def run(cont, util, shell, argv=None):
                                                            "setup.py"])
 
     with util.Task("""Preparing for deployment to PyPI"""):
-        hs_ver = defaultdict(lambda: "7.8.4")
+        hs_ver = util.language_version("haskell")
         hs_script = "setup/project/configure_haskell.py"
         hs_cont = cont.fetch_and_import(hs_script).get(cont,
                                                        util,

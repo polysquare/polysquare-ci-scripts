@@ -21,8 +21,6 @@ import subprocess
 
 import tempfile
 
-from collections import defaultdict
-
 from contextlib import contextmanager
 
 
@@ -40,10 +38,7 @@ def _move_directories_ignore_errors(directories, src, dst):
 def _get_python_container(cont, util, shell):
     """Get python container to run linters in."""
     config_python = "setup/project/configure_python.py"
-    py_ver = defaultdict(lambda: "3.4.1",
-                         Linux="3.2.3",
-                         Windows="3.4.1",
-                         Darwin="3.4.2")
+    py_ver = util.language_version("python3")
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,
                                                     shell,

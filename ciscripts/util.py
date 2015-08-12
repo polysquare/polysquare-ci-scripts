@@ -27,6 +27,7 @@ import tempfile
 
 import threading
 
+from collections import defaultdict
 
 from contextlib import contextmanager
 
@@ -35,6 +36,28 @@ try:
 except ImportError:
     # suppress(F811,E301,E101,F401,import-error,unused-import)
     from queue import Queue, Empty
+
+
+_PREFERRED_VERSIONS = {
+    "python2": defaultdict(lambda: "2.7.9",
+                           Linux="2.7.3",
+                           Darwin="2.7.6",
+                           Windows="2.7.9"),
+    "python3": defaultdict(lambda: "3.4.1",
+                           Linux="3.4.1",
+                           Windows="3.4.1",
+                           Darwin="3.4.2"),
+    "ruby": defaultdict(lambda: "1.9.3",
+                        Linux="1.9.3",
+                        Windows="2.1.6",
+                        Darwin="2.0.0"),
+    "haskell": defaultdict(lambda: "7.8.4")
+}
+
+
+def language_version(language):
+    """Get preferred language version for this OS."""
+    return _PREFERRED_VERSIONS[language]
 
 
 PRINT_MESSAGES_TO = None
