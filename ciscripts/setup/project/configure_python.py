@@ -277,20 +277,30 @@ def pre_existing_python(lang_dir, python_executable, util, container, shell):
                                                    version,
                                                    "Scripts",
                                                    "python")
+                    upgrade_cmd = (python_location,
+                                   "-m",
+                                   "pip",
+                                   "install",
+                                   "--upgrade",
+                                   "pip")
                 else:
                     python_location = os.path.join(lang_dir,
                                                    version,
                                                    "bin",
                                                    "python")
+                    pip_location = os.path.join(lang_dir,
+                                                version,
+                                                "bin",
+                                                "pip")
+                    upgrade_cmd = (python_location,
+                                   pip_location,
+                                   "install",
+                                   "--upgrade",
+                                   "pip")
 
                 util.execute(container,
                              util.long_running_suppressed_output(),
-                             python_location,
-                             "-m",
-                             "pip",
-                             "install",
-                             "--upgrade",
-                             "pip")
+                             *upgrade_cmd)
 
             return get(container, util, shell, defaultdict(lambda: version))
 
