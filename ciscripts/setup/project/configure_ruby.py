@@ -7,6 +7,8 @@
 
 import errno
 
+import fnmatch
+
 import os
 import os.path
 
@@ -90,12 +92,19 @@ def get(container, util, shell, ver_info):
         @staticmethod
         def _get_gem_dirs(user_installation, system_installation, version):
             """Given an installation, return a GemDirs set."""
-            minor_ver = ".".join(version.split("-")[0].split(".")[:2]) + ".0"
+            minor_ver = ".".join(version.split("-")[0].split(".")[:2])
+            # We now need to search inside the library path to determine
+            # the micro-version.
+            system_lib_ruby = os.path.join(system_installation,
+                                           "lib",
+                                           "ruby")
+            micro_ver = fnmatch.filter(os.listdir(system_lib_ruby),
+                                       "{}.[0123456789]".format(minor_ver))[0]
 
             system_ruby_path = os.path.join(system_installation,
                                             "lib",
                                             "ruby",
-                                            minor_ver)
+                                            micro_ver)
             assert os.path.exists(system_ruby_path)
 
             return GemDirs(system=system_ruby_path,
