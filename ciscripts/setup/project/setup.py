@@ -11,8 +11,6 @@ import argparse
 def _prepare_project_deployment(cont, util, py_util, py_cont):
     """Install travis-bump-version, necessary for deployment on any project."""
     with util.Task("""Installing version bumper"""):
-        py_util.pip_install(cont, util, "travis-bump-version")
-
         with py_cont.activated(util):
             py_util.pip_install(cont, util, "travis-bump-version")
 
