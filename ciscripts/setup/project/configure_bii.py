@@ -157,6 +157,7 @@ def run(container, util, shell, ver_info, os_cont):
                                  "git",
                                  "rm",
                                  "-r",
+                                 "--cached",
                                  "bii-server")
                     util.execute(container,
                                  util.output_on_fail,
