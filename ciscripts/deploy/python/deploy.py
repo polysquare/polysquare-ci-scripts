@@ -26,26 +26,12 @@ def run(cont, util, shell, argv=None):
         # writable by the current user and make a symbolic link
         # from the pandoc binary to.
         if not util.which("pandoc"):
-            home_dir = os.path.expanduser("~")
-            languages = cont.language_dir("")
-            virtualenv = os.path.join(home_dir, "virtualenv")
-            # Filter out paths in the container as they won't
-            # be available during the deploy step.
-            for path in os.environ.get("PATH", "").split(":"):
-                in_home = (os.path.commonprefix([home_dir,
-                                                 path]) == home_dir)
-                in_container = (os.path.commonprefix([languages,
-                                                      path]) == languages)
-                in_venv = (os.path.commonprefix([virtualenv,
-                                                 path] == virtualenv))
-
-                if in_home and not in_container and not in_venv:
-                    destination = os.path.join(path, "pandoc")
-                    with util.Task("""Creating a symbolic link from """
-                                   """{0} to {1}.""".format(pandoc_binary,
-                                                            destination)):
-                        shutil.copy(pandoc_binary, destination)
-                        break
+            path = util.find_usable_path_in_homedir(cont)
+            destination = os.path.join(path, "pandoc")
+            with util.Task("""Copying pandoc binary from """
+                           """{0} to {1}.""".format(pandoc_binary,
+                                                    destination)):
+                shutil.copy(pandoc_binary, destination)
 
     def install_setuptools_markdown():
         """Install setuptools-markdown in currently active python."""

@@ -9,6 +9,8 @@ import errno
 
 import os
 
+import shutil
+
 
 def _move_directories_ignore_errors(directories, src, dst):
     """Move specified directories from :src: to :dst: ignoring errors."""
@@ -30,6 +32,13 @@ _BII_LAYOUT = [
 ]
 
 
+def _get_bii_container(cont, util, shell):
+    """Get pre-installed bii installation."""
+    return util.fetch_and_import("setup/project/configure_bii.py").get(cont,
+                                                                       util,
+                                                                       shell)
+
+
 def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
     del argv
@@ -42,3 +51,13 @@ def run(cont, util, shell, argv=None):
         if os.environ.get("CI", None):
             build = cont.named_cache_dir("cmake-build", ephemeral=False)
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
+
+            if not util.which("bii"):
+                path = util.find_usable_path_in_homedir(cont)
+                with _get_bii_container(cont, util, shell):
+                    bii_binary = util.which("bii")
+                destination = os.path.join(path, "pandoc")
+                with util.Task("""Copying bii binary from """
+                               """{0} to {1}.""".format(bii_binary,
+                                                        destination)):
+                    shutil.copy(bii_binary, destination)
