@@ -72,4 +72,5 @@ def run(cont, util, shell, argv=None):
                             raise error
 
                     shutil.copy(bii_binary, destination)
-                    shutil.copytree(biicode_module, path)
+                    shutil.copytree(biicode_module,
+                                    os.path.join(path, "biicode"))
