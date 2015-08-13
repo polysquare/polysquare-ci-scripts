@@ -61,4 +61,10 @@ def run(cont, util, shell, argv=None):
                 with util.Task("""Copying bii binary from """
                                """{0} to {1}.""".format(bii_binary,
                                                         destination)):
+                    try:
+                        os.makedirs(os.path.dirname(destination))
+                    except OSError as error:
+                        if error.errno != errno.EEXIST:
+                            raise error
+
                     shutil.copy(bii_binary, destination)
