@@ -57,6 +57,10 @@ def run(cont, util, shell, argv=None):
                 path = util.find_usable_path_in_homedir(cont)
                 with _get_bii_container(cont, util, shell).activated(util):
                     bii_binary = util.which("bii")
+                    binary_dir = os.path.dirname(bii_binary)
+                    biicode_module = os.path.abspath(os.path.join(binary_dir,
+                                                                  "..",
+                                                                  "biicode"))
                 destination = os.path.join(path, "bii")
                 with util.Task("""Copying bii binary from """
                                """{0} to {1}.""".format(bii_binary,
@@ -68,3 +72,4 @@ def run(cont, util, shell, argv=None):
                             raise error
 
                     shutil.copy(bii_binary, destination)
+                    shutil.copytree(biicode_module, path)
