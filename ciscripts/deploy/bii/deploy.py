@@ -34,7 +34,7 @@ _BII_LAYOUT = [
 
 def _get_bii_container(cont, util, shell):
     """Get pre-installed bii installation."""
-    return util.fetch_and_import("setup/project/configure_bii.py").get(cont,
+    return cont.fetch_and_import("setup/project/configure_bii.py").get(cont,
                                                                        util,
                                                                        shell)
 
