@@ -41,7 +41,7 @@ def run(cont, util, shell, argv=None):
 
     if api_key and job_slug and result.bump_version_on:
         with util.Task("""Pushing version bump to """ + job_slug):
-            with _get_python_container(cont, util, shell):
+            with _get_python_container(cont, util, shell).activated(util):
                 util.execute(cont,
                              util.running_output,
                              "travis-bump-version",
