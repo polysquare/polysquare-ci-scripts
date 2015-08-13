@@ -57,7 +57,7 @@ def run(cont, util, shell, argv=None):
                 path = util.find_usable_path_in_homedir(cont)
                 with _get_bii_container(cont, util, shell).activated(util):
                     bii_binary = util.which("bii")
-                destination = os.path.join(path, "pandoc")
+                destination = os.path.join(path, "bii")
                 with util.Task("""Copying bii binary from """
                                """{0} to {1}.""".format(bii_binary,
                                                         destination)):
