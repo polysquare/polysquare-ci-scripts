@@ -36,7 +36,8 @@ def _get_bii_container(cont, util, shell):
     """Get pre-installed bii installation."""
     return cont.fetch_and_import("setup/project/configure_bii.py").get(cont,
                                                                        util,
-                                                                       shell)
+                                                                       shell,
+                                                                       None)
 
 
 def run(cont, util, shell, argv=None):
