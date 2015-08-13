@@ -156,6 +156,7 @@ def run(container, util, shell, ver_info, os_cont):
                                  util.output_on_fail,
                                  "git",
                                  "rm",
+                                 "-r",
                                  "bii-server")
                     util.execute(container,
                                  util.output_on_fail,
