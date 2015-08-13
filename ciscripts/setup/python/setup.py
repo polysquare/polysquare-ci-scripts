@@ -35,8 +35,9 @@ def _prepare_python_deployment(cont, util, shell, py_util):
                                cont,
                                "pandoc")
 
-        with util.Task("""Installing deploy dependencies"""):
-            py_util.pip_install_deps(cont, util, "upload")
+    with util.Task("""Installing deploy dependencies"""):
+        py_util.pip_install_deps(cont, util, "upload")
+        py_util.pip_install(cont, util, "twine")
 
 
 def _upgrade_pip(cont, util):
