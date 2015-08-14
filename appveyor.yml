@@ -1,13 +1,13 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python27"
+    - PYTHON: C:\Python34
+    - PYTHON: C:\Python27
 
 cache:
  - C:\container -> appveyor.yml
 
 install:
- - ps: $env:PATH="${env:PYTHON};${env:PYTHON}\\Scripts;C:\\MinGW\bin;C:\\Python34;C:\\Python34\\Scripts;C:\\Ruby21\bin;${env:PATH}"
+ - ps: $env:PATH="${env:PYTHON};${env:PYTHON}\Scripts;C:\MinGW\bin;C:\Python34;C:\Python34\Scripts;C:\Ruby21\bin;${env:PATH}"
  - ps: python ciscripts/bootstrap.py -d C:/container -s container-setup.py -r $(pwd) -e powershell -p test-env.ps1 --no-mdl
  - ps: . ./test-env
 
