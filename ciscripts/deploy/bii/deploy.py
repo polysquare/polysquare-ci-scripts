@@ -9,8 +9,6 @@ import errno
 
 import os
 
-import shutil
-
 
 def _move_directories_ignore_errors(directories, src, dst):
     """Move specified directories from :src: to :dst: ignoring errors."""
@@ -34,7 +32,7 @@ _BII_LAYOUT = [
 
 def _get_bii_container(cont, util, shell):
     """Get pre-installed bii installation."""
-    return cont.fetch_and_import("setup/project/configure_bii.py").get(cont,
+    return cont.fetch_and_import("setup/project/configure_bii.py").run(cont,
                                                                        util,
                                                                        shell,
                                                                        None)
@@ -44,34 +42,36 @@ def _get_python_container(cont, util, shell):
     """Get python container pertaining to biicode installation."""
     configure_python = "setup/project/configure_python.py"
     py_ver = util.language_version("python2")
-    return cont.fetch_and_import(configure_python).get(cont,
+    return cont.fetch_and_import(configure_python).run(cont,
                                                        util,
                                                        shell,
                                                        py_ver)
 
 
-def _set_up_bii_installation(bii_binary_source,
-                             python_binary_source,
-                             bii_binary_destination,
-                             biicode_module_source,
-                             biicode_module_destination):
+def _set_up_bii_installation(cont, util, bii_destination):
     """Relocate the bii installation."""
     try:
-        os.makedirs(os.path.dirname(bii_binary_destination))
+        os.makedirs(os.path.dirname(bii_destination))
     except OSError as error:
         if error.errno != errno.EEXIST:
             raise error
 
-    shutil.copy(bii_binary_source, bii_binary_destination)
-    shutil.copytree(biicode_module_source,
-                    os.path.join(biicode_module_destination, "biicode"))
+    configure_bii = "setup/project/configure_bii.py"
+
+    with _get_python_container(cont, util, None).activated(util):
+        cont.fetch_and_import(configure_bii).run_installer(cont,
+                                                           util,
+                                                           util.execute,
+                                                           bii_destination)
+        python_binary = util.which("python")
 
     # Open the bii binary and re-write the shebang to
     # container the relative path to the python interpreter
     # from where we are now.
-    with open(bii_binary_destination, "r+") as bii_binary_file:
+    with open(os.path.join(bii_destination, "bin", "bii"),
+              "r+") as bii_binary_file:
         bii_binary_lines = bii_binary_file.readlines()
-        bii_binary_lines[0] = "#!{}".format(python_binary_source)
+        bii_binary_lines[0] = "#!{}".format(os.path.relpath(python_binary))
         bii_binary_file.seek(0)
         bii_binary_file.write("\n".join(bii_binary_lines))
 
@@ -89,24 +89,7 @@ def run(cont, util, shell, argv=None):
             build = cont.named_cache_dir("cmake-build", ephemeral=False)
             _move_directories_ignore_errors(_BII_LAYOUT, build, os.getcwd())
 
-            if not util.which("bii"):
-                path = util.find_usable_path_in_homedir(cont)
-                bii_cont = _get_bii_container(cont, util, shell)
-                py_cont = _get_python_container(cont, util, shell)
-                python_binary = os.path.join(py_cont.executable_path(),
-                                             "python")
-                with bii_cont.activated(util):
-                    bii_binary = util.which("bii")
-                    binary_dir = os.path.dirname(bii_binary)
-                    biicode_module = os.path.abspath(os.path.join(binary_dir,
-                                                                  "..",
-                                                                  "biicode"))
-                destination = os.path.join(path, "bii")
-                with util.Task("""Copying bii binary from """
-                               """{0} to {1}.""".format(bii_binary,
-                                                        destination)):
-                    _set_up_bii_installation(bii_binary,
-                                             os.path.relpath(python_binary),
-                                             destination,
-                                             biicode_module,
-                                             path)
+            if not util.which("bii") or True:
+                path = os.path.dirname(util.find_usable_path_in_homedir(cont))
+                with util.Task("""Installing bii to """ + path):
+                    _set_up_bii_installation(cont, util, path)
