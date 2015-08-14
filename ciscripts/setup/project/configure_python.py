@@ -70,7 +70,11 @@ def get(container, util, shell, ver_info):
             if platform.system() in ("Linux", "Darwin"):
                 lib_subdirectory = "lib"
                 py_lib = os.path.join(installation, lib_subdirectory)
-                py_path = fnmatch.filter(os.listdir(py_lib), "python*")
+                try:
+                    py_path = fnmatch.filter(os.listdir(py_lib), "python*")
+                except OSError:
+                    raise RuntimeError("""lib not found in """ +
+                                       repr(os.listdir(installation)))
 
                 assert len(py_path) == 1
                 return os.path.join(py_lib, py_path[0])
