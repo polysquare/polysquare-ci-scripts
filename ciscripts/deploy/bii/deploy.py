@@ -93,9 +93,10 @@ def run(cont, util, shell, argv=None):
                 path = util.find_usable_path_in_homedir(cont)
                 bii_cont = _get_bii_container(cont, util, shell)
                 py_cont = _get_python_container(cont, util, shell)
-                with bii_cont.activated(util), py_cont.activated(util):
+                python_binary = os.path.join(py_cont.executable_path(),
+                                             "python")
+                with bii_cont.activated(util):
                     bii_binary = util.which("bii")
-                    python_binary = os.path.relpath(util.which("python"))
                     binary_dir = os.path.dirname(bii_binary)
                     biicode_module = os.path.abspath(os.path.join(binary_dir,
                                                                   "..",
@@ -105,7 +106,7 @@ def run(cont, util, shell, argv=None):
                                """{0} to {1}.""".format(bii_binary,
                                                         destination)):
                     _set_up_bii_installation(bii_binary,
-                                             python_binary,
+                                             os.path.relpath(python_binary),
                                              destination,
                                              biicode_module,
                                              path)
