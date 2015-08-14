@@ -40,6 +40,42 @@ def _get_bii_container(cont, util, shell):
                                                                        None)
 
 
+def _get_python_container(cont, util, shell):
+    """Get python container pertaining to biicode installation."""
+    configure_python = "setup/project/configure_python.py"
+    py_ver = util.language_version("python2")
+    return cont.fetch_and_import(configure_python).get(cont,
+                                                       util,
+                                                       shell,
+                                                       py_ver)
+
+
+def _set_up_bii_installation(bii_binary_source,
+                             python_binary_source,
+                             bii_binary_destination,
+                             biicode_module_source,
+                             biicode_module_destination):
+    """Relocate the bii installation."""
+    try:
+        os.makedirs(os.path.dirname(bii_binary_destination))
+    except OSError as error:
+        if error.errno != errno.EEXIST:
+            raise error
+
+    shutil.copy(bii_binary_source, bii_binary_destination)
+    shutil.copytree(biicode_module_source,
+                    os.path.join(biicode_module_destination, "biicode"))
+
+    # Open the bii binary and re-write the shebang to
+    # container the relative path to the python interpreter
+    # from where we are now.
+    with open(bii_binary_destination, "r+") as bii_binary_file:
+        bii_binary_lines = bii_binary_file.readlines()
+        bii_binary_lines[0] = "#!{}".format(python_binary_source)
+        bii_binary_file.seek(0)
+        bii_binary_file.write("\n".join(bii_binary_lines))
+
+
 def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
     del argv
@@ -55,8 +91,12 @@ def run(cont, util, shell, argv=None):
 
             if not util.which("bii"):
                 path = util.find_usable_path_in_homedir(cont)
-                with _get_bii_container(cont, util, shell).activated(util):
+                with (_get_bii_container(cont, util, shell).activated(util),
+                      _get_python_container(cont,
+                                            util,
+                                            shell).activated(util)):
                     bii_binary = util.which("bii")
+                    python_binary = os.path.relpath(util.which("python"))
                     binary_dir = os.path.dirname(bii_binary)
                     biicode_module = os.path.abspath(os.path.join(binary_dir,
                                                                   "..",
@@ -65,12 +105,8 @@ def run(cont, util, shell, argv=None):
                 with util.Task("""Copying bii binary from """
                                """{0} to {1}.""".format(bii_binary,
                                                         destination)):
-                    try:
-                        os.makedirs(os.path.dirname(destination))
-                    except OSError as error:
-                        if error.errno != errno.EEXIST:
-                            raise error
-
-                    shutil.copy(bii_binary, destination)
-                    shutil.copytree(biicode_module,
-                                    os.path.join(path, "biicode"))
+                    _set_up_bii_installation(bii_binary,
+                                             python_binary,
+                                             destination,
+                                             biicode_module,
+                                             path)
