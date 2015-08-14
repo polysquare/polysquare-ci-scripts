@@ -91,10 +91,9 @@ def run(cont, util, shell, argv=None):
 
             if not util.which("bii"):
                 path = util.find_usable_path_in_homedir(cont)
-                with (_get_bii_container(cont, util, shell).activated(util),
-                      _get_python_container(cont,
-                                            util,
-                                            shell).activated(util)):
+                bii_cont = _get_bii_container(cont, util, shell)
+                py_cont = _get_python_container(cont, util, shell)
+                with bii_cont.activated(util), py_cont.activated(util):
                     bii_binary = util.which("bii")
                     python_binary = os.path.relpath(util.which("python"))
                     binary_dir = os.path.dirname(bii_binary)
