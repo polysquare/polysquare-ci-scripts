@@ -14,6 +14,10 @@ import os.path
 
 import platform
 
+import shutil
+
+import tarfile
+
 from collections import defaultdict
 
 from contextlib import closing
@@ -265,6 +269,32 @@ def windows_installer(lang_dir, python_build_dir, util, container, shell):
     return install
 
 
+def _virtualenv_script(container, util):
+    """Return location of virtualenv script, fetching if necessary."""
+    python_venv = container.language_dir("python-venv")
+    virtualenv_install = os.path.join(python_venv, "virtualenv.py")
+    remote_url = "http://github.com/pypa/virtualenv/tarball/develop"
+    if not os.path.exists(virtualenv_install):
+        with container.in_temp_cache_dir() as cache_dir:
+            with util.in_dir(cache_dir):
+                local_name = os.path.join(cache_dir,
+                                          os.path.basename(remote_url))
+                with open(local_name, "wb") as local_file:
+                    remote = util.url_opener()(remote_url)
+                    with closing(remote):
+                        local_file.write(remote.read())
+
+                with tarfile.open(local_name) as local_tar:
+                    local_tar.extractall()
+
+                directory_name = [d for d in os.listdir(".")
+                                  if not os.path.basename(remote_url) in d][0]
+                shutil.rmtree(python_venv)
+                shutil.copytree(directory_name, python_venv)
+
+    return virtualenv_install
+
+
 def pre_existing_python(lang_dir, python_executable, util, container, shell):
     """Use pre-installed python."""
     def install(version):
@@ -273,10 +303,12 @@ def pre_existing_python(lang_dir, python_executable, util, container, shell):
             # Use virtualenv (assumed to be installed) to create a virtual
             # python environment at lang_dir.
             python_virtualenv = os.path.join(lang_dir, version)
+            virtualenv_script = _virtualenv_script(container, util)
             if not os.path.exists(python_virtualenv):
                 util.execute(container,
                              util.long_running_suppressed_output(),
-                             "virtualenv",
+                             "python",
+                             virtualenv_script,
                              "--python=" + python_executable,
                              os.path.join(lang_dir, version))
 
@@ -331,7 +363,7 @@ def run(container, util, shell, ver_info):
     usable = _usable_preinstalled_python(container,
                                          ".".join(version.split(".")[:2]))
 
-    if usable and util.which("virtualenv"):
+    if usable:
         # Pass the usable python as the build directory to pre_existing_python
         installer = pre_existing_python
         python_build_dir = usable
