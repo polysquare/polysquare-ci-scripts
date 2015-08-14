@@ -63,6 +63,10 @@ def get(container, util, shell, ver_info):
         @staticmethod
         def _get_py_path_from(installation):
             """Given an installation, get the python library dir."""
+            if not os.path.exists(installation):
+                raise RuntimeError("""Python installation {} """
+                                   """does not exist""".format(installation))
+
             if platform.system() in ("Linux", "Darwin"):
                 lib_subdirectory = "lib"
                 py_lib = os.path.join(installation, lib_subdirectory)
