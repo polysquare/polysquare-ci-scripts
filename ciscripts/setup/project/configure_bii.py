@@ -114,6 +114,79 @@ def _collect_nonnull_containers(util, *args, **kwargs):
                                     **kwargs)
 
 
+def run_installer(container, util, executor, directory):
+    """Install biicode into directory, using executor to run pip."""
+    bii_bin = os.path.join(directory, "bin")
+    bii_script_filename = os.path.join(bii_bin, "bii")
+
+    with util.in_dir(directory):
+        biicode_repo = os.path.join(directory, "biicode")
+        with util.Task("""Downloading biicode client"""):
+            remote = "git://github.com/biicode/biicode"
+            util.execute(container,
+                         util.long_running_suppressed_output(),
+                         "git",
+                         "clone",
+                         remote,
+                         instant_fail=True)
+            with util.in_dir(biicode_repo):
+                # Remove the server-side parts
+                util.execute(container,
+                             util.output_on_fail,
+                             "git",
+                             "submodule",
+                             "deinit",
+                             "bii-server")
+                util.execute(container,
+                             util.output_on_fail,
+                             "git",
+                             "rm",
+                             "-r",
+                             "--cached",
+                             "bii-server")
+                util.execute(container,
+                             util.output_on_fail,
+                             "git",
+                             "submodule",
+                             "update",
+                             "--init",
+                             "--recursive",
+                             instant_fail=True)
+                util.force_remove_tree(os.path.join(biicode_repo,
+                                                    "client",
+                                                    "test"))
+                util.force_remove_tree(os.path.join(biicode_repo,
+                                                    "common",
+                                                    "test"))
+                _write_bii_script(util,
+                                  bii_bin,
+                                  directory,
+                                  bii_script_filename)
+
+                executor(container,
+                         util.long_running_suppressed_output(),
+                         "pip",
+                         "install",
+                         "-r",
+                         os.path.join(biicode_repo,
+                                      "common",
+                                      "requirements.txt"),
+                         instant_fail=True)
+                executor(container,
+                         util.long_running_suppressed_output(),
+                         "pip",
+                         "install",
+                         "-r",
+                         os.path.join(biicode_repo,
+                                      "client",
+                                      "requirements.txt"),
+                         instant_fail=True)
+
+        util.force_remove_tree(os.path.join(biicode_repo, ".git"))
+        os.remove(os.path.join(biicode_repo, "client", ".git"))
+        os.remove(os.path.join(biicode_repo, "common", ".git"))
+
+
 def run(container, util, shell, ver_info, os_cont):
     """Install and activates a bii installation.
 
@@ -124,83 +197,14 @@ def run(container, util, shell, ver_info, os_cont):
     if result is not util.NOT_YET_COMPLETED:
         return result
 
+    bii_dir = container.language_dir("bii")
     py_cont = _setup_python_if_necessary(container, util, shell)
 
-    bii_dir = container.language_dir("bii")
-    bii_bin = os.path.join(bii_dir, "bin")
-
-    bii_script_filename = os.path.join(bii_bin, "bii")
-
-    if not os.path.exists(bii_script_filename):
+    if not os.path.exists(os.path.join(bii_dir, "bin", "bii")):
         util.force_remove_tree(bii_dir)
         os.makedirs(bii_dir)
-        with util.in_dir(bii_dir), _maybe_activated_python(py_cont, util):
-            biicode_repo = os.path.join(bii_dir, "biicode")
-            with util.Task("""Downloading biicode client"""):
-                remote = "git://github.com/biicode/biicode"
-                util.execute(container,
-                             util.long_running_suppressed_output(),
-                             "git",
-                             "clone",
-                             remote,
-                             instant_fail=True)
-                with util.in_dir(biicode_repo):
-                    # Remove the server-side parts
-                    util.execute(container,
-                                 util.output_on_fail,
-                                 "git",
-                                 "submodule",
-                                 "deinit",
-                                 "bii-server")
-                    util.execute(container,
-                                 util.output_on_fail,
-                                 "git",
-                                 "rm",
-                                 "-r",
-                                 "--cached",
-                                 "bii-server")
-                    util.execute(container,
-                                 util.output_on_fail,
-                                 "git",
-                                 "submodule",
-                                 "update",
-                                 "--init",
-                                 "--recursive",
-                                 instant_fail=True)
-                    util.force_remove_tree(os.path.join(biicode_repo,
-                                                        "client",
-                                                        "test"))
-                    util.force_remove_tree(os.path.join(biicode_repo,
-                                                        "common",
-                                                        "test"))
-                    _write_bii_script(util,
-                                      bii_bin,
-                                      bii_dir,
-                                      bii_script_filename)
-
-                    with _maybe_activated_python(py_cont, util):
-                        os_cont.execute(container,
-                                        util.long_running_suppressed_output(),
-                                        "pip",
-                                        "install",
-                                        "-r",
-                                        os.path.join(biicode_repo,
-                                                     "common",
-                                                     "requirements.txt"),
-                                        instant_fail=True)
-                        os_cont.execute(container,
-                                        util.long_running_suppressed_output(),
-                                        "pip",
-                                        "install",
-                                        "-r",
-                                        os.path.join(biicode_repo,
-                                                     "client",
-                                                     "requirements.txt"),
-                                        instant_fail=True)
-
-            util.force_remove_tree(os.path.join(biicode_repo, ".git"))
-            os.remove(os.path.join(biicode_repo, "client", ".git"))
-            os.remove(os.path.join(biicode_repo, "common", ".git"))
+        with _maybe_activated_python(py_cont, util):
+            run_installer(container, util, os_cont.execute, bii_dir)
 
     meta_container = _collect_nonnull_containers(util,
                                                  os_cont,
