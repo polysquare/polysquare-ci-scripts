@@ -151,10 +151,13 @@ def run(cont, util, shell, argv=None):
                 util.force_remove_tree(os.path.join(os.getcwd(), "cmake"))
             util.apply_to_files(cmake_check.reset_mtime,
                                 build,
+                                matching=cmake_check.NO_CACHE_FILE_PATTERNS)
+            util.apply_to_files(util.force_remove_tree,
+                                build,
                                 matching=[
                                     "*/.hive.db",
                                     "*/layout.bii"
-                                ] + cmake_check.NO_CACHE_FILE_PATTERNS)
+                                ] + cmake_check.REMOVE_FILE_PATTERNS)
 
     @contextmanager
     def _activate_py27(util):
