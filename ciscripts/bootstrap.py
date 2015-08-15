@@ -604,7 +604,9 @@ class ContainerDir(ContainerBase):
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
-                self.delete(self._scripts_dir)
+                util.apply_to_files(util.force_remove_tree,
+                                    self._scripts_dir,
+                                    matching=["*.pyc"])
 
         # Clean our own caches once we've cleaned caches from
         # other containers, as they might be relying on our own cache.
