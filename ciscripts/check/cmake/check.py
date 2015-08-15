@@ -316,6 +316,14 @@ def _cmake_only_build_command(build):
     return ("cmake", "--build", os.path.join(build, "build"))
 
 
+def _clean_coverage_files(util):
+    """Clean coverage data from last build."""
+    for coverage_file_path in ("coverage.info",
+                               "coverage.trace",
+                               "TracefileConverterLoc"):
+        util.force_remove_tree(coverage_file_path)
+
+
 # suppress(too-many-arguments,too-many-locals)
 def check_cmake_like_project(cont,
                              util,
@@ -368,6 +376,9 @@ def check_cmake_like_project(cont,
 
     build_dir = cont.named_cache_dir("cmake-build", ephemeral=False)
     project_dir = os.getcwd()
+
+    with util.Task("""Cleaning previous build"""):
+        _clean_coverage_files(util)
 
     if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
         with util.Task("""Restoring cached files to build tree"""):
@@ -426,6 +437,12 @@ NO_CACHE_FILE_PATTERNS = [
     "DartConfiguration.tcl"
 ]
 
+REMOVE_FILE_PATTERNS = [
+    "*/DRIVER.error",
+    "*/DRIVER.output",
+    "*/Temporary/*"
+]
+
 
 def run(cont, util, shell, argv=None):
     """Run checks on this cmake project."""
@@ -437,6 +454,9 @@ def run(cont, util, shell, argv=None):
             util.apply_to_files(reset_mtime,
                                 build,
                                 matching=NO_CACHE_FILE_PATTERNS)
+            util.apply_to_files(util.force_remove_tree,
+                                build,
+                                matching=REMOVE_FILE_PATTERNS)
 
     check_cmake_like_project(cont,
                              util,

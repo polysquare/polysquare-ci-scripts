@@ -604,7 +604,9 @@ class ContainerDir(ContainerBase):
 
         with util.Task("""Cleaning up downloaded scripts"""):
             if self._force_created_scripts_dir:
-                self.delete(self._scripts_dir)
+                util.apply_to_files(util.force_remove_tree,
+                                    self._scripts_dir,
+                                    matching=["*.pyc"])
 
         # Clean our own caches once we've cleaned caches from
         # other containers, as they might be relying on our own cache.
@@ -908,6 +910,10 @@ def main(argv):
                                                     util,
                                                     parent_shell,
                                                     argv=remainder)
+
+        # Print a final new line so that active messages don't get
+        # truncated.
+        util.print_message("\n")
 
         if container.return_code() != 0:
             parent_shell.exit(container.return_code())
