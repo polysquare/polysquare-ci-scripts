@@ -909,6 +909,10 @@ def main(argv):
                                                     parent_shell,
                                                     argv=remainder)
 
+        # Print a final new line so that active messages don't get
+        # truncated.
+        util.print_message("\n")
+
         if container.return_code() != 0:
             parent_shell.exit(container.return_code())
 

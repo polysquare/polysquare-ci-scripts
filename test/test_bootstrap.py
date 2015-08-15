@@ -621,7 +621,7 @@ class TestMain(TrackedLoadedModulesTestCase):
                             "setup/test/setup.py",
                             "--keep-scripts"])
 
-        self.assertEqual(captured_output.stdout, "Hello\n")
+        self.assertEqual(captured_output.stdout, "Hello\n\n")
 
     def test_create_dir_and_pass_args_to_script(self):
         """Test creating a container and passing arguments to a script."""
@@ -638,7 +638,7 @@ class TestMain(TrackedLoadedModulesTestCase):
                             "--keep-scripts",
                             "Argument"])
 
-        self.assertEqual(captured_output.stdout, "Argument\n")
+        self.assertEqual(captured_output.stdout, "Argument\n\n")
 
     def test_create_dir_and_pass_control_to_downloaded_script(self):
         """Test creating container and passing control to a fetched script."""
@@ -670,4 +670,4 @@ class TestMain(TrackedLoadedModulesTestCase):
                                         "setup/test/setup.py",
                                         "--keep-scripts"])
 
-                    self.assertEqual(captured_output.stdout, "Hello\n")
+                    self.assertEqual(captured_output.stdout, "Hello\n\n")
