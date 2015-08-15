@@ -369,6 +369,10 @@ def check_cmake_like_project(cont,
     build_dir = cont.named_cache_dir("cmake-build", ephemeral=False)
     project_dir = os.getcwd()
 
+    with util.Task("""Cleaning previous build"""):
+        [util.force_remove_tree(os.path.join(build_dir, t))
+         for t in ("coverage.info", "coverage.trace", "TracefileConverterLoc")]
+
     if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
         with util.Task("""Restoring cached files to build tree"""):
             _move_directories_ignore_errors(build_tree,
