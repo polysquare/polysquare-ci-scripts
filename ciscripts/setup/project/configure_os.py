@@ -122,13 +122,12 @@ def get(container,
                 # script and not the frozen binary. The frozen binary will
                 # be executed using the currently active python, which may
                 # not be the same python as where it is installed.
-                if platform.system() == "Windows":
-                    exec_script = "psq-travis-container-exec-script.py"
+                exec_scr = util.which("psq-travis-container-exec-script.py")
+                if exec_scr:
+                    exec_args.append(util.which("python"))
+                    exec_args.append(exec_scr)
                 else:
-                    exec_script = "psq-travis-container-exec"
-
-                exec_args.append(util.which("python"))
-                exec_args.append(util.which(exec_script))
+                    exec_args.append(util.which("psq-travis-container-exec"))
 
             args = exec_args + [self._installation, "--show-output"] + use_args
             return util.execute(container,
