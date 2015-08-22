@@ -70,13 +70,24 @@ def run(cont,  # suppress(too-many-arguments)
                      linter,
                      *args)
 
+    def format_extension(extension):
+        """Format extension so it looks like a file name extension.
+
+        If the extension already has an extension in it, then don't prepend
+        a dot to the beginning.
+        """
+        if "." in extension:
+            return "*" + extension
+        else:
+            return "*." + extension
+
     def run_linters_on_code_files(extensions,
                                   exclusions,
                                   directories,
                                   block_regexps):
         """Run polysquare-generic-file-linter on code files."""
         for directory in [os.path.realpath(d) for d in directories]:
-            matching = ["*.{0}".format(e) for e in extensions]
+            matching = [format_extension(e) for e in extensions]
             not_matching = ([e for e in exclusions] +
                             [os.path.join(cont.path(), "*"),
                              os.path.join(os.getcwd(), ".eggs", "*"),
