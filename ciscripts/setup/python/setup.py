@@ -44,7 +44,7 @@ def _upgrade_pip(cont, util):
     """Upgrade pip installation in current virtual environment."""
     import pip
 
-    if LooseVersion(pip.__version__) < LooseVersion("7.1.0"):
+    if LooseVersion(pip.__version__) < LooseVersion("7.1.1"):
         util.execute(cont,
                      util.long_running_suppressed_output(),
                      "python",
