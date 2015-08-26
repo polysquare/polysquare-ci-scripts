@@ -12,6 +12,15 @@ import os
 from contextlib import contextmanager
 
 
+def _move_ignore_enoent(src, dst):
+    """Move src to dst, ignoring ENOENT."""
+    try:
+        os.rename(src, dst)
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise error
+
+
 @contextmanager
 def _bii_deps_in_place(cont):
     """Move bii project dependencies into layout.
@@ -19,11 +28,12 @@ def _bii_deps_in_place(cont):
     The coverage step may require these dependencies to be present.
     """
     bii_dir = os.path.join(cont.named_cache_dir("cmake-build"), "bii")
+    _move_ignore_enoent(bii_dir, os.path.join(os.getcwd(), "bii"))
+
     try:
-        os.rename(bii_dir, os.path.join(os.getcwd(), "bii"))
-    except OSError as error:
-        if error.errno != errno.ENOENT:
-            raise error
+        yield
+    finally:
+        _move_ignore_enoent(os.path.join(os.getcwd(), "bii"), bii_dir)
 
 
 def run(cont, util, shell, argv=None):
