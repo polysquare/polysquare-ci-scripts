@@ -39,7 +39,7 @@ def _bii_deps_in_place(cont):
 def run(cont, util, shell, argv=None):
     """Submit coverage total to coveralls, with bii specific preparation."""
     with _bii_deps_in_place(cont):
-        util.fetch_and_import("coverage/cmake/coverage.py").run(cont,
+        cont.fetch_and_import("coverage/cmake/coverage.py").run(cont,
                                                                 util,
                                                                 shell,
                                                                 argv)
