@@ -5,8 +5,6 @@
 # See /LICENCE.md for Copyright information
 """The main setup script to bootstrap and set up a python project."""
 
-from distutils.version import LooseVersion  # suppress(import-error)
-
 
 def _install_test_dependencies(cont, util, py_util, *args):
     """Install testing dependencies for python project."""
@@ -40,21 +38,6 @@ def _prepare_python_deployment(cont, util, shell, py_util):
         py_util.pip_install(cont, util, "twine")
 
 
-def _upgrade_pip(cont, util):
-    """Upgrade pip installation in current virtual environment."""
-    import pip
-
-    if LooseVersion(pip.__version__) < LooseVersion("7.1.1"):
-        util.execute(cont,
-                     util.long_running_suppressed_output(),
-                     "python",
-                     "-m",
-                     "pip",
-                     "install",
-                     "--upgrade",
-                     "pip")
-
-
 def run(cont, util, shell, argv=None):
     """Install everything necessary to test and check a python project.
 
@@ -79,12 +62,6 @@ def run(cont, util, shell, argv=None):
                                                               util,
                                                               shell,
                                                               py_ver)
-
-        with util.Task("""Ensuring that pip is up to date"""):
-            with py_cont.activated(util):
-                _upgrade_pip(cont, util)
-
-            _upgrade_pip(cont, util)
 
         with util.Task("""Installing python linters"""):
             with py_cont.activated(util):

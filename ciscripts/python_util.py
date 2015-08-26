@@ -175,6 +175,28 @@ def _packages_to_install(installed, requested):
     return list(set(pkgs))
 
 
+def _upgrade_pip(cont, util):
+    """Upgrade pip installation in current virtual environment."""
+    pip = util.which("pip")
+    if not os.environ.get("_POLYSQUARE_CHECKED_PIP_VERSION_" + pip, None):
+        os.environ["_POLYSQUARE_CHECKED_PIP_VERSION_" + pip] = "True"
+    else:
+        return
+
+    version = subprocess.check_output([util.which("pip"),
+                                       "--version"]).split()[1].decode()
+
+    if LooseVersion(version) < LooseVersion("7.1.2"):
+        util.execute(cont,
+                     util.long_running_suppressed_output(),
+                     "python",
+                     "-m",
+                     "pip",
+                     "install",
+                     "--upgrade",
+                     "pip")
+
+
 def _pip_install_internal(container, util, py_path, *args, **kwargs):
     """Run pip install, without removing redundant packages."""
     pip_install_args = [
@@ -204,6 +226,8 @@ def pip_install(container, util, *args, **kwargs):
     This function does caching to make sure that we don't double-download
     packages.
     """
+    _upgrade_pip(container, util)
+
     active_python = util.which("python")
     to_install = _packages_to_install(_PACKAGES_FOR_PYTHON[active_python],
                                       list(args))
@@ -261,6 +285,8 @@ def pip_install_deps(cont, util, target, *args, **kwargs):
     Dependencies are not installed if we've already got them installed. We
     use a shortcut method to determine that.
     """
+    _upgrade_pip(cont, util)
+
     active_python = util.which("python")
     initially_installed_packages = _PACKAGES_FOR_PYTHON[active_python]
     pip_install_args = [
