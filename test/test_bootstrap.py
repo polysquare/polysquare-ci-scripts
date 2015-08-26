@@ -80,6 +80,9 @@ def write_bootstrap_script_into_container(directory_name):
     shutil.copyfile(os.path.join(os.path.dirname(bootstrap.__file__),
                                  "bootstrap.py"),
                     os.path.join(scripts_dir, "bootstrap.py"))
+    shutil.copyfile(os.path.join(os.path.dirname(util.__file__),
+                                 "util.py"),
+                    os.path.join(scripts_dir, "util.py"))
 
 
 @contextmanager
@@ -109,9 +112,10 @@ class TrackedLoadedModulesTestCase(TestCase):
         self._loaded_modules = []
 
     def setUp(self):  # suppress(N802)
-        """Ensure that bootstrap.__file__ is absolute."""
+        """Ensure that bootstrap and util __file__ is absolute."""
         super(TrackedLoadedModulesTestCase, self).setUp()
         self.patch(bootstrap, "__file__", os.path.abspath(bootstrap.__file__))
+        self.patch(util, "__file__", os.path.abspath(util.__file__))
 
     def tearDown(self):  # suppress(N802)
         """Ensure that any loaded modules are removed."""
@@ -563,12 +567,6 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
 def _write_setup_script(script_contents):
     """Write script_contents to setup script and return its path."""
     loadable = os.path.abspath("container/_scripts")
-    util_script_path = os.path.abspath(os.path.join(loadable,
-                                                    "ciscripts",
-                                                    "util.py"))
-    with make_loadable_module_path(util_script_path, loadable) as f:
-        pass
-
     setup_script_path = os.path.abspath(os.path.join(loadable,
                                                      "ciscripts",
                                                      "setup",
