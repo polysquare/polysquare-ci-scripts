@@ -142,7 +142,11 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
 
 def reset_mtime(path):
     """Reset modification time of file at path."""
-    os.utime(path, (1, 1))
+    try:
+        os.utime(path, (1, 1))
+    except OSError as error:
+        if error.errno != errno.ENOENT:
+            raise error
 
 
 def _parse_args(kind, argv):
