@@ -116,7 +116,7 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
                              generator,
                              cmake_coverage):
     """Configure an underlying cmake project."""
-    cmake_args = list(configure_cmd) + [
+    cmake_args = list(configure_cmd(project_dir)) + [
         project_dir,
         "-DCMAKE_COLOR_MAKEFILE=ON"
     ]
@@ -336,7 +336,8 @@ def check_cmake_like_project(cont,
                              after_lint=lambda cont, osc, util: None,
                              build_tree=None,
                              configure_context=_cmake_only_configure_context,
-                             configure_cmd=("cmake", ),
+                             configure_cmd=lambda b: ("cmake", ),
+                             proj_dir_xform=lambda d: d,
                              test_cmd=("ctest", ),
                              build_cmd=_cmake_only_build_command,
                              after_test=lambda cont, util, build: None,
@@ -390,7 +391,7 @@ def check_cmake_like_project(cont,
                                             build_dir,
                                             project_dir)
 
-    with _maybe_map_to_drive_letter(project_dir) as mapped_project_dir:
+    with _maybe_map_to_drive_letter(project_dir) as mapped_proj_dir:
         after_lint(cont, os_cont, util)
 
         with configure_context(util):
@@ -400,7 +401,7 @@ def check_cmake_like_project(cont,
                     _configure_cmake_project(cont,
                                              util,
                                              os_cont,
-                                             mapped_project_dir,
+                                             proj_dir_xform(mapped_proj_dir),
                                              build_dir,
                                              configure_cmd,
                                              generator,
@@ -409,7 +410,7 @@ def check_cmake_like_project(cont,
                 with util.Task("""Building {} project""".format(kind)):
                     os_cont.execute(cont,
                                     util.running_output,
-                                    *(build_cmd(mapped_project_dir)))
+                                    *(build_cmd(mapped_proj_dir)))
 
                 with util.Task("""Testing {} project""".format(kind)):
                     os_cont.execute(cont,

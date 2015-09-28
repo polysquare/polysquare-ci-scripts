@@ -7,6 +7,8 @@
 
 import argparse
 
+import errno
+
 import os
 
 import platform
@@ -56,7 +58,7 @@ def _maybe_activate_python(py_cont, util):
         yield
 
 
-def _bii_run_build(util, bii_exe):
+def _bii_run_build(util):
     """Return function to build a bii project."""
     def _win_safe_abs(path):
         """Get absolute path to file, but escape drive letters."""
@@ -75,7 +77,7 @@ def _bii_run_build(util, bii_exe):
         """
         del build
 
-        bii_build = os.path.join(os.getcwd(), "bii", "build")
+        bii_build = os.getcwd()
         ninja_file_path = os.path.join(bii_build, "build.ninja")
         if os.path.exists(ninja_file_path):
             with util.in_dir(bii_build):
@@ -95,9 +97,26 @@ def _bii_run_build(util, bii_exe):
                         ninja_file.write("\n".join(write_lines))
                         ninja_file.write("\n")
 
-        return (bii_exe, "build")
+        return ("cmake", "--build", os.getcwd())
 
     return _run_build_func
+
+
+def _bii_conf_cmd(bii_exe):
+    """Return a function to compute what command to run."""
+    def _configure_cmd(project_dir):
+        """Use bii configure if we don't have bii specific cmake files yet."""
+        if not os.path.exists(os.path.join(project_dir, "bii", "cmake")):
+            return (bii_exe, "configure")
+
+        return ("cmake", )
+
+    return _configure_cmd
+
+
+def _bii_project_xform(project_dir):
+    """Redirect project dir to /bii/cmake."""
+    return os.path.join(project_dir, "bii", "cmake")
 
 
 def run(cont, util, shell, argv=None):
@@ -160,10 +179,21 @@ def run(cont, util, shell, argv=None):
                                 ] + cmake_check.REMOVE_FILE_PATTERNS)
 
     @contextmanager
-    def _activate_py27(util):
-        """Stay in current directory."""
-        with _maybe_activate_python(py_cont, util), bii_cont.activated(util):
-            yield
+    def _bii_configure_ctx(util):
+        """Change to build directory in bii layout, or activate bii."""
+        build_dir = os.path.join(os.getcwd(), "bii", "build")
+        try:
+            os.makedirs(build_dir)
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise error
+
+        # Unfortunately, we can't use the multiple-manager syntax over
+        # multiple lines
+        with util.in_dir(build_dir):
+            with _maybe_activate_python(py_cont, util):
+                with bii_cont.activated(util):
+                    yield
 
     cmake_check.check_cmake_like_project(cont,
                                          util,
@@ -171,11 +201,10 @@ def run(cont, util, shell, argv=None):
                                          kind="bii",
                                          build_tree=_BII_LAYOUT,
                                          after_lint=_after_lint,
-                                         configure_context=_activate_py27,
-                                         configure_cmd=(bii_exe, "configure"),
-                                         build_cmd=_bii_run_build(util,
-                                                                  bii_exe),
-                                         test_cmd=(bii_exe, "test"),
+                                         configure_context=_bii_configure_ctx,
+                                         configure_cmd=_bii_conf_cmd(bii_exe),
+                                         proj_dir_xform=_bii_project_xform,
+                                         build_cmd=_bii_run_build(util),
                                          after_test=_after_test,
                                          argv=(remainder +
                                                ["--lint-exclude",
