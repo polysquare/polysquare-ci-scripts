@@ -54,6 +54,7 @@ filesystem
 ghc
 haskell
 __import__
+inode
 _languages
 libgmp
 libffi

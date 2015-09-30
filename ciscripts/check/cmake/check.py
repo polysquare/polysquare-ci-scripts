@@ -111,13 +111,15 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
                              util,
                              os_cont,
                              project_dir,
+                             project_dir_xform,
                              build_dir,
+                             configure_context_dir,
                              configure_cmd,
                              generator,
                              cmake_coverage):
     """Configure an underlying cmake project."""
     cmake_args = list(configure_cmd(project_dir)) + [
-        project_dir,
+        project_dir_xform(project_dir),
         "-DCMAKE_COLOR_MAKEFILE=ON"
     ]
 
@@ -138,6 +140,11 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
     os_cont.execute(cont,
                     util.running_output,
                     *cmake_args)
+
+    # After running, change back into the current directory. Some build tools
+    # (like biicode) will delete the build tree and re-enter it, which
+    # invalidates the inode that we're currently in.
+    os.chdir(configure_context_dir)
 
 
 def reset_mtime(path):
@@ -312,7 +319,7 @@ def _cmake_only_configure_context(util):
             raise error
 
     with util.in_dir(build_dir):
-        yield
+        yield build_dir
 
 
 def _cmake_only_build_command(build):
@@ -337,7 +344,7 @@ def check_cmake_like_project(cont,
                              build_tree=None,
                              configure_context=_cmake_only_configure_context,
                              configure_cmd=lambda b: ("cmake", ),
-                             proj_dir_xform=lambda d: d,
+                             project_dir_xform=lambda d: d,
                              test_cmd=("ctest", ),
                              build_cmd=_cmake_only_build_command,
                              after_test=lambda cont, util, build: None,
@@ -394,15 +401,17 @@ def check_cmake_like_project(cont,
     with _maybe_map_to_drive_letter(project_dir) as mapped_proj_dir:
         after_lint(cont, os_cont, util)
 
-        with configure_context(util):
+        with configure_context(util) as configure_context_dir:
             with _cmake_generator_context(util,
                                           result.generator) as generator:
                 with util.Task("""Configuring {} project""".format(kind)):
                     _configure_cmake_project(cont,
                                              util,
                                              os_cont,
-                                             proj_dir_xform(mapped_proj_dir),
+                                             mapped_proj_dir,
+                                             project_dir_xform,
                                              build_dir,
+                                             configure_context_dir,
                                              configure_cmd,
                                              generator,
                                              result.use_cmake_coverage)

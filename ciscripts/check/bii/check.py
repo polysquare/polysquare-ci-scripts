@@ -75,9 +75,7 @@ def _bii_run_build(util):
         At the moment, this involves a temporary hack on the ninja
         build file to remove all relative paths from targets.
         """
-        del build
-
-        bii_build = os.getcwd()
+        bii_build = os.path.join(build, "bii", "build")
         ninja_file_path = os.path.join(bii_build, "build.ninja")
         if os.path.exists(ninja_file_path):
             with util.in_dir(bii_build):
@@ -97,7 +95,7 @@ def _bii_run_build(util):
                         ninja_file.write("\n".join(write_lines))
                         ninja_file.write("\n")
 
-        return ("cmake", "--build", os.getcwd())
+        return ("cmake", "--build", bii_build)
 
     return _run_build_func
 
@@ -193,7 +191,7 @@ def run(cont, util, shell, argv=None):
         with util.in_dir(build_dir):
             with _maybe_activate_python(py_cont, util):
                 with bii_cont.activated(util):
-                    yield
+                    yield build_dir
 
     cmake_check.check_cmake_like_project(cont,
                                          util,
@@ -203,7 +201,7 @@ def run(cont, util, shell, argv=None):
                                          after_lint=_after_lint,
                                          configure_context=_bii_configure_ctx,
                                          configure_cmd=_bii_conf_cmd(bii_exe),
-                                         proj_dir_xform=_bii_project_xform,
+                                         project_dir_xform=_bii_project_xform,
                                          build_cmd=_bii_run_build(util),
                                          after_test=_after_test,
                                          argv=(remainder +
