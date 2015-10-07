@@ -107,11 +107,35 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
                          })
 
 
+def _generator_cache_is_stale(build_dir, generator):
+    """Check if generator cache is stale and doesn't match generator."""
+    try:
+        with open(os.path.join(build_dir, "CMakeCache.txt")) as cmake_cache:
+            key = "CMAKE_GENERATOR:INTERNAL="
+            for line in cmake_cache.readlines():
+                if (line.startswith(key) and
+                        line.split(key)[1][:-1] != generator):
+                    return True
+    except IOError:  # suppress(pointless-except)
+        pass
+
+    return False
+
+
+def _check_generator_cache(util, build_dir, generator):
+    """Clear build cache if generator is different from cache."""
+    if _generator_cache_is_stale(build_dir, generator):
+        with util.Task("""Clearing stale generator cache"""):
+            util.force_remove_tree(os.path.join(build_dir, "CMakeFiles"))
+            os.remove(os.path.join(build_dir, "CMakeCache.txt"))
+
+
 def _configure_cmake_project(cont,  # suppress(too-many-arguments)
                              util,
                              os_cont,
                              project_dir,
                              project_dir_xform,
+                             build_dir_xform,
                              build_dir,
                              configure_context_dir,
                              configure_cmd,
@@ -136,6 +160,10 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
         cmake_args.append("-DCMAKE_UNIT_COVERAGE_FILE=" + tracefile)
         cmake_args.append("-DCMAKE_UNIT_TRACE_CONVERTER_LOCATION_OUTPUT=" +
                           os.path.join(build_dir, "TracefileConverterLoc"))
+
+    # We run the build_dir_xform on project_dir since we've moved
+    # the build tree into place
+    _check_generator_cache(util, build_dir_xform(project_dir), generator)
 
     os_cont.execute(cont,
                     util.running_output,
@@ -345,6 +373,7 @@ def check_cmake_like_project(cont,
                              configure_context=_cmake_only_configure_context,
                              configure_cmd=lambda b: ("cmake", ),
                              project_dir_xform=lambda d: d,
+                             build_dir_xform=lambda d: d,
                              test_cmd=("ctest", ),
                              build_cmd=_cmake_only_build_command,
                              after_test=lambda cont, util, build: None,
@@ -410,6 +439,7 @@ def check_cmake_like_project(cont,
                                              os_cont,
                                              mapped_proj_dir,
                                              project_dir_xform,
+                                             build_dir_xform,
                                              build_dir,
                                              configure_context_dir,
                                              configure_cmd,
