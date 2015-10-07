@@ -476,6 +476,10 @@ NO_CACHE_FILE_PATTERNS = [
     "*/Makefile",
     "*/Testing/*",
     "cmake_install.cmake",
+    "*.ninja_deps",
+    "*.ninja_log",
+    "*/rules.ninja",
+    "*/build.ninja",
     "CMakeCache.cmake",
     "CTestTestfile.cmake",
     "DartConfiguration.tcl"

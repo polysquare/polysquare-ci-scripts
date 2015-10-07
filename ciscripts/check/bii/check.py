@@ -176,10 +176,10 @@ def run(cont, util, shell, argv=None):
                                 matching=cmake_check.NO_CACHE_FILE_PATTERNS)
             util.apply_to_files(util.force_remove_tree,
                                 build,
-                                matching=[
-                                    "*/.hive.db",
-                                    "*/layout.bii"
-                                ] + cmake_check.REMOVE_FILE_PATTERNS)
+                                cmake_check.REMOVE_FILE_PATTERNS)
+            util.apply_to_files(os.remove,
+                                build,
+                                ("*/layout.bii", "*/.hive.db"))
 
     @contextmanager
     def _bii_configure_ctx(util):
