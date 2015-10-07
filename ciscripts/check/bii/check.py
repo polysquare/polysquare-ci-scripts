@@ -117,6 +117,11 @@ def _bii_project_xform(project_dir):
     return os.path.join(project_dir, "bii", "cmake")
 
 
+def _bii_build_xform(project_dir):
+    """Redirect project dir to /bii/build."""
+    return os.path.join(project_dir, "bii", "build")
+
+
 def run(cont, util, shell, argv=None):
     """Run checks on this bii project."""
     parser = argparse.ArgumentParser(description="""Run bii checks""")
@@ -171,10 +176,10 @@ def run(cont, util, shell, argv=None):
                                 matching=cmake_check.NO_CACHE_FILE_PATTERNS)
             util.apply_to_files(util.force_remove_tree,
                                 build,
-                                matching=[
-                                    "*/.hive.db",
-                                    "*/layout.bii"
-                                ] + cmake_check.REMOVE_FILE_PATTERNS)
+                                cmake_check.REMOVE_FILE_PATTERNS)
+            util.apply_to_files(os.remove,
+                                build,
+                                ("*/layout.bii", "*/.hive.db"))
 
     @contextmanager
     def _bii_configure_ctx(util):
@@ -202,6 +207,7 @@ def run(cont, util, shell, argv=None):
                                          configure_context=_bii_configure_ctx,
                                          configure_cmd=_bii_conf_cmd(bii_exe),
                                          project_dir_xform=_bii_project_xform,
+                                         build_dir_xform=_bii_build_xform,
                                          build_cmd=_bii_run_build(util),
                                          after_test=_after_test,
                                          argv=(remainder +
