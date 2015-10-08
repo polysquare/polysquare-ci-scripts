@@ -158,6 +158,8 @@ def run(cont,  # suppress(too-many-arguments)
                                       block_regexps)
 
         with util.Task("""Checking markdown documentation"""):
-            run_linters_on_markdown_files(extensions,
+            # We don't want to treat code files as documentation, so
+            # implicitly exclude checked code files
+            run_linters_on_markdown_files(extensions + exclusions,
                                           directories,
                                           no_mdl)
