@@ -107,7 +107,7 @@ def _update_from_user_file(util,
     our_file_name = os.path.join(container_config_dir, user_file_name_template)
     user_file_name = "{u}.{s}".format(u=user_file_name_template,
                                       s=_USER_SUFFIXES[platform.system()])
-    user_file_path = os.path.join(container_config_dir, user_file_name)
+    user_file_path = os.path.join(os.getcwd(), user_file_name)
     cached_file = os.path.join(container_config_dir,
                                "{}.cache".format(user_file_name))
 
