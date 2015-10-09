@@ -140,12 +140,23 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
                              configure_context_dir,
                              configure_cmd,
                              generator,
-                             cmake_coverage):
+                             cmake_coverage,
+                             cmake_cache_variables):
     """Configure an underlying cmake project."""
+    cmake_cache_variables = cmake_cache_variables or list()
+
+    if cmake_coverage:
+        tracefile = os.path.join(build_dir, "coverage.trace")
+        converter = os.path.join(build_dir, "TracefileConverterLoc")
+        cmake_cache_variables.extend(["{}={}".format(k, v) for k, v in {
+            "CMAKE_UNIT_COVERAGE_FILE": tracefile,
+            "CMAKE_UNIT_TRACE_CONVERTER_LOCATION_OUTPUT": converter
+        }])
+
+    cmake_cache_variables.append("CMAKE_COLOR_MAKEFILE=ON")
     cmake_args = list(configure_cmd(project_dir)) + [
-        project_dir_xform(project_dir),
-        "-DCMAKE_COLOR_MAKEFILE=ON"
-    ]
+        project_dir_xform(project_dir)
+    ] + ["-D{}".format(v) for v in cmake_cache_variables]
 
     if generator:
         cmake_args.append("-G" + generator)
@@ -154,12 +165,6 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
         # VS 2013, since MinGW Makefiles are broken where
         # sh is in the PATH.
         cmake_args.append("-GVisual Studio 12 2013")
-
-    if cmake_coverage:
-        tracefile = os.path.join(build_dir, "coverage.trace")
-        cmake_args.append("-DCMAKE_UNIT_COVERAGE_FILE=" + tracefile)
-        cmake_args.append("-DCMAKE_UNIT_TRACE_CONVERTER_LOCATION_OUTPUT=" +
-                          os.path.join(build_dir, "TracefileConverterLoc"))
 
     # We run the build_dir_xform on project_dir since we've moved
     # the build tree into place
@@ -204,6 +209,11 @@ def _parse_args(kind, argv):
                         action="store_true")
     parser.add_argument("--cmake-namespace",
                         help="""Namespace of cmake functions""",
+                        type=str)
+    parser.add_argument("--cmake-cache-variables",
+                        help="""Variables in k=v format to pass to """
+                             """cmake.""",
+                        nargs="*",
                         type=str)
     parser.add_argument("--generator",
                         help="""Generator to use """
@@ -444,7 +454,8 @@ def check_cmake_like_project(cont,
                                              configure_context_dir,
                                              configure_cmd,
                                              generator,
-                                             result.use_cmake_coverage)
+                                             result.use_cmake_coverage,
+                                             result.cmake_cache_variables)
 
                 with util.Task("""Building {} project""".format(kind)):
                     os_cont.execute(cont,
