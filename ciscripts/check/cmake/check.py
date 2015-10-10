@@ -151,7 +151,7 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
         cmake_cache_variables.extend(["{}={}".format(k, v) for k, v in {
             "CMAKE_UNIT_COVERAGE_FILE": tracefile,
             "CMAKE_UNIT_TRACE_CONVERTER_LOCATION_OUTPUT": converter
-        }])
+        }.items()])
 
     cmake_cache_variables.append("CMAKE_COLOR_MAKEFILE=ON")
     cmake_args = list(configure_cmd(project_dir)) + [
