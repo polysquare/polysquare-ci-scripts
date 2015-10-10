@@ -92,7 +92,7 @@ def _copy_from_user_file_and_append(destination, user_file, append):
     """Copy contents of user_file and append other contents to destination."""
     user_lines = _read_optional_user_file(user_file).splitlines()
     destination_file_entries = set([l for l in user_lines if len(l)])
-    destination_file_entries |= set([append])
+    destination_file_entries |= set(append)
 
     with open(destination, "w") as destination_file:
         destination_file.truncate(0)
@@ -115,7 +115,7 @@ def _update_from_user_file(util,
         if not util.compare_contents(user_file_path, cached_file):
             _copy_from_user_file_and_append(our_file_name,
                                             user_file_name,
-                                            " ".join(updated_contents_list))
+                                            updated_contents_list)
             shutil.copyfile(user_file_name, cached_file)
             return our_file_name
 
