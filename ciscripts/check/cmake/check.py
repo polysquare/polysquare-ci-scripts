@@ -100,7 +100,9 @@ def _lint_cmake_files(cont, util, namespace, exclusions):
             util.execute(cont,
                          util.output_on_fail,
                          "cmakelint",
-                         "--filter=-whitespace/extra,-whitespace/indent",
+                         "--filter=-whitespace/extra,"
+                         "-whitespace/indent,"
+                         "-package/consistency",
                          *files_to_lint,
                          env={
                              "HOME": os.path.expanduser("~")
