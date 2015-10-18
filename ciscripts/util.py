@@ -229,7 +229,6 @@ def apply_to_directories(func, tree_node, matching=None, not_matching=None):
 
 
 class IndentedLogger(object):
-
     """A logger that writes to sys.stderr with indents.
 
     IndentedLogger follows some rules when logging to ensure that
@@ -291,7 +290,6 @@ class IndentedLogger(object):
 #
 # suppress(too-few-public-methods)
 class Task(object):
-
     """A message for a task to being performed.
 
     Use this as a context manager to print a message and then perform
@@ -826,7 +824,6 @@ def make_meta_container(containers, **kwargs):
     container to forward those methods.
     """
     class MetaContainer(object):
-
         """A meta-container."""
 
         def __init__(self):

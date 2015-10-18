@@ -47,7 +47,6 @@ def write_invalid_header(f):
 
 
 class TestProjectContainerSetup(acceptance_test_for("project", [])):
-
     """Test cases for setting up a project container."""
 
     def test_lint_with_style_guide_linter_success(self):

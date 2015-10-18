@@ -49,7 +49,6 @@ from testtools.matchers import (Contains,
 
 
 class TestPrintMessage(TestCase):
-
     """Test cases for util.print_message."""
 
     def test_no_print_to_stdout(self):
@@ -62,7 +61,6 @@ class TestPrintMessage(TestCase):
 
 
 class OverwrittenEnvironmentVarsTestCase(TestCase):
-
     """Base class for TestCase where environment variables are overwritten."""
 
     def __init__(self, *args, **kwargs):
@@ -104,7 +102,6 @@ def powershell_parent_environment():
 
 class ParentEnvConfig(namedtuple("ParentEnvConfig",
                                  "parent sep shell env var")):
-
     """Configuration for testing parent environments."""
 
     def __repr__(self):
@@ -113,7 +110,6 @@ class ParentEnvConfig(namedtuple("ParentEnvConfig",
 
 
 class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
-
     """Test case for util.overwrite_environment_variable."""
 
     def __init__(self, *args, **kwargs):
@@ -249,7 +245,6 @@ class TestOverwriteEnvironmentVariables(OverwrittenEnvironmentVarsTestCase):
 
 
 class TestTask(TestCase):
-
     """Test case for util.Task."""
 
     def test_description_after_fat_arrow_first_level(self):
@@ -313,7 +308,6 @@ def _utf8_print_cmd():
 
 
 class TestExecute(TestCase):
-
     """Test case for util.execute."""
 
     def test_execute_with_success(self):
@@ -506,7 +500,6 @@ def _full_path_if_exists(path):
 
 
 class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
-
     """Test cases for executable path functions (util.which)."""
 
     def test_raise_executable_not_in_path(self):
@@ -709,7 +702,6 @@ class TestExecutablePaths(OverwrittenEnvironmentVarsTestCase):
 
 
 class TestApplicationToFilePatterns(TestCase):
-
     """Test cases for apply_to_files/directories_matching."""
 
     # suppress(no-self-use)
@@ -807,7 +799,6 @@ class TestApplicationToFilePatterns(TestCase):
 
 
 class TestGetSystemIdentifier(TestCase):
-
     """Test cases for the :get_system_identifier: function."""
 
     def __init__(self, *args, **kwargs):
@@ -868,7 +859,6 @@ class TestGetSystemIdentifier(TestCase):
 
 
 class PrepopulatedMTimeContainer(object):  # suppress(too-few-public-methods)
-
     """Stub for container class, exposes named_cache_dir.
 
     The current dir will be pre-populated with the md5 of a specified
@@ -895,7 +885,6 @@ class PrepopulatedMTimeContainer(object):  # suppress(too-few-public-methods)
 
 
 class TestStoredMTimes(TestCase):
-
     """Test storing and acting on modification times."""
 
     def test_two_mtimes_have_different_values(self):

@@ -31,7 +31,6 @@ __file__ = os.path.abspath(__file__)
 
 
 class TestCMakeContainerSetup(acceptance_test_for("cmake", REQ_PROGRAMS)):
-
     """Test cases for setting up a cmake project container."""
 
     def tearDown(self):  # suppress(N802)
