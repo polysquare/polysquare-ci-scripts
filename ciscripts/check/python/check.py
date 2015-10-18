@@ -101,7 +101,7 @@ def run(cont, util, shell, argv=None):
                          "python",
                          "setup.py",
                          "polysquarelint",
-                         "--suppress-codes=LongDescription,TestSuite",
+                         "--suppress-codes=LongDescription,TestSuite,D203",
                          ("--stamp-directory=" +
                           cont.named_cache_dir("polysquarelint-stamp",
                                                ephemeral=False)))
