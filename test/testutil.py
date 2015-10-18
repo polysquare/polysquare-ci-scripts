@@ -45,7 +45,6 @@ setattr(util, "_NO_TASK_CACHING", True)
 
 
 class CapturedOutput(object):  # suppress(too-few-public-methods)
-
     """Represents the captured contents of stdout and stderr."""
 
     def __init__(self):
@@ -136,7 +135,6 @@ def server_in_tempdir(parent, prefix):
     with in_tempdir(parent, prefix) as temp_dir:
         class QuietHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler,
                                object):
-
             """Custom SimpleHTTPRequestHandler, does not log messages."""
 
             def log_message(self, message, *args):
@@ -172,7 +170,6 @@ def server_in_tempdir(parent, prefix):
 def _build_http_connection(superclass, resolver):
     """Build a connection handler for superclass, resolving with resolver."""
     class Connection(superclass):  # suppress(too-few-public-methods)
-
         """A connection that resolves with resolver."""
 
         def __init__(self, *args, **kwargs):
@@ -232,7 +229,6 @@ def overridden_dns(dns_map):
 
 
 class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
-
     """Match if a path is a subdirectory of the specified path."""
 
     def __init__(self, path):
@@ -259,7 +255,6 @@ class IsInSubdirectoryOf(object):  # suppress(too-few-public-methods)
 
 
 class SubprocessExitWithMismatch(object):
-
     """Detail of a SubprocessExitsWith mismatch."""
 
     # suppress(too-many-arguments)
@@ -286,7 +281,6 @@ class SubprocessExitWithMismatch(object):
 
 
 class SubprocessExitsWith(object):  # suppress(too-few-public-methods)
-
     """Match if the subprocess to be executed exits with the expected code."""
 
     def __init__(self, expected_code):
@@ -314,7 +308,6 @@ class SubprocessExitsWith(object):  # suppress(too-few-public-methods)
 
 
 class CIScriptExitsWith(object):  # suppress(too-few-public-methods)
-
     """Match if the specified ci-script runs with its arguments."""
 
     def __init__(self, expected_status, container, util_mod, *args, **kwargs):
@@ -416,7 +409,6 @@ def acceptance_test_for(project_type, expected_programs):
     installed in the container.
     """
     class AcceptanceTestForProject(TestCase):
-
         """Test cases for setting up a project container."""
 
         def __init__(self, *args, **kwargs):

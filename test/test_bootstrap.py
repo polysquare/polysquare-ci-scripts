@@ -38,7 +38,6 @@ from testtools.matchers import (Contains,
 
 
 class TestForceMkDir(TestCase):
-
     """Test cases for forcing directories to be created."""
 
     def test_force_single_mkdir(self):
@@ -103,7 +102,6 @@ def removable_container_dir(directory_name):
 
 
 class TrackedLoadedModulesTestCase(TestCase):
-
     """Test case that tracks loaded modules and unloads them as appropriate."""
 
     def __init__(self, *args, **kwargs):
@@ -165,7 +163,6 @@ def make_loadable_module_path(abs_path, loadable, mode="w"):
 
 
 class TestContainerDir(TrackedLoadedModulesTestCase):
-
     """Test cases for the ContainerDir class, which encapsulates everything."""
 
     def test_container_dir_exists(self):
@@ -275,7 +272,6 @@ class TestContainerDir(TrackedLoadedModulesTestCase):
 
 
 class TestBashParentEnvironment(TestCase):
-
     """Test cases for specific functionality in bash parent environment."""
 
     @parameterized.expand([param(x) for x in range(0, 10)])
@@ -306,7 +302,6 @@ def _parent_env(output, key):
 
 
 class TestLanguageContainer(TrackedLoadedModulesTestCase):
-
     """Test cases for the LanguageContainer abstract base class."""
 
     def __init__(self, *args, **kwargs):
@@ -348,7 +343,6 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
 
         class EmptyLanguageContainer(container.new_container_for(language,
                                                                  "0.0")):
-
             """Concrete implementation of LanguageBase."""
 
             def __init__(self):
@@ -580,7 +574,6 @@ def _write_setup_script(script_contents):
 
 
 class TestMain(TrackedLoadedModulesTestCase):
-
     """Test cases for creating containers on the command line."""
 
     def __init__(self, *args, **kwargs):

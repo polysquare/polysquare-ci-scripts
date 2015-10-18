@@ -44,7 +44,6 @@ def get(container, util, shell, ver_info):
     #
     # suppress(too-few-public-methods)
     class RubyContainer(container.new_container_for("ruby", version)):
-
         """A container representing an active ruby installation."""
 
         # pylint can't detect that this is a new-style class

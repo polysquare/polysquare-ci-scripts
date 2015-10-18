@@ -66,7 +66,6 @@ def get(container,
                                     shell)
 
     class OSContainer(container.new_container_for("os", subdirectory_name)):
-
         """A container representing an active operating system container."""
 
         # pylint can't detect that this is a new-style class

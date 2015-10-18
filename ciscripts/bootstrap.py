@@ -60,7 +60,6 @@ def open_and_force_mkdir(path, mode):
 
 
 class BashParentEnvironment(object):
-
     """A parent environment in a bash shell."""
 
     @staticmethod
@@ -136,7 +135,6 @@ class BashParentEnvironment(object):
 
 
 class PowershellParentEnvironment(object):
-
     """A parent environment in a bash shell."""
 
     def __init__(self, printer):
@@ -227,7 +225,6 @@ def _update_set_like_file(path, key):
 
 
 class ContainerBase(object):
-
     """Base class for all language and top-level containers."""
 
     def __init__(self, directory):
@@ -322,7 +319,6 @@ ActiveEnvironment = namedtuple("ActiveEnvironment", "overwrite prepend")
 
 
 class LanguageBase(ContainerBase):
-
     """An abstract base class for a language-specific container."""
 
     def __init__(self, installation, language, version, parent_shell):
@@ -536,7 +532,6 @@ def _clear_stale(scripts_dir,
 
 
 class ContainerDir(ContainerBase):
-
     """A container that all scripts and other data will be stored in."""
 
     def __init__(self,

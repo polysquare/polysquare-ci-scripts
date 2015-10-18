@@ -18,7 +18,6 @@ from testtools import TestCase
 
 
 class TestGetPythonVersion(TestCase):
-
     """Test cases for obtaining the python version."""
 
     @parameterized.expand([param(1, "{0}".format(sys.version_info[0])),
@@ -37,7 +36,6 @@ class TestGetPythonVersion(TestCase):
 
 
 class TestDetermineIfPythonModulesAvailable(TestCase):
-
     """Test cases for determining if a python module is available."""
 
     def test_python_module_available(self):

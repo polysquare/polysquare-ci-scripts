@@ -29,7 +29,6 @@ REQ_PROGRAMS = [
 
 
 class TestBiiContainerSetup(acceptance_test_for("bii", REQ_PROGRAMS)):
-
     """Test cases for setting up a bii project container."""
 
     def tearDown(self):  # suppress(N802)

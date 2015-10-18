@@ -56,7 +56,6 @@ def get(container, util, shell, ver_info, installer=_no_installer_available):
                                   version)
 
     class HaskellContainer(container.new_container_for("haskell", version)):
-
         """A container representing an active haskell installation."""
 
         # pylint can't detect that this is a new-style class
