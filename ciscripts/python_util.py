@@ -194,6 +194,7 @@ def _upgrade_pip(cont, util):
                      "pip",
                      "install",
                      "--upgrade",
+                     "--disable-pip-version-check",
                      "pip")
 
 
@@ -203,7 +204,8 @@ def _pip_install_internal(container, util, py_path, *args, **kwargs):
         container,
         util.long_running_suppressed_output(),
         "pip",
-        "install"
+        "install",
+        "--disable-pip-version-check"
     ] + list(args)
 
     allow_external = kwargs.pop("polysquare_allow_external", None) or list()
