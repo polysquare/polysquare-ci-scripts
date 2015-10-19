@@ -187,15 +187,21 @@ def _upgrade_pip(cont, util):
                                        "--version"]).split()[1].decode()
 
     if LooseVersion(version) < LooseVersion("7.1.2"):
+        arguments = [
+            "python",
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+            "pip"
+        ]
+
+        if LooseVersion(version) > LooseVersion("6.0.3"):
+            arguments.append("--disable-pip-version-check")
+
         util.execute(cont,
                      util.long_running_suppressed_output(),
-                     "python",
-                     "-m",
-                     "pip",
-                     "install",
-                     "--upgrade",
-                     "--disable-pip-version-check",
-                     "pip")
+                     *arguments)
 
 
 def _pip_install_internal(container, util, py_path, *args, **kwargs):
