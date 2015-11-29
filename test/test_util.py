@@ -850,7 +850,7 @@ class TestGetSystemIdentifier(TestCase):
     def test_system_identifier_has_system_name(self):
         """Determined system identifier has OS name."""
         system_identifier_map = defaultdict(lambda: lambda s: s,
-                                            windows=lambda s: "mingw")
+                                            windows=lambda s: "pc-msys")
 
         sys_id = platform.system().lower()
         sys_id = system_identifier_map[sys_id](sys_id)

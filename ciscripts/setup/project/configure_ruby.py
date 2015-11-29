@@ -144,15 +144,79 @@ def get(container, util, shell, ver_info):
     return RubyContainer(version, container_path, system_installation, shell)
 
 
-def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
+def rvm_download_strategy(container,
+                          util,
+                          ruby_download_dir,
+                          lang_dir,
+                          version):
+    """Install ruby by downloading an already built version."""
+    with util.Task("""Installing pre-built ruby version """ + version):
+        rvm_download = os.path.join(ruby_download_dir,
+                                    "bin",
+                                    "ruby-build")
+        util.execute(container,
+                     util.long_running_suppressed_output(),
+                     "bash", rvm_download, version,
+                     env={
+                         "RBENV_ROOT": lang_dir,
+                         "RUBIES_ROOT": os.path.join(lang_dir,
+                                                     "versions")
+                     },
+                     instant_fail=True)
+
+
+def ruby_build_strategy(container,
+                        util,
+                        ruby_build_dir,
+                        lang_dir,
+                        version):
+    """Install ruby by downloading an already built version."""
+    with util.Task("""Installing pre-built ruby version """ + version):
+        ruby_build = os.path.join(ruby_build_dir,
+                                  "bin",
+                                  "ruby-build")
+        dest_dir = os.path.join(lang_dir, "versions", version)
+        util.execute(container,
+                     util.long_running_suppressed_output(),
+                     "bash", ruby_build, version + "-dev", dest_dir)
+
+
+def is_running_ubuntu_wily():
+    """True if running on Ubuntu 15.04."""
+    if os.path.exists("/etc/lsb-release"):
+        with open("/etc/lsb-release") as release_file:
+            release_keys = {l.split("=")[0]: l.split("=")[1].strip()
+                            for l in release_file.readlines()}
+            return release_keys.get("DISTRIB_RELEASE", None) == "15.04"
+    return False
+
+
+def posix_ruby_installer(lang_dir,
+                         ruby_build_dir,
+                         container,
+                         util,
+                         shell):
     """Ruby installer for posix compatible operating systems."""
-    if not os.path.exists(ruby_build_dir):
+    ruby_build_root = os.path.join(ruby_build_dir, "ruby-build")
+    ruby_download_root = os.path.join(ruby_build_dir, "rvm-download")
+
+    if not os.path.exists(ruby_download_root):
         with util.Task("""Downloading rvm-download"""):
-            remote = "git://github.com/smspillaz/rvm-download"
-            dest = ruby_build_dir
+            remote = "git://github.com/garnieretienne/rvm-download"
+            dest = ruby_download_root
             util.execute(container,
                          util.output_on_fail,
-                         "git", "clone", remote, "--branch", "fix-13", dest,
+                         "git", "clone", remote, dest,
+                         instant_fail=True)
+            util.force_remove_tree(os.path.join(dest, ".git"))
+
+    if not os.path.exists(ruby_build_root):
+        with util.Task("""Downloading ruby-build"""):
+            remote = "git://github.com/rbenv/ruby-build"
+            dest = ruby_build_root
+            util.execute(container,
+                         util.output_on_fail,
+                         "git", "clone", remote, dest,
                          instant_fail=True)
             util.force_remove_tree(os.path.join(dest, ".git"))
 
@@ -164,19 +228,18 @@ def posix_ruby_installer(lang_dir, ruby_build_dir, container, util, shell):
 
         if not os.path.exists(ruby_version_container):
             os.makedirs(ruby_version_container)
-            with util.Task("""Installing ruby version """ + version):
-                rvm_download = os.path.join(ruby_build_dir,
-                                            "bin",
-                                            "rbenv-download")
-                util.execute(container,
-                             util.long_running_suppressed_output(),
-                             "bash", rvm_download, version,
-                             env={
-                                 "RBENV_ROOT": lang_dir,
-                                 "RUBIES_ROOT": os.path.join(lang_dir,
-                                                             "versions")
-                             },
-                             instant_fail=True)
+            if is_running_ubuntu_wily():
+                rvm_download_strategy(container,
+                                      util,
+                                      ruby_download_root,
+                                      lang_dir,
+                                      version)
+            else:
+                ruby_build_strategy(container,
+                                    util,
+                                    ruby_build_root,
+                                    lang_dir,
+                                    version)
 
         return get(container, util, shell, defaultdict(lambda: version))
 
