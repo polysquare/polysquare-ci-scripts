@@ -287,7 +287,7 @@ def _virtualenv_script(container, util):
                     local_tar.extractall()
 
                 directory_name = [d for d in os.listdir(".")
-                                  if not os.path.basename(remote_url) in d][0]
+                                  if os.path.basename(remote_url) not in d][0]
                 shutil.rmtree(python_venv)
                 shutil.copytree(directory_name, python_venv)
 
