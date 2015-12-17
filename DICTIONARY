@@ -97,6 +97,7 @@ shellcheck
 subdirectories
 subdirectory
 subcommand
+suppressions
 symlinked
 symlinks
 todo
