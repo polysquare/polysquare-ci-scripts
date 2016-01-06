@@ -68,7 +68,7 @@ def _run_tests_and_coverage(cont, util, coverage_exclude):
                  "--target=test")
 
 
-def lint_python(cont, util, shell):
+def lint_python(cont, util, shell, lint_exclude=None):
     """Run python-specific lint checks on this project."""
     config_python = "setup/project/configure_python.py"
     py_ver = util.language_version("python3")
@@ -90,6 +90,7 @@ def lint_python(cont, util, shell):
                          "python",
                          "setup.py",
                          "polysquarelint",
+                         "--exclusions=" + ",".join(lint_exclude or []),
                          "--suppress-codes=" + ",".join(suppress),
                          ("--stamp-directory=" +
                           cont.named_cache_dir("polysquarelint-stamp",
@@ -129,7 +130,7 @@ def run(cont, util, shell, argv=None):
 
     install_log = os.path.join(cont.named_cache_dir("python-install"), "log")
 
-    lint_python(cont, util, shell)
+    lint_python(cont, util, shell, lint_exclude=result.lint_exclude)
 
     with util.Task("""Creating development installation """):
         util.execute(cont,
