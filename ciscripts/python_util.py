@@ -186,7 +186,7 @@ def _upgrade_pip(cont, util):
     version = subprocess.check_output([util.which("pip"),
                                        "--version"]).split()[1].decode()
 
-    if LooseVersion(version) < LooseVersion("7.1.2"):
+    if LooseVersion(version) < LooseVersion("8.0.3"):
         arguments = [
             "python",
             "-m",
