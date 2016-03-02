@@ -270,6 +270,26 @@ def _parse_setup_py(container, py_path, fields):
     return parsed_fields
 
 
+def _parse_requirements_file(py_path):
+    """Parse /requirements.txt and return a list of dependencies from it."""
+    requirements_path = os.path.join(os.getcwd(), "requirements.txt")
+    key = hashlib.sha1((requirements_path +
+                        py_path).encode("utf-8")).hexdigest()
+
+    try:
+        return _PARSED_SETUP_FILES[key]
+    except KeyError:  # suppress(pointless-except)
+        pass
+
+    try:
+        with open(requirements_path, "r") as requirements_file:
+            _PARSED_SETUP_FILES[key] = requirements_file.read().splitlines()
+    except IOError:  # suppress(pointless-except)
+        _PARSED_SETUP_FILES[key] = []
+
+    return _PARSED_SETUP_FILES[key]
+
+
 def _dependencies_to_update(container, py_path, installed, target):
     """Return a list of dependencies to install."""
     fields = ("extras_require",
@@ -283,6 +303,7 @@ def _dependencies_to_update(container, py_path, installed, target):
     requested += parsed_setup_py.get("install_requires", list())
     requested += parsed_setup_py.get("setup_requires", list())
     requested += parsed_setup_py.get("test_requires", list())
+    requested += _parse_requirements_file(py_path)
 
     return _packages_to_install(installed, requested)
 
