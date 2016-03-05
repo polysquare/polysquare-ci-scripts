@@ -32,6 +32,7 @@ activatable
 appveyor
 autotools
 bashlint
+before_deploy
 bii
 biicode
 bool
