@@ -22,7 +22,7 @@ def run(cont, util, shell, argv=None):
     parser.add_argument("--password",
                         help="""Conan password""",
                         type=str,
-                        requred=True)
+                        required=True)
     result = parser.parse_args(argv)
 
     cont.fetch_and_import("deploy/project/deploy.py").run(cont,
