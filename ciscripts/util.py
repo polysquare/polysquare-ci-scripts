@@ -68,7 +68,7 @@ _PREFERRED_VERSIONS = {
                            Darwin="3.5.1"),
     "ruby": defaultdict(lambda: "1.9.3",
                         Linux="1.9.3",
-                        Windows="2.1.6",
+                        Windows="2.1.8",
                         Darwin="2.0.0"),
     "haskell": defaultdict(lambda: "7.8.4")
 }
