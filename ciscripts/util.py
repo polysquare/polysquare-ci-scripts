@@ -62,13 +62,13 @@ _PREFERRED_VERSIONS = {
                            Linux="2.7.3",
                            Darwin="2.7.11",
                            Windows="2.7.9"),
-    "python3": defaultdict(lambda: "3.4.1",
-                           Linux="3.4.1",
-                           Windows="3.4.1",
+    "python3": defaultdict(lambda: "3.5.1",
+                           Linux="3.5.1",
+                           Windows="3.5.0",
                            Darwin="3.5.1"),
     "ruby": defaultdict(lambda: "1.9.3",
                         Linux="1.9.3",
-                        Windows="2.1.6",
+                        Windows="2.1.8",
                         Darwin="2.0.0"),
     "haskell": defaultdict(lambda: "7.8.4")
 }
