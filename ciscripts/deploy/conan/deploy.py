@@ -7,8 +7,6 @@
 
 import argparse
 
-import os
-
 
 def run(cont, util, shell, argv=None):
     """Place a symbolic link of pandoc in a writable directory in PATH."""
@@ -17,19 +15,22 @@ def run(cont, util, shell, argv=None):
                         help="""Package name""",
                         type=str,
                         required=True)
+    parser.add_argument("--username",
+                        help="""Conan username""",
+                        type=str,
+                        required=True)
+    parser.add_argument("--password",
+                        help="""Conan password""",
+                        type=str,
+                        requred=True)
     result = parser.parse_args(argv)
 
     cont.fetch_and_import("deploy/project/deploy.py").run(cont,
                                                           util,
                                                           shell)
 
-    assert os.environ.get("CONAN_USER", None) is not None
-    assert os.environ.get("CONAN_PASS", None) is not None
-
-    user = os.environ["CONAN_USER"]
-    password = os.environ["CONAN_PASS"]
-
-    block = "{user}/{pkg}".format(user=user, pkg=result.package_name)
+    block = "{user}/{pkg}".format(user=result.username,
+                                  pkg=result.package_name)
     upload_desc = "{pkg}/master@{block}".format(pkg=result.package_name,
                                                 block=block)
 
@@ -39,14 +40,14 @@ def run(cont, util, shell, argv=None):
                                                                    argv)
 
     with conan_cont.activated(util):
-        with util.Task("""Logging in as {}""".format(user)):
+        with util.Task("""Logging in as {}""".format(result.username)):
             util.execute(cont,
                          util.running_output,
                          "conan",
                          "user",
-                         user,
+                         result.username,
                          "-p",
-                         password)
+                         result.password)
 
         with util.Task("""Deploying {} to conan""".format(upload_desc)):
             util.execute(cont,
