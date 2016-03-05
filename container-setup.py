@@ -17,6 +17,7 @@ def run(cont, util, shell, argv=None):
         cont.fetch_and_import(configure_haskell).run(cont, util, shell, hs_ver)
 
     cont.fetch_and_import("setup/bii/setup.py").run(cont, util, shell, argv)
+    cont.fetch_and_import("setup/conan/setup.py").run(cont, util, shell, argv)
     cont.fetch_and_import("setup/python/setup.py").run(cont, util, shell, argv)
 
     with util.Task("""Preparing for this container to be copied later"""):
