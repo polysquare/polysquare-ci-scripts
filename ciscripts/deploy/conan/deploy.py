@@ -41,22 +41,22 @@ def run(cont, util, shell, argv=None):
 
     with conan_cont.activated(util):
         with util.Task("""Logging in as {}""".format(result.username)):
-            util.execute(cont,
-                         util.running_output,
-                         "conan",
-                         "user",
-                         result.username,
-                         "-p",
-                         result.password)
+            conan_cont.execute(cont,
+                               util.running_output,
+                               "conan",
+                               "user",
+                               result.username,
+                               "-p",
+                               result.password)
 
         with util.Task("""Deploying {} to conan""".format(upload_desc)):
-            util.execute(cont,
-                         util.running_output,
-                         "conan",
-                         "export",
-                         block)
-            util.execute(cont,
-                         util.running_output,
-                         "conan",
-                         "upload",
-                         upload_desc)
+            conan_cont.execute(cont,
+                               util.running_output,
+                               "conan",
+                               "export",
+                               block)
+            conan_cont.execute(cont,
+                               util.running_output,
+                               "conan",
+                               "upload",
+                               upload_desc)
