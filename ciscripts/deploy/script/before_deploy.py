@@ -16,7 +16,6 @@ def run(cont, util, shell, argv=None):
     as options to python when invoking the bootstrap script.
     """
     del shell
-    del util
 
     with open("travis-deploy", "w") as travis_deploy_script_file:
         bootstrap_script = cont.script_path("bootstrap.py").fs_path
@@ -30,3 +29,5 @@ def run(cont, util, shell, argv=None):
                                                   container=cont.path(),
                                                   scripts_path=scripts_path,
                                                   argv=" ".join(argv)))
+
+    util.make_executable(os.path.join(os.getcwd(), "travis-deploy"))
