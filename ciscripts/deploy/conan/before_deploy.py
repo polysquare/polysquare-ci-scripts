@@ -21,9 +21,11 @@ def run(cont, util, shell, argv=None):
 
     assert os.environ.get("CONAN_USER", None)
     assert os.environ.get("CONAN_PASS", None)
+    assert os.environ.get("REPO_API_KEY", None)
 
     with open("conan_keys", "w") as conan_keys_file:
         conan_keys_file.write(json.dumps({
             "username": os.environ["CONAN_USER"],
-            "password": os.environ["CONAN_PASS"]
+            "password": os.environ["CONAN_PASS"],
+            "repo_api_key": os.environ["REPO_API_KEY"]
         }))

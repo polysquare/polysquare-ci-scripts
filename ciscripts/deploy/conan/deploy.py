@@ -86,6 +86,7 @@ def run(cont, util, shell, argv=None):
     username = conan_keys["username"]
     password = conan_keys["password"]
 
+    os.environ["REPO_API_KEY"] = conan_keys["repo_api_key"]
     cont.fetch_and_import("deploy/project/deploy.py").run(cont,
                                                           util,
                                                           shell)
