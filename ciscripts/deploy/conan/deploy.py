@@ -38,6 +38,12 @@ def run(cont, util, shell, argv=None):
     upload_desc = "{pkg}/master@{block}".format(pkg=result.package_name,
                                                 block=block)
 
+    cont.fetch_and_import("deploy/project/deploy.py").run(cont,
+                                                          util,
+                                                          shell,
+                                                          ["--bump-version-on",
+                                                           "conanfile.py"])
+
     conan_cont = cont.fetch_and_import("setup/conan/setup.py").run(cont,
                                                                    util,
                                                                    shell,
