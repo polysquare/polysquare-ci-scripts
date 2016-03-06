@@ -12,7 +12,7 @@ def _prepare_project_deployment(cont, util, py_util, py_cont):
     """Install travis-bump-version, necessary for deployment on any project."""
     with util.Task("""Installing version bumper"""):
         with py_cont.activated(util):
-            py_util.pip_install(cont, util, "travis-bump-version")
+            py_util.pip_install(cont, util, "travis-bump-version>=0.1.7")
 
 
 def _get_python_container(cont, util, shell):
