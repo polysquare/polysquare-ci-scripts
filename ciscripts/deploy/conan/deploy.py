@@ -131,7 +131,7 @@ def run(cont, util, shell, argv=None):
                                "print(conanfile.VERSION)")
 
         version_stream.seek(0)
-        version = version_stream.read().encode().strip()
+        version = str(version_stream.read()).strip()
         run_deploy(cont,
                    util,
                    conan_cont,
