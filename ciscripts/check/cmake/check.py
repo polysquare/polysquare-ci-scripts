@@ -61,6 +61,13 @@ def _run_style_guide_lint(cont, util, lint_exclude, no_mdl):
                                                        None,
                                                        no_mdl=no_mdl,
                                                        extensions=[
+                                                           "cpp",
+                                                           "c",
+                                                           "h",
+                                                           "hpp",
+                                                           "cc",
+                                                           "cxx",
+                                                           "hxx",
                                                            "cmake",
                                                            "CMakeLists.txt"
                                                        ],
