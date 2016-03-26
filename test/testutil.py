@@ -402,6 +402,18 @@ def copy_scripts_to_directory(target):
                     os.path.join(target, "ciscripts"))
 
 
+_ACCEPTANCE_TEST_DIRS_TO_REMOVE = set()
+
+
+def _remove_acceptance_test_dirs():
+    """Remove all acceptance tests directories.
+
+    Designed to be called on an atexit handler.
+    """
+    for directory in _ACCEPTANCE_TEST_DIRS_TO_REMOVE:
+        util.force_remove_tree(directory)
+
+
 def acceptance_test_for(project_type, expected_programs):
     """Generate acceptance test class for :project_type:.
 
@@ -497,12 +509,20 @@ def acceptance_test_for(project_type, expected_programs):
                     pass
 
         @classmethod
+        def _register_removal_atexit(cls, temp_dir):  # suppress(N802)
+            """Register the atexit handler to remove directories."""
+            if len(_ACCEPTANCE_TEST_DIRS_TO_REMOVE) == 0:
+                atexit.register(_remove_acceptance_test_dirs)
+
+            _ACCEPTANCE_TEST_DIRS_TO_REMOVE.add(temp_dir)
+
+        @classmethod
         def setUpClass(cls):  # suppress(N802)
             """Call container setup script."""
             temp_dir_prefix = "{}_acceptance_test".format(project_type)
             cls.container_temp_dir = tempfile.mkdtemp(dir=os.getcwd(),
                                                       prefix=temp_dir_prefix)
-            atexit.register(util.force_remove_tree, cls.container_temp_dir)
+            cls._register_removal_atexit(cls.container_temp_dir)
             cls._environ_backup = os.environ.copy()
             cls.maybe_copy_from_existing_container(cls.container_temp_dir)
 
