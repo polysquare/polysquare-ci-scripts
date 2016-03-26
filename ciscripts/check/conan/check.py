@@ -48,7 +48,7 @@ def _maybe_activate_python(py_cont, util):
         yield
 
 
-def run(cont, util, shell, argv=None):
+def run(cont, util, shell, argv=None, override_kwargs=None):
     """Run checks on this conan project."""
     parser = argparse.ArgumentParser(description="""Run conan checks""")
     parser.add_argument("--lint-exclude",
@@ -86,15 +86,22 @@ def run(cont, util, shell, argv=None):
                                 ])
             util.force_remove_tree(os.path.join(os.getcwd(), "build"))
 
+    kwargs = {
+        "kind": "conan",
+        "build_tree": _CONAN_LAYOUT,
+        "after_lint": _after_lint,
+        "after_test": _after_test
+    }
+
+    if override_kwargs:
+        kwargs.update(override_kwargs)
+
     cmake_check.check_cmake_like_project(cont,
                                          util,
                                          shell,
-                                         kind="conan",
-                                         build_tree=_CONAN_LAYOUT,
-                                         after_lint=_after_lint,
-                                         after_test=_after_test,
                                          argv=(remainder +
                                                ["--lint-exclude",
                                                 "*/conanbuildinfo.cmake",
                                                 "*/conaninfo.txt"] +
-                                               (result.lint_exclude or [])))
+                                               (result.lint_exclude or [])),
+                                         **kwargs)

@@ -1,5 +1,6 @@
 ABI
 AppVeyor
+C
 CMake
 CMAKE_CFG_INTDIR
 CONAN_VERSION_OVERRIDE
@@ -39,6 +40,7 @@ biicode
 bool
 buildsystem
 _cache
+c
 ciscripts
 cmake
 cmakelint
@@ -70,11 +72,14 @@ mdl
 mtime
 N
 namespace
+npm
 pandoc
+parallelized
 polysquare
 polysquare_run
 posix
 powershell
+psqcppconan
 prepend
 prepended
 prepends

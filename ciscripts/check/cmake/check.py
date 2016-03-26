@@ -396,6 +396,7 @@ def check_cmake_like_project(cont,
                                                                     "build"),
                              test_cmd=("ctest", ),
                              build_cmd=_cmake_only_build_command,
+                             during_test=lambda cont, exec, util, build: None,
                              after_test=lambda cont, util, build: None,
                              argv=None):
     """Run tests and static analysis checks on this cmake project.
@@ -473,13 +474,17 @@ def check_cmake_like_project(cont,
                                     *(build_cmd(mapped_proj_dir)))
 
                 with util.Task("""Testing {} project""".format(kind)):
-                    os_cont.execute(cont,
-                                    util.running_output,
-                                    *(tuple(list(test_cmd) + [
-                                        "--output-on-failure",
-                                        "-C",
-                                        "Debug"
-                                    ])))
+                    if os.path.exists(os.path.join(build_dir,
+                                                   "CTestTestfile.cmake")):
+                        os_cont.execute(cont,
+                                        util.running_output,
+                                        *(tuple(list(test_cmd) + [
+                                            "--output-on-failure",
+                                            "-C",
+                                            "Debug"
+                                        ])))
+
+                    during_test(cont, os_cont.execute, util, build_dir)
 
     if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
         with util.Task("""Moving build tree to cache"""):

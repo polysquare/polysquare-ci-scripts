@@ -1,0 +1,6 @@
+# /ciscripts/check/psqcppconan/__init__.py
+#
+# Module loader file for /ciscripts/check/psqcppconan.
+#
+# See /LICENCE.md for Copyright information
+"""Module loader file for /ciscripts/check/psqcppconan."""
