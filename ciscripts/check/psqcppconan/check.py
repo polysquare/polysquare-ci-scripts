@@ -30,6 +30,9 @@ def run(cont, util, shell, argv=None):
         del build
 
         for binary in result.run_test_binaries or list():
+            if not os.path.exists(binary) and os.path.exists(binary + ".exe"):
+                binary = binary + ".exe"
+
             executor(cont,
                      util.running_output,
                      os.path.join(os.getcwd(), binary))
