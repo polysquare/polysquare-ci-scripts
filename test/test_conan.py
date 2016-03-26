@@ -194,13 +194,18 @@ class TestPSQCPPContainerSetup(acceptance_test_for("psqcppconan",
             check_path = "check/psqcppconan/check.py"
             check = self.__class__.container.fetch_and_import(check_path)
 
+            if platform.system() == "Windows":
+                binary = os.path.join("Debug", "psq_test")
+            else:
+                binary = "psq_test"
+
             check.run(self.__class__.container,
                       self.__class__.util,
                       None,
                       argv=[
                           "--no-mdl",
                           "--run-test-binaries",
-                          "psq_test"
+                          binary
                       ])
 
         self.assertThat(captured_output.stderr,
