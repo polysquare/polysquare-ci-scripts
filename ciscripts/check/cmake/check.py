@@ -382,6 +382,12 @@ def _clean_coverage_files(util):
         util.force_remove_tree(coverage_file_path)
 
 
+def _default_during_test(*args, **kwargs):
+    """No-op function."""
+    del args
+    del kwargs
+
+
 # suppress(too-many-arguments,too-many-locals)
 def check_cmake_like_project(cont,
                              util,
@@ -396,7 +402,7 @@ def check_cmake_like_project(cont,
                                                                     "build"),
                              test_cmd=("ctest", ),
                              build_cmd=_cmake_only_build_command,
-                             during_test=lambda cont, exec, util, build: None,
+                             during_test=_default_during_test,
                              after_test=lambda cont, util, build: None,
                              argv=None):
     """Run tests and static analysis checks on this cmake project.
