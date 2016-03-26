@@ -209,7 +209,7 @@ def _upgrade_pip(cont, util):
                      *arguments)
 
 
-def _pip_install_internal(container, util, py_path, *args, **kwargs):
+def _pip_install_internal(container, util, py_path, pip_args=None, **kwargs):
     """Run pip install, without removing redundant packages."""
     pip_install_args = [
         container,
@@ -217,7 +217,7 @@ def _pip_install_internal(container, util, py_path, *args, **kwargs):
         "pip",
         "install",
         "--disable-pip-version-check"
-    ] + list(args)
+    ] + (pip_args or list())
 
     allow_external = kwargs.pop("polysquare_allow_external", None) or list()
     if len(allow_external):
@@ -249,7 +249,7 @@ def pip_install(container, util, *args, **kwargs):
         _pip_install_internal(container,
                               util,
                               active_python,
-                              *to_install,
+                              pip_args=to_install,
                               **kwargs)
 
 
@@ -323,18 +323,18 @@ def pip_install_deps(cont, util, target, *args, **kwargs):
 
     active_python = util.which("python")
     initially_installed_packages = _PACKAGES_FOR_PYTHON[active_python]
-    pip_install_args = [
-        cont,
-        util,
-        active_python
-    ]
 
-    to_install = (_dependencies_to_update(cont,
-                                          util.which("python"),
-                                          initially_installed_packages,
-                                          target) +
-                  _packages_to_install(initially_installed_packages,
-                                       list(args)))
+    to_install = _dependencies_to_update(cont,
+                                         util.which("python"),
+                                         initially_installed_packages,
+                                         target)
+    to_install += _packages_to_install(initially_installed_packages,
+                                       list(args))
+
+    pip_install_kwargs = {
+        "pip_args": to_install
+    }
+    pip_install_kwargs.update(kwargs)
 
     if len([p for p in to_install if not p.startswith("-")]):
-        _pip_install_internal(*(pip_install_args + to_install), **kwargs)
+        _pip_install_internal(cont, util, active_python, **pip_install_kwargs)
