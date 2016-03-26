@@ -95,7 +95,11 @@ def fetch_packages_in_active_python():
 
     The dict shall have the format { "package": "version" }.
     """
-    out = subprocess.check_output(["pip", "list"]).decode().splitlines()
+    out = subprocess.check_output([
+        "pip",
+        "list",
+        "--disable-pip-version-check"
+    ]).decode().splitlines()
     reg = r"\(|\)|,|\s+"
     tuples = [[w for w in re.split(reg, l) if w][:2] for l in out]
     return dict([tuple(t) for t in tuples])
@@ -184,6 +188,7 @@ def _upgrade_pip(cont, util):
         return
 
     version = subprocess.check_output([util.which("pip"),
+                                       "--disable-pip-version-check",
                                        "--version"]).split()[1].decode()
 
     if LooseVersion(version) < LooseVersion("8.0.3"):
