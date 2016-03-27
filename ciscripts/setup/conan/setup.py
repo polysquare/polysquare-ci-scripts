@@ -37,7 +37,6 @@ def run(cont, util, shell, argv=None):
     extra_packages = defaultdict(lambda: defaultdict(lambda: []),
                                  Linux=defaultdict(lambda: [
                                      "python",
-                                     "python-pip",
                                      "ninja-build"
                                  ]),
                                  Windows=defaultdict(lambda: [
