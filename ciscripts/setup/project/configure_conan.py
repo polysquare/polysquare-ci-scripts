@@ -113,6 +113,11 @@ def run(container, util, shell, ver_info, os_cont=None):
             # Use the OS container to install conan, since we might need
             # to install it inside the container, particularly for
             # linux systems.
+            if platform.system() == "Linux":
+                executor(container,
+                         util.long_running_suppressed_output(),
+                         "easy_install",
+                         "pip")
             executor(container,
                      util.long_running_suppressed_output(),
                      "pip",

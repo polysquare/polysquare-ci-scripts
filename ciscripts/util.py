@@ -526,22 +526,25 @@ def force_remove_tree(directory):
     try:
         shutil.rmtree(directory)
     except OSError as err:
-        if err.errno == errno.ENOENT:
+        if err.errno == errno.ENOENT or err.errno == errno.EPERM:
             pass
-        elif err.errno == errno.EPERM:
-            # On Windows, we might get PermissionError when attempting
-            # to delete things, so shell out to /rmdir.exe to handle
-            # the case for us. On Unix use rm -rf
-            if platform.system() == "Windows":
+
+    if os.path.exists(directory):
+        print_message("shutil.rmtree failed, nuclear option\n")
+        # On Windows, we might get PermissionError when attempting
+        # to delete things, so shell out to /rmdir.exe to handle
+        # the case for us. On Unix use rm -rf
+        if platform.system() == "Windows":
+            with in_dir("C:/"):
                 subprocess.check_call(["cmd",
                                        "/c",
                                        "rmdir",
                                        directory,
                                        "/s",
                                        "/q"])
-            else:
-                subprocess.check_call(["rm", "-rf", directory])
-                raise err
+        else:
+            subprocess.check_call(["rm", "-rf", directory])
+            raise err
 
 
 def execute(container, output_strategy, *args, **kwargs):
