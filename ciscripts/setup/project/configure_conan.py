@@ -42,7 +42,7 @@ def get(container, util, shell, ver_info):
         def clean(self, util_mod):
             """Clean out cruft in the container."""
             super(ConanContainer, self).clean(util_mod)
-            build = container.named_cache_dir("cmake-build", ephemeral=False)
+            build = container.named_cache_dir("cmake-build", ephemeral=True)
             util_mod.force_remove_tree(os.path.join(build, "bin"))
             util_mod.force_remove_tree(os.path.join(build, "lib"))
 

@@ -51,7 +51,7 @@ def run(cont, util, shell, argv=None):
                                                                  shell,
                                                                  None)
 
-        cmake_build = cont.named_cache_dir("cmake-build", False)
+        cmake_build = cont.named_cache_dir("cmake-build", True)
         tracefile = os.path.join(cmake_build, "coverage.trace")
         converter = os.path.join(cmake_build, "TracefileConverterLoc")
         if os.path.exists(converter) and os.path.exists(tracefile):

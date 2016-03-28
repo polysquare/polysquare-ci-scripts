@@ -442,7 +442,7 @@ def check_cmake_like_project(cont,
                           result.cmake_namespace,
                           result.lint_exclude or list())
 
-    build_dir = cont.named_cache_dir("cmake-build", ephemeral=False)
+    build_dir = cont.named_cache_dir("cmake-build", ephemeral=True)
     project_dir = os.getcwd()
 
     with util.Task("""Cleaning previous build"""):
