@@ -94,6 +94,16 @@ def _collect_nonnull_containers(util, *args, **kwargs):
                                     **kwargs)
 
 
+def _install_pip_in_os_conatiner(container, util, executor):
+    """Install pip in the nominated OS container."""
+    executor(container,
+             util.long_running_suppressed_output(),
+             "pip",
+             "install",
+             "--upgrade",
+             "pip")
+
+
 def run(container, util, shell, ver_info, os_cont=None):
     """Install and activates a conan installation.
 
@@ -114,10 +124,7 @@ def run(container, util, shell, ver_info, os_cont=None):
             # to install it inside the container, particularly for
             # linux systems.
             if platform.system() == "Linux":
-                executor(container,
-                         util.long_running_suppressed_output(),
-                         "easy_install",
-                         "pip")
+                _install_pip_in_os_conatiner(container, util, executor)
             executor(container,
                      util.long_running_suppressed_output(),
                      "pip",
