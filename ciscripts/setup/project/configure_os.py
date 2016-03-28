@@ -26,7 +26,7 @@ DEFAULT_DISTRO_FOR_SYSTEM = {
 }
 
 DEFAULT_DISTRO_RELEASE_FOR_SYSTEM = {
-    "Linux": "precise",
+    "Linux": "trusty",
     "Darwin": "10.10",
     "Windows": "8.1"
 }

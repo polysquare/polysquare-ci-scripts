@@ -23,7 +23,7 @@ _LINUX_REPOS = {
 _OSX_REPOS = defaultdict(lambda: ["homebrew/versions"])
 
 _USER_SUFFIXES = {
-    "Linux": "Ubuntu.precise",
+    "Linux": "Ubuntu.trusty",
     "Darwin": "OSX.10.10",
     "Windows": "Windows.8.1"
 }
