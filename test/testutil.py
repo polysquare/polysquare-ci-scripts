@@ -568,7 +568,6 @@ def acceptance_test_for(project_type, expected_programs):
         def tearDownClass(cls):  # suppress(N802)
             """Remove container."""
             os.environ = cls._environ_backup
-            util.force_remove_tree(cls.container_temp_dir)
 
         def _get_project_template(self):  # suppress(no-self-use)
             """Get template of project type from /sample."""
