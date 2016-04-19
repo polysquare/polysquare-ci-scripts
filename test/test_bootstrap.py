@@ -429,6 +429,7 @@ class TestLanguageContainer(TrackedLoadedModulesTestCase):
 
     def test_double_activating_container_returns_false(self):
         """Activating container twice returns false on second try."""
+        self.addCleanup(lambda: language_container.deactivate(self._util))
         with testutil.CapturedOutput():
             language_container = self._get_lang_container("language")
             with language_container.activated(self._util):

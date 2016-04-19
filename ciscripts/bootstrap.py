@@ -347,13 +347,22 @@ class LanguageBase(ContainerBase):
         This will set the environment using the data in _active_environment
         and create a backup of those variables so that the container can
         be deactivated later.
+
+        True if returned if this container was activated for the first time
+        and the environment variables changed. False is returned otherwise
+        and the reference count for this container will be increased.
         """
         # Skip if this container has already been activated
         activation_keys = _keys_for_activation(self._language, self._version)
-        if os.environ.get(activation_keys.activated, None):
+        activated_env = os.environ.get(activation_keys.activated, None)
+        shell = self._parent_shell if persist else None
+
+        if activated_env:
+            util.overwrite_environment_variable(shell,
+                                                activation_keys.activated,
+                                                str(int(activated_env) + 1))
             return False
 
-        shell = self._parent_shell if persist else None
         active_environment = self._active_environment(ActiveEnvironment)
 
         for key, value in active_environment.overwrite.items():
@@ -382,39 +391,55 @@ class LanguageBase(ContainerBase):
         This will look at the keys in _active_environment and use those to
         retrieve backups and restore them, effectively deactivating the
         container.
+
+        True if returned if this container was deactivated and the environment
+        changed as a result. False is returned otherwise and this container's
+        reference count will be decreased.
         """
         activation_keys = _keys_for_activation(self._language, self._version)
-        if not os.environ.get(activation_keys.activated, None):
-            return False
 
+        # We substitute zero here because that is treated as the never
+        # activated value.
+        activated_env = os.environ.get(activation_keys.activated, "0")
         shell = self._parent_shell if persist else None
-        active_environment = self._active_environment(ActiveEnvironment)
 
-        for key in active_environment.overwrite.keys():
-            backup = activation_keys.deactivate.format(key=key)
+        util.print_message("Activation count : {}\n".format(activated_env))
+
+        if int(activated_env) > 1:
             util.overwrite_environment_variable(shell,
-                                                key,
-                                                os.environ.get(backup, ""))
+                                                activation_keys.activated,
+                                                str(int(activated_env) - 1))
+            return False
+        elif int(activated_env) == 1:
+            active_environment = self._active_environment(ActiveEnvironment)
+
+            for key in active_environment.overwrite.keys():
+                backup = activation_keys.deactivate.format(key=key)
+                util.overwrite_environment_variable(shell,
+                                                    key,
+                                                    os.environ.get(backup, ""))
+                util.overwrite_environment_variable(shell,
+                                                    backup,
+                                                    None)
+
+            for key in active_environment.prepend.keys():
+                inserted = activation_keys.inserted.format(key=key)
+                for value in os.environ[inserted].split(os.pathsep):
+                    util.remove_from_environment_variable(shell,
+                                                          key,
+                                                          value)
+
+                util.overwrite_environment_variable(shell,
+                                                    inserted,
+                                                    None)
+
             util.overwrite_environment_variable(shell,
-                                                backup,
+                                                activation_keys.activated,
                                                 None)
 
-        for key in active_environment.prepend.keys():
-            inserted = activation_keys.inserted.format(key=key)
-            for value in os.environ[inserted].split(os.pathsep):
-                util.remove_from_environment_variable(shell,
-                                                      key,
-                                                      value)
-
-            util.overwrite_environment_variable(shell,
-                                                inserted,
-                                                None)
-
-        util.overwrite_environment_variable(shell,
-                                            activation_keys.activated,
-                                            None)
-
-        return True
+            return True
+        else:
+            return False
 
     def activate(self, util):
         """Activate this container, persisting across invocations."""
