@@ -403,8 +403,6 @@ class LanguageBase(ContainerBase):
         activated_env = os.environ.get(activation_keys.activated, "0")
         shell = self._parent_shell if persist else None
 
-        util.print_message("Activation count : {}\n".format(activated_env))
-
         if int(activated_env) > 1:
             util.overwrite_environment_variable(shell,
                                                 activation_keys.activated,
