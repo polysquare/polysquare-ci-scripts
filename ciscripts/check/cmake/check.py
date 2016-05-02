@@ -443,7 +443,7 @@ def check_cmake_like_project(cont,
                           result.lint_exclude or list())
 
     build_dir = cont.named_cache_dir("cmake-build", ephemeral=True)
-    project_dir = os.getcwd()
+    proj_dir = os.getcwd()
 
     with util.Task("""Cleaning previous build"""):
         _clean_coverage_files(util)
@@ -452,9 +452,9 @@ def check_cmake_like_project(cont,
         with util.Task("""Restoring cached files to build tree"""):
             _move_directories_ignore_errors(build_tree,
                                             build_dir,
-                                            project_dir)
+                                            proj_dir)
 
-    with _maybe_map_to_drive_letter(project_dir) as mapped_proj_dir:
+    with _maybe_map_to_drive_letter(proj_dir) as mapped_proj_dir:
         after_lint(cont, os_cont, util)
 
         with configure_context(util) as configure_context_dir:
@@ -480,7 +480,7 @@ def check_cmake_like_project(cont,
                                     *(build_cmd(mapped_proj_dir)))
 
                 with util.Task("""Testing {} project""".format(kind)):
-                    if os.path.exists(os.path.join(build_dir,
+                    if os.path.exists(os.path.join(build_dir_xform(proj_dir),
                                                    "CTestTestfile.cmake")):
                         os_cont.execute(cont,
                                         util.running_output,
@@ -495,7 +495,7 @@ def check_cmake_like_project(cont,
     if not os.environ.get("POLYSQUARE_KEEP_CMAKE_CACHE", None):
         with util.Task("""Moving build tree to cache"""):
             _move_directories_ignore_errors(build_tree,
-                                            project_dir,
+                                            proj_dir,
                                             build_dir)
 
     after_test(cont, util, build_dir)
