@@ -530,7 +530,7 @@ def force_remove_tree(directory):
             pass
 
     if os.path.exists(directory):
-        print_message("shutil.rmtree failed, nuclear option\n")
+        print_message("shutil.rmtree failed, shelling out to rm\n")
         # On Windows, we might get PermissionError when attempting
         # to delete things, so shell out to /rmdir.exe to handle
         # the case for us. On Unix use rm -rf
