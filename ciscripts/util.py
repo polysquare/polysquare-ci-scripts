@@ -516,6 +516,17 @@ def process_shebang(args):
     return args
 
 
+def _try_ignoring_ent_and_perm(func, *args, **kwargs):
+    """Invoke func, ignoring OSError arising from ENOENT and EPERM."""
+    try:
+        func(*args, **kwargs)
+    except OSError as err:
+        if err.errno == errno.ENOENT or err.errno == errno.EPERM:
+            return
+        else:
+            raise err
+
+
 def force_remove_tree(directory):
     """Use various strategies to see that directory is removed.
 
@@ -523,11 +534,11 @@ def force_remove_tree(directory):
     then fall back to shelling out to rmdir on Windows or rm -rf on
     Unix.
     """
-    try:
-        shutil.rmtree(directory)
-    except OSError as err:
-        if err.errno == errno.ENOENT or err.errno == errno.EPERM:
-            pass
+    # If this is not a directory, just try removing the file directly
+    if os.path.isdir(directory):
+        _try_ignoring_ent_and_perm(shutil.rmtree, directory)
+    else:
+        _try_ignoring_ent_and_perm(os.remove, directory)
 
     if os.path.exists(directory):
         print_message("shutil.rmtree failed, shelling out to rm\n")
@@ -544,7 +555,6 @@ def force_remove_tree(directory):
                                        "/q"])
         else:
             subprocess.check_call(["rm", "-rf", directory])
-            raise err
 
 
 def execute(container, output_strategy, *args, **kwargs):
