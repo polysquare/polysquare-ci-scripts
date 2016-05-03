@@ -11,12 +11,37 @@ import json
 
 import os
 
+import platform
+
 from contextlib import contextmanager
 
 try:
     from io import StringIO
 except ImportError:
     from cStringIO import StringIO   # suppress(import-error)
+
+
+def _get_python_container(cont, util, shell):
+    """Get a python 2.7.9 installation if necessary."""
+    if platform.system() == "Linux":
+        return None
+
+    py_ver = util.language_version("python2")
+    config_python = "setup/project/configure_python.py"
+    return cont.fetch_and_import(config_python).get(cont,
+                                                    util,
+                                                    shell,
+                                                    py_ver)
+
+
+@contextmanager
+def _maybe_activate_python(py_cont, util):
+    """Activate py_cont if it exists."""
+    if py_cont:
+        with py_cont.activated(util):
+            yield
+    else:
+        yield
 
 
 def updated_dict(input_dict, update):
@@ -122,13 +147,17 @@ def run(cont, util, shell, argv=None):
                    "master",
                    block)
 
-        with captured_messages(util) as version_stream:
-            conan_cont.execute(cont,
-                               util.running_output,
-                               "python",
-                               "-c",
-                               "import conanfile; "
-                               "print(conanfile.VERSION)")
+        with _maybe_activate_python(_get_python_container(cont,
+                                                          util,
+                                                          shell),
+                                    util):
+            with captured_messages(util) as version_stream:
+                conan_cont.execute(cont,
+                                   util.running_output,
+                                   "python",
+                                   "-c",
+                                   "import conanfile; "
+                                   "print(conanfile.VERSION)")
 
         version_stream.seek(0)
         version = str(version_stream.read()).strip()
