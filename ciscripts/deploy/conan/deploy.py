@@ -130,6 +130,14 @@ def run(cont, util, shell, argv=None):
                                                                    shell,
                                                                    argv)
 
+    with captured_messages(util) as version_stream:
+        conan_cont.execute(cont,
+                           util.running_output,
+                           "python",
+                           "-c",
+                           "import conanfile; "
+                           "print(conanfile.VERSION)")
+
     with conan_cont.activated(util):
         with util.Task("""Logging in as {}""".format(username)):
             conan_cont.execute(cont,
@@ -147,17 +155,7 @@ def run(cont, util, shell, argv=None):
                    "master",
                    block)
 
-        with _maybe_activate_python(_get_python_container(cont,
-                                                          util,
-                                                          shell),
-                                    util):
-            with captured_messages(util) as version_stream:
-                conan_cont.execute(cont,
-                                   util.running_output,
-                                   "python",
-                                   "-c",
-                                   "import conanfile; "
-                                   "print(conanfile.VERSION)")
+
 
         version_stream.seek(0)
         version = str(version_stream.read()).strip()
