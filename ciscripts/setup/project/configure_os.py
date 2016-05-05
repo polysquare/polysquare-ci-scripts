@@ -96,7 +96,8 @@ def get(container,
             """
             args = [
                 "--distro=" + self._distro,
-                "--release=" + self._distro_version
+                "--release=" + self._distro_version,
+                "--local"
             ]
 
             if self._distro_arch:
@@ -242,6 +243,7 @@ def _update_os_container(container,
                              os_container_path,
                              "--distro=" + distro,
                              "--release=" + distro_version,
+                             "--local",
                              *additional_options,
                              instant_fail=True)
 
