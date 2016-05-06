@@ -9,16 +9,11 @@ import argparse
 
 import os
 
-import platform
-
 from contextlib import contextmanager
 
 
 def _get_python_container(cont, util, shell):
     """Get a python 2.7.9 installation if necessary."""
-    if platform.system() == "Linux":
-        return None
-
     py_ver = util.language_version("python2")
     config_python = "setup/project/configure_python.py"
     return cont.fetch_and_import(config_python).get(cont,
