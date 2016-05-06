@@ -76,6 +76,7 @@ def lint_python(cont, util, shell, lint_exclude=None):
                                                        util,
                                                        shell,
                                                        py_ver)
+    lint_exclude = (lint_exclude or []) + ["*/container/*"]
 
     with util.Task("""Linting python project"""):
         with py_cont.activated(util):
@@ -90,7 +91,7 @@ def lint_python(cont, util, shell, lint_exclude=None):
                          "python",
                          "setup.py",
                          "polysquarelint",
-                         "--exclusions=" + ",".join(lint_exclude or []),
+                         "--exclusions=" + ",".join(lint_exclude),
                          "--suppress-codes=" + ",".join(suppress),
                          ("--stamp-directory=" +
                           cont.named_cache_dir("polysquarelint-stamp",

@@ -70,7 +70,7 @@ def run(cont, util, shell, argv=None):
                                          "polysquarelint")
                 py_util.pip_install(cont,
                                     util,
-                                    "polysquare-setuptools-lint>=0.0.22")
+                                    "polysquare-setuptools-lint>=0.0.35")
 
         with util.Task("""Installing python test runners"""):
             _install_test_dependencies(cont,

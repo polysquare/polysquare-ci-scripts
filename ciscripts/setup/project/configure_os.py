@@ -26,7 +26,7 @@ DEFAULT_DISTRO_FOR_SYSTEM = {
 }
 
 DEFAULT_DISTRO_RELEASE_FOR_SYSTEM = {
-    "Linux": "trusty",
+    "Linux": "precise",
     "Darwin": "10.10",
     "Windows": "8.1"
 }
@@ -96,7 +96,8 @@ def get(container,
             """
             args = [
                 "--distro=" + self._distro,
-                "--release=" + self._distro_version
+                "--release=" + self._distro_version,
+                "--local"
             ]
 
             if self._distro_arch:
@@ -242,6 +243,7 @@ def _update_os_container(container,
                              os_container_path,
                              "--distro=" + distro,
                              "--release=" + distro_version,
+                             "--local",
                              *additional_options,
                              instant_fail=True)
 
@@ -266,7 +268,7 @@ def _install_psq_travis_container(cont,
             py_util.pip_install(cont,
                                 util,
                                 "requests",
-                                "polysquare-travis-container>=0.0.23",
+                                "polysquare-travis-container>=0.0.24",
                                 instant_fail=True)
 
     return py_cont

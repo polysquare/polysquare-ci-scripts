@@ -137,6 +137,8 @@ def run(cont, util, shell, argv=None):
                            "-c",
                            "import conanfile; "
                            "print(conanfile.VERSION)")
+        version_stream.seek(0)
+        version = str(version_stream.read()).strip()
 
     with conan_cont.activated(util):
         with util.Task("""Logging in as {}""".format(username)):
@@ -155,10 +157,6 @@ def run(cont, util, shell, argv=None):
                    "master",
                    block)
 
-
-
-        version_stream.seek(0)
-        version = str(version_stream.read()).strip()
         run_deploy(cont,
                    util,
                    conan_cont,
