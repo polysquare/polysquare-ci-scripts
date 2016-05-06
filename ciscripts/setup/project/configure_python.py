@@ -272,7 +272,7 @@ def _virtualenv_script(container, util):
     """Return location of virtualenv script, fetching if necessary."""
     python_venv = container.language_dir("python-venv")
     virtualenv_install = os.path.join(python_venv, "virtualenv.py")
-    remote_url = "http://github.com/pypa/virtualenv/tarball/develop"
+    remote_url = "http://github.com/pypa/virtualenv/tarball/15.0.1"
     if not os.path.exists(virtualenv_install):
         with container.in_temp_cache_dir() as cache_dir:
             with util.in_dir(cache_dir):
