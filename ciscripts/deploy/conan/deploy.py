@@ -11,8 +11,6 @@ import json
 
 import os
 
-import platform
-
 from contextlib import contextmanager
 
 try:
@@ -23,9 +21,6 @@ except ImportError:
 
 def _get_python_container(cont, util, shell):
     """Get a python 2.7.9 installation if necessary."""
-    if platform.system() == "Linux":
-        return None
-
     py_ver = util.language_version("python2")
     config_python = "setup/project/configure_python.py"
     return cont.fetch_and_import(config_python).get(cont,
@@ -74,7 +69,7 @@ def captured_messages(util):
 
 
 # suppress(too-many-arguments)
-def run_deploy(cont, util, conan_cont, pkg_name, version, block):
+def run_deploy(cont, util, pkg_name, version, block):
     """Run the deploy step and set CONAN_VERSION_OVERRIDE to version."""
     update = {"CONAN_VERSION_OVERRIDE": version} if version else {}
     upload_desc = "{pkg}/{version}@{block}".format(pkg=pkg_name,
@@ -82,16 +77,16 @@ def run_deploy(cont, util, conan_cont, pkg_name, version, block):
                                                    block=block)
     with util.Task("""Deploying {} to conan""".format(upload_desc)):
         with temporary_environment(updated_dict(os.environ, update)):
-            conan_cont.execute(cont,
-                               util.running_output,
-                               "conan",
-                               "export",
-                               block)
-            conan_cont.execute(cont,
-                               util.running_output,
-                               "conan",
-                               "upload",
-                               upload_desc)
+            util.execute(cont,
+                         util.running_output,
+                         "conan",
+                         "export",
+                         block)
+            util.execute(cont,
+                         util.running_output,
+                         "conan",
+                         "upload",
+                         upload_desc)
 
 
 def run(cont, util, shell, argv=None):
@@ -125,41 +120,35 @@ def run(cont, util, shell, argv=None):
                                                           ["--bump-version-on",
                                                            "conanfile.py"])
 
-    conan_cont = cont.fetch_and_import("setup/conan/setup.py").run(cont,
-                                                                   util,
-                                                                   shell,
-                                                                   argv)
+    with _maybe_activate_python(_get_python_container(cont, util, shell),
+                                util):
+        with captured_messages(util) as version_stream:
+            util.execute(cont,
+                         util.running_output,
+                         "python",
+                         "-c",
+                         "import conanfile; "
+                         "print(conanfile.VERSION)")
+            version_stream.seek(0)
+            version = str(version_stream.read()).strip()
 
-    with captured_messages(util) as version_stream:
-        conan_cont.execute(cont,
-                           util.running_output,
-                           "python",
-                           "-c",
-                           "import conanfile; "
-                           "print(conanfile.VERSION)")
-        version_stream.seek(0)
-        version = str(version_stream.read()).strip()
-
-    with conan_cont.activated(util):
         with util.Task("""Logging in as {}""".format(username)):
-            conan_cont.execute(cont,
-                               util.running_output,
-                               "conan",
-                               "user",
-                               username,
-                               "-p",
-                               password)
+            util.execute(cont,
+                         util.running_output,
+                         "conan",
+                         "user",
+                         username,
+                         "-p",
+                         password)
 
         run_deploy(cont,
                    util,
-                   conan_cont,
                    result.package_name,
                    "master",
                    block)
 
         run_deploy(cont,
                    util,
-                   conan_cont,
                    result.package_name,
                    version,
                    block)

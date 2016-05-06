@@ -8,8 +8,6 @@
 import os
 import os.path
 
-import platform
-
 from contextlib import contextmanager
 
 
@@ -65,9 +63,6 @@ def _setup_python_if_necessary(container, util, shell):
     This will be for platforms where python will not be installed into
     the OS container.
     """
-    if platform.system() == "Linux":
-        return None
-
     config_python = "setup/project/configure_python.py"
 
     py_ver = util.language_version("python2")
@@ -94,16 +89,6 @@ def _collect_nonnull_containers(util, *args, **kwargs):
                                     **kwargs)
 
 
-def _install_pip_in_os_conatiner(container, util, executor):
-    """Install pip in the nominated OS container."""
-    executor(container,
-             util.long_running_suppressed_output(),
-             "pip",
-             "install",
-             "--upgrade",
-             "pip")
-
-
 def run(container, util, shell, ver_info, os_cont=None):
     """Install and activates a conan installation.
 
@@ -120,11 +105,6 @@ def run(container, util, shell, ver_info, os_cont=None):
 
     with util.Task("""Installing conan"""):
         with _maybe_activated_python(py_cont, util):
-            # Use the OS container to install conan, since we might need
-            # to install it inside the container, particularly for
-            # linux systems.
-            if platform.system() == "Linux":
-                _install_pip_in_os_conatiner(container, util, executor)
             executor(container,
                      util.long_running_suppressed_output(),
                      "pip",
