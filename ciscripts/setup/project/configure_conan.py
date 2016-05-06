@@ -101,19 +101,18 @@ def run(container, util, shell, ver_info, os_cont=None):
 
     py_cont = _setup_python_if_necessary(container, util, shell)
 
-    executor = (os_cont.execute if os_cont else util.execute)
-
     with util.Task("""Installing conan"""):
         with _maybe_activated_python(py_cont, util):
-            executor(container,
-                     util.long_running_suppressed_output(),
-                     "pip",
-                     "install",
-                     "conan")
-            executor(container,
-                     util.long_running_suppressed_output(),
-                     "conan")
+            util.execute(container,
+                         util.long_running_suppressed_output(),
+                         "pip",
+                         "install",
+                         "conan")
+            util.execute(container,
+                         util.long_running_suppressed_output(),
+                         "conan")
 
+    executor = (os_cont.execute if os_cont else util.execute)
     meta_container = _collect_nonnull_containers(util,
                                                  os_cont,
                                                  py_cont,
