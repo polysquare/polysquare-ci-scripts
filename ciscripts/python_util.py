@@ -33,13 +33,17 @@ _KNOWN_PYTHON_INSTALLATIONS = dict()
 
 
 # suppress(invalid-name)
-def _get_python_version_from_specified(python_executable, precision):
+def _get_python_version_from_specified(version, precision):
     """Get python version at precision from specified python_executable."""
+    return ".".join(version.split(" ")[1].split(".")[0:precision]).strip()
+
+
+def _get_python_version_string(python_executable):
+    """Get the version string for a python executable."""
     output = subprocess.Popen([python_executable, "--version"],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE).communicate()
-    version = "".join([o.decode() for o in output])
-    return ".".join(version.split(" ")[1].split(".")[0:precision]).strip()
+    return "".join([o.decode() for o in output])
 
 
 def get_python_version(util, precision):  # suppress(unused-function)
@@ -52,7 +56,8 @@ def get_python_version(util, precision):  # suppress(unused-function)
     through on stdout, on others it comes through on stderr. Just join them
     both and parse the whole string.
     """
-    return _get_python_version_from_specified(util.which("python"), precision)
+    version_string = _get_python_version_string(util.which("python"))
+    return _get_python_version_from_specified(version_string, precision)
 
 
 def discover_pythons():
@@ -83,8 +88,15 @@ def discover_pythons():
         candidates = set([os.path.join(path_component, c) for c in candidates])
         candidates = set([p for p in candidates if not os.path.islink(p)])
 
+        candidate_versions = {
+            python_executable: _get_python_version_string(python_executable)
+            for python_executable in candidates
+        }
+
         _KNOWN_PYTHON_INSTALLATIONS.update({
-            _get_python_version_from_specified(p, 3): p for p in candidates
+            _get_python_version_from_specified(version_string, 3): python_exec
+            for python_exec, version_string in candidate_versions.items()
+            if not python_is_pypy(version_string)
         })
 
     return _KNOWN_PYTHON_INSTALLATIONS
@@ -128,11 +140,9 @@ def run_if_module_unavailable(module,  # suppress(unused-function)
     return None
 
 
-def python_is_pypy():  # suppress(unused-function)
+def python_is_pypy(version_string):  # suppress(unused-function)
     """Return true if the currently selected python is a PyPy python."""
-    return "PyPy" in subprocess.Popen(["python", "--version"],
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE).communicate()[1]
+    return "PyPy" in version_string
 
 
 def _packages_to_install(installed, requested):
