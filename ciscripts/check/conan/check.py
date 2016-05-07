@@ -9,12 +9,10 @@ import argparse
 
 import os
 
-from contextlib import contextmanager
-
 
 def _get_python_container(cont, util, shell):
-    """Get a python 2.7.9 installation if necessary."""
-    py_ver = util.language_version("python2")
+    """Get a python 3 installation."""
+    py_ver = util.language_version("python3")
     config_python = "setup/project/configure_python.py"
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,
@@ -31,16 +29,6 @@ def _get_conan_container(cont, util, shell):
 _CONAN_LAYOUT = [
     "build"
 ]
-
-
-@contextmanager
-def _maybe_activate_python(py_cont, util):
-    """Activate py_cont if it exists."""
-    if py_cont:
-        with py_cont.activated(util):
-            yield
-    else:
-        yield
 
 
 def run(cont, util, shell, argv=None, override_kwargs=None):
@@ -60,7 +48,7 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
 
     def _after_lint(cont, os_cont, util):
         """Perform conan specific setup."""
-        with _maybe_activate_python(py_cont, util), conan_cont.activated(util):
+        with py_cont.activated(util), conan_cont.activated(util):
             with util.Task("""Downloading dependencies"""):
                 os_cont.execute(cont,
                                 util.running_output,

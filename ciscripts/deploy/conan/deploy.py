@@ -20,23 +20,13 @@ except ImportError:
 
 
 def _get_python_container(cont, util, shell):
-    """Get a python 2.7.9 installation if necessary."""
-    py_ver = util.language_version("python2")
+    """Get a python 3 installation."""
+    py_ver = util.language_version("python3")
     config_python = "setup/project/configure_python.py"
     return cont.fetch_and_import(config_python).get(cont,
                                                     util,
                                                     shell,
                                                     py_ver)
-
-
-@contextmanager
-def _maybe_activate_python(py_cont, util):
-    """Activate py_cont if it exists."""
-    if py_cont:
-        with py_cont.activated(util):
-            yield
-    else:
-        yield
 
 
 def updated_dict(input_dict, update):
@@ -120,8 +110,7 @@ def run(cont, util, shell, argv=None):
                                                           ["--bump-version-on",
                                                            "conanfile.py"])
 
-    with _maybe_activate_python(_get_python_container(cont, util, shell),
-                                util):
+    with _get_python_container(cont, util, shell).activated(util):
         with captured_messages(util) as version_stream:
             util.execute(cont,
                          util.running_output,
