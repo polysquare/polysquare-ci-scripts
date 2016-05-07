@@ -304,6 +304,7 @@ def pre_existing_python(lang_dir, python_executable, util, container, shell):
             python_virtualenv = os.path.join(lang_dir, version)
             virtualenv_script = _virtualenv_script(container, util)
             if not os.path.exists(python_virtualenv):
+                util.print_message("Using python {} wiht virtualenv\n".format(python_executable))
                 util.execute(container,
                              util.long_running_suppressed_output(),
                              "python",
