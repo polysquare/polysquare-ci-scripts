@@ -7,6 +7,8 @@
 
 import argparse
 
+import errno
+
 import os
 
 from contextlib import contextmanager
@@ -40,6 +42,7 @@ _CONAN_LAYOUT = [
 ]
 
 
+# suppress(too-many-locals)
 def run(cont, util, shell, argv=None, override_kwargs=None):
     """Run checks on this conan project."""
     parser = argparse.ArgumentParser(description="""Run conan checks""")
@@ -49,8 +52,7 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
                         help="""Patterns of files to exclude from linting""")
     result, remainder = parser.parse_known_args(argv or list())
 
-    cmake_check_script = "check/cmake/check.py"
-    cmake_check = cont.fetch_and_import(cmake_check_script)
+    cmake_check = cont.fetch_and_import("check/cmake/check.py")
 
     py_cont = _get_python_container(cont, util, shell)
     rb_cont = _get_ruby_container(cont, util, shell)
@@ -82,11 +84,16 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
     @contextmanager
     def _configure_context(util):
         """Activate other language containers we might have available."""
+        build_dir = os.path.join(os.getcwd(), "build")
         try:
+            os.makedirs(build_dir)
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise error
+
+        with util.in_dir(build_dir):
             with py_cont.activated(util), rb_cont.activated(util):
-                yield
-        finally:
-            pass
+                yield build_dir
 
     kwargs = {
         "kind": "conan",
