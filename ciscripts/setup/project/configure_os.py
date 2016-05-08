@@ -297,13 +297,6 @@ def run(container,
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    if platform.system() == "Windows":
-        with util.Task("""Performing Windows-specific setup for Python 2"""):
-            _install_psq_travis_container(container,
-                                          util,
-                                          shell,
-                                          py_ver_key="python2")
-
     py_cont = _install_psq_travis_container(container,
                                             util,
                                             shell)
