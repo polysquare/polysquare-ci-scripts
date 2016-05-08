@@ -9,6 +9,8 @@ import argparse
 
 import os
 
+from contextlib import contextmanager
+
 
 def _get_python_container(cont, util, shell):
     """Get a python 3 installation."""
@@ -18,6 +20,13 @@ def _get_python_container(cont, util, shell):
                                                     util,
                                                     shell,
                                                     py_ver)
+
+
+def _get_ruby_container(cont, util, shell):
+    """Get a ruby installation."""
+    rb_ver = util.language_version("ruby")
+    config_ruby = "setup/project/configure_ruby.py"
+    return cont.fetch_and_import(config_ruby).get(cont, util, shell, rb_ver)
 
 
 def _get_conan_container(cont, util, shell):
@@ -44,6 +53,7 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
     cmake_check = cont.fetch_and_import(cmake_check_script)
 
     py_cont = _get_python_container(cont, util, shell)
+    rb_cont = _get_ruby_container(cont, util, shell)
     conan_cont = _get_conan_container(cont, util, shell)
 
     def _after_lint(cont, os_cont, util):
@@ -69,11 +79,21 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
                                 ])
             util.force_remove_tree(os.path.join(os.getcwd(), "build"))
 
+    @contextmanager
+    def _configure_context(util):
+        """Activate other language containers we might have available."""
+        try:
+            with py_cont.activated(util), rb_cont.activated(util):
+                yield
+        finally:
+            pass
+
     kwargs = {
         "kind": "conan",
         "build_tree": _CONAN_LAYOUT,
         "after_lint": _after_lint,
-        "after_test": _after_test
+        "after_test": _after_test,
+        "configure_context": _configure_context
     }
 
     if override_kwargs:
