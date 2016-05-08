@@ -8,8 +8,6 @@
 import os
 import os.path
 
-from contextlib import contextmanager
-
 
 def get(container, util, shell, ver_info):
     """Return a ConanContainer for an installed conan in container."""
@@ -57,36 +55,16 @@ def get(container, util, shell, ver_info):
     return ConanContainer(version, container.language_dir("conan"), shell)
 
 
-def _setup_python_if_necessary(container, util, shell):
-    """Install python 2.7 if necessary.
-
-    This will be for platforms where python will not be installed into
-    the OS container.
-    """
+def _setup_python(container, util, shell):
+    """Get python 3 installation."""
     config_python = "setup/project/configure_python.py"
 
-    py_ver = util.language_version("python2")
+    py_ver = util.language_version("python3")
     py_cont = container.fetch_and_import(config_python).run(container,
                                                             util,
                                                             shell,
                                                             py_ver)
     return py_cont
-
-
-@contextmanager
-def _maybe_activated_python(py_cont, util):
-    """Activate py_cont if it exists."""
-    if py_cont:
-        with py_cont.activated(util):
-            yield
-    else:
-        yield
-
-
-def _collect_nonnull_containers(util, *args, **kwargs):
-    """Return all non-null args."""
-    return util.make_meta_container(tuple([a for a in args if a is not None]),
-                                    **kwargs)
 
 
 def run(container, util, shell, ver_info, os_cont=None):
@@ -99,27 +77,26 @@ def run(container, util, shell, ver_info, os_cont=None):
     if result is not util.NOT_YET_COMPLETED:
         return result
 
-    py_cont = _setup_python_if_necessary(container, util, shell)
+    py_cont = _setup_python(container, util, shell)
 
     with util.Task("""Installing conan"""):
-        with _maybe_activated_python(py_cont, util):
+        with py_cont.activated(util):
             util.execute(container,
                          util.long_running_suppressed_output(),
                          "pip",
                          "install",
-                         "conan")
+                         "conan>=0.9.0")
             util.execute(container,
                          util.long_running_suppressed_output(),
                          "conan")
 
     executor = (os_cont.execute if os_cont else util.execute)
-    meta_container = _collect_nonnull_containers(util,
-                                                 os_cont,
-                                                 py_cont,
-                                                 get(container,
-                                                     util,
-                                                     shell,
-                                                     ver_info),
-                                                 execute=executor)
+    meta_container = util.make_meta_container((os_cont,
+                                               py_cont,
+                                               get(container,
+                                                   util,
+                                                   shell,
+                                                   ver_info)),
+                                              execute=executor)
     util.register_result("_POLYSQUARE_CONFIGURE_CONAN", meta_container)
     return meta_container
