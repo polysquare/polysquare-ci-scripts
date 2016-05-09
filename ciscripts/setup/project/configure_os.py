@@ -112,22 +112,9 @@ def get(container,
                         list(argv))
             exec_args = []
 
-            # We need to construct our command line in a way that explicitly
-            # specifies which python we want, without actually running with
-            # the python container activated. The user might want
-            # child scripts to run under a different implementation and
-            # we should respect that.
+            # Activate our python container and use psq-travis-container-exec
             with py_cont.activated(util):
-                # On Windows, specify that we want the entry-point
-                # script and not the frozen binary. The frozen binary will
-                # be executed using the currently active python, which may
-                # not be the same python as where it is installed.
-                exec_scr = util.which("psq-travis-container-exec-script.py")
-                if exec_scr:
-                    exec_args.append(util.which("python"))
-                    exec_args.append(exec_scr)
-                else:
-                    exec_args.append(util.which("psq-travis-container-exec"))
+                exec_args.append(util.which("psq-travis-container-exec"))
 
             args = exec_args + [self._installation, "--show-output"] + use_args
             return util.execute(container,
