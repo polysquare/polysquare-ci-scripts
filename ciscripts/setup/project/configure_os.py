@@ -82,6 +82,8 @@ def get(container,
             self._distro = distro
             self._distro_version = distro_version
             self._distro_arch = distro_arch
+            with py_cont.activated(util):
+                self._exec_script = util.which("psq-travis-container-exec")
 
         # suppress(super-on-old-class)
         def clean(self, util):
@@ -107,16 +109,10 @@ def get(container,
 
         def execute(self, container, output_strategy, *argv, **kwargs):
             """Execute command specified by argv in this OSContainer."""
-            use_args = (self._container_specification_args() +
-                        ["--"] +
-                        list(argv))
-            exec_args = []
-
-            # Activate our python container and use psq-travis-container-exec
-            with py_cont.activated(util):
-                exec_args.append(util.which("psq-travis-container-exec"))
-
-            args = exec_args + [self._installation, "--show-output"] + use_args
+            args = ([self._exec_script,
+                     self._installation,
+                     "--show-output"] + self._container_specification_args() +
+                    ["--"] + list(argv))
             return util.execute(container,
                                 output_strategy,
                                 *args,
