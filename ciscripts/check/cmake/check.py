@@ -184,8 +184,8 @@ def _configure_cmake_project(cont,  # suppress(too-many-arguments)
                     *cmake_args)
 
     # After running, change back into the current directory. Some build tools
-    # (like biicode) will delete the build tree and re-enter it, which
-    # invalidates the inode that we're currently in.
+    # will delete the build tree and re-enter it, which invalidates the inode
+    # that we're currently in.
     os.chdir(configure_context_dir)
 
 

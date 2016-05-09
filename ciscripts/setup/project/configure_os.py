@@ -82,6 +82,8 @@ def get(container,
             self._distro = distro
             self._distro_version = distro_version
             self._distro_arch = distro_arch
+            with py_cont.activated(util):
+                self._exec_script = util.which("psq-travis-container-exec")
 
         # suppress(super-on-old-class)
         def clean(self, util):
@@ -107,29 +109,10 @@ def get(container,
 
         def execute(self, container, output_strategy, *argv, **kwargs):
             """Execute command specified by argv in this OSContainer."""
-            use_args = (self._container_specification_args() +
-                        ["--"] +
-                        list(argv))
-            exec_args = []
-
-            # We need to construct our command line in a way that explicitly
-            # specifies which python we want, without actually running with
-            # the python container activated. The user might want
-            # child scripts to run under a different implementation and
-            # we should respect that.
-            with py_cont.activated(util):
-                # On Windows, specify that we want the entry-point
-                # script and not the frozen binary. The frozen binary will
-                # be executed using the currently active python, which may
-                # not be the same python as where it is installed.
-                exec_scr = util.which("psq-travis-container-exec-script.py")
-                if exec_scr:
-                    exec_args.append(util.which("python"))
-                    exec_args.append(exec_scr)
-                else:
-                    exec_args.append(util.which("psq-travis-container-exec"))
-
-            args = exec_args + [self._installation, "--show-output"] + use_args
+            args = ([self._exec_script,
+                     self._installation,
+                     "--show-output"] + self._container_specification_args() +
+                    ["--"] + list(argv))
             return util.execute(container,
                                 output_strategy,
                                 *args,
@@ -296,13 +279,6 @@ def run(container,
                                     subdirectory_name)
     if result is not util.NOT_YET_COMPLETED:
         return result
-
-    if platform.system() == "Windows":
-        with util.Task("""Performing Windows-specific setup for Python 2"""):
-            _install_psq_travis_container(container,
-                                          util,
-                                          shell,
-                                          py_ver_key="python2")
 
     py_cont = _install_psq_travis_container(container,
                                             util,

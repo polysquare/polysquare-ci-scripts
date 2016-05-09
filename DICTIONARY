@@ -35,8 +35,6 @@ appveyor
 autotools
 bashlint
 before_deploy
-bii
-biicode
 bool
 buildsystem
 _cache
@@ -83,6 +81,7 @@ psqcppconan
 prepend
 prepended
 prepends
+psq
 pychecker
 pyenv
 pyflakes
