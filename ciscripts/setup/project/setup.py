@@ -80,7 +80,7 @@ def run(cont, util, shell, argv=None):
             with py_cont.activated(util):
                 py_util.pip_install(cont,
                                     util,
-                                    "polysquare-generic-file-linter>=0.1.1",
+                                    "polysquare-generic-file-linter>=0.1.2",
                                     instant_fail=True)
 
         util.prepare_deployment(_prepare_project_deployment,
