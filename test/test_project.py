@@ -51,10 +51,12 @@ class TestProjectContainerSetup(acceptance_test_for("project", [])):
 
     def test_lint_with_style_guide_linter_success(self):
         """Success code if all files satisfy style guide linter."""
+        success_filename = os.path.join(os.getcwd(), "success.sh")
         with open(os.path.join(os.getcwd(), "success.sh"),
                   "wt") as success_file:
             write_valid_header(success_file)
 
+        self.addCleanup(lambda: os.remove(success_filename))
         self.assertThat("check/project/lint.py",
                         CIScriptExitsWith(0,
                                           self.__class__.container,
@@ -64,10 +66,12 @@ class TestProjectContainerSetup(acceptance_test_for("project", [])):
 
     def test_lint_with_style_guide_linter_failure(self):
         """Failure code if one file doesn't satisfy style guide linter."""
+        failure_filename = os.path.join(os.getcwd(), "failure.sh")
         with open(os.path.join(os.getcwd(), "failure.sh"),
                   "wt") as failure_file:
             write_invalid_header(failure_file)
 
+        self.addCleanup(lambda: os.remove(failure_filename))
         self.assertThat("check/project/lint.py",
                         CIScriptExitsWith(1,
                                           self.__class__.container,
