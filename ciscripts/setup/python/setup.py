@@ -76,8 +76,7 @@ def run(cont, util, shell, argv=None):
             _install_test_dependencies(cont,
                                        util,
                                        py_util,
-                                       "coverage",
-                                       "coveralls")
+                                       "coverage")
 
             # Install testing dependencies both inside and outside container.
             # They need to be installed in the container so that static
@@ -86,7 +85,8 @@ def run(cont, util, shell, argv=None):
                 _install_test_dependencies(cont,
                                            util,
                                            py_util,
-                                           "coverage")
+                                           "coverage",
+                                           "coveralls")
 
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,
