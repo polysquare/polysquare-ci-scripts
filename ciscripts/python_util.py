@@ -197,9 +197,17 @@ def _upgrade_pip(cont, util):
     else:
         return
 
-    version = subprocess.check_output([util.which("pip"),
-                                       "--disable-pip-version-check",
-                                       "--version"]).split()[1].decode()
+    try:
+        version = subprocess.check_output([util.which("pip"),
+                                           "--disable-pip-version-check",
+                                           "--version"])
+    except subprocess.CalledProcessError:
+        # Try again without the version check argument - it could
+        # not be disabled on some older versions of pip
+        version = subprocess.check_output([util.which("pip"),
+                                           "--version"])
+
+    version = version.split()[1].decode()
 
     if LooseVersion(version) < LooseVersion("8.0.3"):
         arguments = [

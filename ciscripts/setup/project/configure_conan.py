@@ -85,6 +85,7 @@ def run(container, util, shell, ver_info, os_cont=None):
                          util.long_running_suppressed_output(),
                          "pip",
                          "install",
+                         "--upgrade",
                          "conan>=0.9.0")
             util.execute(container,
                          util.long_running_suppressed_output(),

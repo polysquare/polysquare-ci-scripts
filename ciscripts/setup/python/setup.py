@@ -70,14 +70,13 @@ def run(cont, util, shell, argv=None):
                                          "polysquarelint")
                 py_util.pip_install(cont,
                                     util,
-                                    "polysquare-setuptools-lint>=0.0.36")
+                                    "polysquare-setuptools-lint>=0.0.38")
 
         with util.Task("""Installing python test runners"""):
             _install_test_dependencies(cont,
                                        util,
                                        py_util,
-                                       "coverage",
-                                       "coveralls")
+                                       "coverage")
 
             # Install testing dependencies both inside and outside container.
             # They need to be installed in the container so that static
@@ -86,7 +85,8 @@ def run(cont, util, shell, argv=None):
                 _install_test_dependencies(cont,
                                            util,
                                            py_util,
-                                           "coverage")
+                                           "coverage",
+                                           "coveralls")
 
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,

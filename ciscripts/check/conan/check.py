@@ -66,6 +66,7 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
                                 util.running_output,
                                 "conan",
                                 "install",
+                                "-u",
                                 "--build=missing")
 
     def _after_test(cont, util, build):
