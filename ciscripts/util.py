@@ -38,25 +38,6 @@ except ImportError:
     from queue import Queue, Empty
 
 
-def find_usable_path_in_homedir(cont):
-    """Return first usable executable path for deployment in home directory."""
-    home_dir = os.path.expanduser("~")
-    languages = cont.language_dir("")
-    virtualenv = os.path.join(home_dir, "virtualenv")
-    # Filter out paths in the container as they won't
-    # be available during the deploy step.
-    for path in os.environ.get("PATH", "").split(":"):
-        in_home = (os.path.commonprefix([home_dir,
-                                         path]) == home_dir)
-        in_container = (os.path.commonprefix([languages,
-                                              path]) == languages)
-        in_venv = (os.path.commonprefix([virtualenv,
-                                         path] == virtualenv))
-
-        if in_home and not in_container and not in_venv:
-            return path
-
-
 _PREFERRED_VERSIONS = {
     "python2": defaultdict(lambda: "2.7.9",
                            Linux="2.7.3",
@@ -807,26 +788,6 @@ def make_executable(path):
     os.chmod(path,
              os.stat(path).st_mode |
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def get_system_identifier(container):
-    """Return an identifier which contains information about the ABI."""
-    system_identifier_cache_dir = container.named_cache_dir("system-id")
-    system_identifier_config_guess = os.path.join(system_identifier_cache_dir,
-                                                  "config.guess")
-
-    if not os.path.exists(system_identifier_config_guess):
-        domain = "http://public-travis-autoconf-scripts.polysquare.org"
-        config_project = "{0}/cgit/config.git/plain".format(domain)
-        with open(system_identifier_config_guess, "w") as config_guess:
-            remote = url_opener()(config_project + "/config.guess")
-            config_guess.write(remote.read().decode("utf-8"))
-
-    make_executable(system_identifier_config_guess)
-    output = subprocess.Popen(["sh", system_identifier_config_guess],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE).communicate()
-    return "".join([o.decode() for o in output]).strip()
 
 
 def make_meta_container(containers, **kwargs):
