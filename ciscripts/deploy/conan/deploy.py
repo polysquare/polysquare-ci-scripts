@@ -3,7 +3,7 @@
 # Copy directories into place to prepare for publishing conan project
 #
 # See /LICENCE.md for Copyright information
-"""Place a symbolic link of pandoc in a writable directory in PATH."""
+"""Copy directories into place to prepare for publishing conan project."""
 
 import argparse
 
@@ -80,7 +80,7 @@ def run_deploy(cont, util, pkg_name, version, block):
 
 
 def run(cont, util, shell, argv=None):
-    """Place a symbolic link of pandoc in a writable directory in PATH."""
+    """Copy directories into place to prepare for publishing conan project."""
     parser = argparse.ArgumentParser("""Conan deployment""")
     parser.add_argument("--package-name",
                         help="""Package name""",

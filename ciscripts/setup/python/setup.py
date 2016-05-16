@@ -17,22 +17,8 @@ def _install_test_dependencies(cont, util, py_util, *args):
                         "setuptools-green>=0.0.13")
 
 
-def _prepare_python_deployment(cont, util, shell, py_util):
+def _prepare_python_deployment(cont, util, py_util):
     """Install dependencies required to deploy python project."""
-    hs_ver = util.language_version("haskell")
-    hs_config_script = "setup/project/configure_haskell.py"
-    hs_container = cont.fetch_and_import(hs_config_script).run(cont,
-                                                               util,
-                                                               shell,
-                                                               hs_ver)
-
-    with util.Task("""Installing pandoc"""):
-        hs_container.activate(util)
-        util.where_unavailable("pandoc",
-                               hs_container.install_cabal_pkg,
-                               cont,
-                               "pandoc")
-
     with util.Task("""Installing deploy dependencies"""):
         py_util.pip_install_deps(cont, util, "upload")
         py_util.pip_install(cont, util, "twine")
@@ -91,7 +77,6 @@ def run(cont, util, shell, argv=None):
         util.prepare_deployment(_prepare_python_deployment,
                                 cont,
                                 util,
-                                shell,
                                 py_util)
 
         util.register_result("_POLYSQUARE_SETUP_PYTHON", meta_cont)

@@ -38,25 +38,6 @@ except ImportError:
     from queue import Queue, Empty
 
 
-def find_usable_path_in_homedir(cont):
-    """Return first usable executable path for deployment in home directory."""
-    home_dir = os.path.expanduser("~")
-    languages = cont.language_dir("")
-    virtualenv = os.path.join(home_dir, "virtualenv")
-    # Filter out paths in the container as they won't
-    # be available during the deploy step.
-    for path in os.environ.get("PATH", "").split(":"):
-        in_home = (os.path.commonprefix([home_dir,
-                                         path]) == home_dir)
-        in_container = (os.path.commonprefix([languages,
-                                              path]) == languages)
-        in_venv = (os.path.commonprefix([virtualenv,
-                                         path] == virtualenv))
-
-        if in_home and not in_container and not in_venv:
-            return path
-
-
 _PREFERRED_VERSIONS = {
     "python2": defaultdict(lambda: "2.7.9",
                            Linux="2.7.3",
