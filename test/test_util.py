@@ -7,8 +7,6 @@
 
 import doctest
 
-import errno
-
 import hashlib
 
 import os
@@ -25,7 +23,7 @@ import tempfile
 
 import time
 
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 
 from test import testutil
 
@@ -796,66 +794,6 @@ class TestApplicationToFilePatterns(TestCase):
                                           matching=["{0}/*".format("other")])
 
                 function_applied.assert_not_called()  # suppress(PYC70)
-
-
-class TestGetSystemIdentifier(TestCase):
-    """Test cases for the :get_system_identifier: function."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize this TestCase."""
-        super(TestGetSystemIdentifier, self).__init__(*args, **kwargs)
-        self.container = None
-
-    def setUp(self):  # suppress(N802)
-        """Create a stub class with a temporary directory to store files in."""
-        super(TestGetSystemIdentifier, self).setUp()
-
-        def named_cache_dir_func(temp_dir):
-            """Return a function to create named cache dirs in temp_dir."""
-            def named_cache_dir(self, directory):
-                """Create a named cache directory."""
-                del self
-
-                cache_dir = os.path.join(temp_dir, directory)
-                try:
-                    os.makedirs(cache_dir)
-                except OSError as error:
-                    if error.errno != errno.EEXIST:  # suppress(PYC90)
-                        raise error
-
-                return cache_dir
-
-            return named_cache_dir
-
-        temp_dir_prefix = os.path.join(os.getcwd(), "sysid")
-        temporary_directory = tempfile.mkdtemp(prefix=temp_dir_prefix)
-        self.addCleanup(util.force_remove_tree, temporary_directory)
-        cache_dir_func = named_cache_dir_func(temporary_directory)
-
-        self.container = type("StubContainer",
-                              (object, ),
-                              {"named_cache_dir": cache_dir_func})()
-
-    def test_system_identifier_has_architecture(self):
-        """Determined system identifier has architecture."""
-        is_64bits = sys.maxsize > 2**32
-
-        if (is_64bits and "64" not in platform.machine() or
-                not is_64bits and "64" in platform.machine()):
-            self.skipTest("can't reliably get machine ID on mixed binary")
-
-        self.assertThat(util.get_system_identifier(self.container),
-                        Contains(platform.machine()))
-
-    def test_system_identifier_has_system_name(self):
-        """Determined system identifier has OS name."""
-        system_identifier_map = defaultdict(lambda: lambda s: s,
-                                            windows=lambda s: "pc-msys")
-
-        sys_id = platform.system().lower()
-        sys_id = system_identifier_map[sys_id](sys_id)
-        self.assertThat(util.get_system_identifier(self.container),
-                        Contains(sys_id))
 
 
 class PrepopulatedMTimeContainer(object):  # suppress(too-few-public-methods)

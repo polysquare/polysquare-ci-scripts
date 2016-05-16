@@ -790,26 +790,6 @@ def make_executable(path):
              stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
-def get_system_identifier(container):
-    """Return an identifier which contains information about the ABI."""
-    system_identifier_cache_dir = container.named_cache_dir("system-id")
-    system_identifier_config_guess = os.path.join(system_identifier_cache_dir,
-                                                  "config.guess")
-
-    if not os.path.exists(system_identifier_config_guess):
-        domain = "http://public-travis-autoconf-scripts.polysquare.org"
-        config_project = "{0}/cgit/config.git/plain".format(domain)
-        with open(system_identifier_config_guess, "w") as config_guess:
-            remote = url_opener()(config_project + "/config.guess")
-            config_guess.write(remote.read().decode("utf-8"))
-
-    make_executable(system_identifier_config_guess)
-    output = subprocess.Popen(["sh", system_identifier_config_guess],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE).communicate()
-    return "".join([o.decode() for o in output]).strip()
-
-
 def make_meta_container(containers, **kwargs):
     """Make a meta-container object out of containers.
 

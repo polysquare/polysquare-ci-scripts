@@ -226,13 +226,6 @@ The output management modes are as follows:
                                             travis-ci will not time out waiting
                                             for additional output.
 
-### Uniquely identifying a type of system ###
-
-A system type identifier is useful for determining whether pre-compiled
-binaries can be fetched from a certain location. This can be obtained
-with the `get_system_identifier` function which is defined in the
-`util` module.
-
 ### Functional programming constructs ###
 
 The `util` module also provides some functions which simplify a number
