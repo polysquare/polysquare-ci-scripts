@@ -7,4 +7,5 @@ if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then
   virtualenv container/venv -p $PYTHON;
   pip install --upgrade pip;
   source container/venv/bin/activate;
+  python --version;
 fi;
