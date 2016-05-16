@@ -200,7 +200,8 @@ def _upgrade_pip(cont, util):
     try:
         version = subprocess.check_output([util.which("pip"),
                                            "--disable-pip-version-check",
-                                           "--version"])
+                                           "--version"],
+                                          stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
         # Try again without the version check argument - it could
         # not be disabled on some older versions of pip
