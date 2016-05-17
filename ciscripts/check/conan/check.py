@@ -101,7 +101,9 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
         "build_tree": _CONAN_LAYOUT,
         "after_lint": _after_lint,
         "after_test": _after_test,
-        "configure_context": _configure_context
+        "configure_context": _configure_context,
+        "configure_cmd": lambda b: ("cmake",
+                                    "-DCONAN_DISABLE_CHECK_COMPILER=ON")
     }
 
     if override_kwargs:
