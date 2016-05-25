@@ -66,6 +66,8 @@ def run(cont, util, shell, argv=None, override_kwargs=None):
                                 util.running_output,
                                 "conan",
                                 "install",
+                                "-o",
+                                "dev=True",
                                 "-u",
                                 "--build=missing")
 

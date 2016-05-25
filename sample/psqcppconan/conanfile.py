@@ -29,6 +29,10 @@ class CPPProjectConan(ConanFile):
     requires = tuple()
     url = "http://github.com/polysquare/cpp-project"
     license = "MIT"
+    options = {
+        "dev": [True, False]
+    }
+    default_options = "dev=False"
 
     def build(self):
         """Build conan project."""
