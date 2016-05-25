@@ -81,6 +81,7 @@ def run(cont, util, shell, argv=None):
                 py_util.pip_install(cont,
                                     util,
                                     "polysquare-generic-file-linter>=0.1.7",
+>>>>>>> 0761ba4... project: Bump polysquare-generic-file-linter version
                                     instant_fail=True)
 
         util.prepare_deployment(_prepare_project_deployment,
