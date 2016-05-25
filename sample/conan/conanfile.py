@@ -10,6 +10,10 @@ class CMakeForwardArgumentsConan(ConanFile):
     requires = ("cmake-include-guard/master@smspillaz/cmake-include-guard", )
     url = "http://github.com/polysquare/cmake-forward-cache"
     license = "MIT"
+    options = {
+        "dev": [True, False]
+    }
+    default_options = "dev=False"
 
     def source(self):
         zip_name = "cmake-forward-cache-master.zip"
