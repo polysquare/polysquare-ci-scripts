@@ -9,7 +9,7 @@ import sys
 
 import ciscripts.python_util as python_util
 
-from ciscripts import util
+from ciscripts import util  # suppress(I100)
 
 from mock import Mock
 

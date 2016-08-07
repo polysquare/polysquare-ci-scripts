@@ -29,7 +29,7 @@ from test import testutil
 
 import ciscripts.util as util
 
-from ciscripts.bootstrap import (BashParentEnvironment,
+from ciscripts.bootstrap import (BashParentEnvironment,    # suppress(I100)
                                  PowershellParentEnvironment,
                                  escaped_printer_with_character)
 
