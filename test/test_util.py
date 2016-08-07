@@ -27,10 +27,11 @@ from collections import namedtuple
 
 from test import testutil
 
+import ciscripts.util as util
+
 from ciscripts.bootstrap import (BashParentEnvironment,
                                  PowershellParentEnvironment,
                                  escaped_printer_with_character)
-import ciscripts.util as util
 
 from mock import Mock
 

@@ -7,8 +7,9 @@
 
 import sys
 
-from ciscripts import util
 import ciscripts.python_util as python_util
+
+from ciscripts import util
 
 from mock import Mock
 
