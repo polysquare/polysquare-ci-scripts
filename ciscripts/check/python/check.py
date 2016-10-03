@@ -87,7 +87,7 @@ def lint_python(cont, util, shell, lint_exclude=None):
                 "D203"
             ]
             util.execute(cont,
-                         util.output_on_fail,
+                         util.long_running_suppressed_output(),
                          "python",
                          "setup.py",
                          "polysquarelint",
