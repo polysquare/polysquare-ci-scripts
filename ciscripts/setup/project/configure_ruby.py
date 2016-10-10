@@ -63,9 +63,11 @@ def get(container, util, shell, ver_info):
             assert os.path.exists(self._system_installation)
 
             if (platform.system() == "Darwin" and
-                    not os.path.exists("/etc/openssl/cert.pem")):
+                    not (os.path.exists("/etc/openssl/cert.pem") or
+                         os.path.exists("/usr/local/etc/openssl/cert.pem"))):
                 raise Exception("""/System/Library/OpenSSL/cert.pem needs """
                                 """to be symlinked to /etc/openssl/cert.pem """
+                                """or /usr/local/etc/openssl/cert.pem """
                                 """in order to work around broken rvm """
                                 """builds.""")
 
