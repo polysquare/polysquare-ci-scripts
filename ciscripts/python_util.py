@@ -110,6 +110,7 @@ def fetch_packages_in_active_python():
     out = subprocess.check_output([
         "pip",
         "list",
+        "--format=columns",
         "--disable-pip-version-check"
     ]).decode().splitlines()
     reg = r"\(|\)|,|\s+"
