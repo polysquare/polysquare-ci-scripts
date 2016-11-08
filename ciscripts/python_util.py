@@ -107,15 +107,15 @@ def fetch_packages_in_active_python():
 
     The dict shall have the format { "package": "version" }.
     """
-    out = subprocess.check_output([
-        "pip",
-        "list",
-        "--format=columns",
-        "--disable-pip-version-check"
-    ]).decode().splitlines()
-    reg = r"\(|\)|,|\s+"
-    tuples = [[w for w in re.split(reg, l) if w][:2] for l in out]
-    return dict([tuple(t) for t in tuples])
+    return dict([
+        (x["name"], x["version"]) for x in
+        json.loads(subprocess.check_output([
+            "pip",
+            "list",
+            "--format=json",
+            "--disable-pip-version-check"
+        ]).decode())
+    ])
 
 _PACKAGES_FOR_PYTHON = defaultdict(fetch_packages_in_active_python)
 _PARSED_SETUP_FILES = dict()
@@ -211,7 +211,7 @@ def _upgrade_pip(cont, util):
 
     version = version.split()[1].decode()
 
-    if LooseVersion(version) < LooseVersion("8.0.3"):
+    if LooseVersion(version) < LooseVersion("9.0.1"):
         arguments = [
             "python",
             "-m",
