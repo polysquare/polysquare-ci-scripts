@@ -7,9 +7,9 @@ matrix:
   - os: linux
     python: '3.5'
   - os: linux
-    python: 'pypy'
+    python: pypy
   - os: linux
-    python: 'pypy3'
+    python: pypy3
   - os: osx
     language: generic
     env: PYTHON=python PIP=pip
@@ -24,16 +24,19 @@ addons:
     - python3.4-dev
 cache:
   directories:
-    - container
+  - container
 install:
- - eval "$(cat $(pwd)/ciscripts/bash/osx-python.sh)"
- # As a special case for this project, we specify our ciscripts
- # directory as -r so that changes from the pull-request are
- # used during the build process.
- - eval "$(curl -LSs --connect-timeout 2 --retry 100 file://$(pwd)/ciscripts/bootstrap.py | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e bash -p /dev/stdout)"
+- eval "$(cat $(pwd)/ciscripts/bash/osx-python.sh)"
+- eval "$(curl -LSs --connect-timeout 2 --retry 100 file://$(pwd)/ciscripts/bootstrap.py
+  | python /dev/stdin -d $(pwd)/container -s container-setup.py -r $(pwd) -e bash
+  -p /dev/stdout)"
 script:
- - polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" "*/_scripts/*" "tmp*" --lint-exclude "*/sample/*" --no-mdl
+- polysquare_run check/python/check.py --coverage-exclude "*/__init__.py" "*/_scripts/*"
+  "tmp*" --lint-exclude "*/sample/*" --no-mdl
 after_success:
- - polysquare_run coverage/python/coverage.py
+- polysquare_run coverage/python/coverage.py
 before_cache:
- - polysquare_cleanup
+- polysquare_cleanup
+env:
+  global:
+    secure: ju8nZVmQkNqDSCeALLzQ7DZXkexIi3xAMMfxLMHVODH2WDvwjIC2uC4/V1fLZV0KA8YNK170gFxOdUK+plkCCCWr8Ba/rWvahano94r5b0Ms8ppNzu6SiNQICvpq8XiBuQ1SFBk4JmI1sNYPJ2+ixeBUicEoCGIajw/fQMWSHx8=
