@@ -46,7 +46,7 @@ _PREFERRED_VERSIONS = {
     "python3": defaultdict(lambda: "3.4.4",
                            Linux="3.4.4",
                            Windows="3.4.3",
-                           Darwin="3.5.1"),
+                           Darwin="3.6.0"),
     "ruby": defaultdict(lambda: "1.9.3",
                         Linux="1.9.3",
                         Windows="2.1.8",
