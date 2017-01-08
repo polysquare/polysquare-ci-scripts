@@ -1,7 +1,6 @@
 if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then
   brew update;
-  brew install python python3;
-  brew link python python3;
+  brew link python;
   mkdir -p container
   rm -rf container/venv;
   virtualenv container/venv -p $PYTHON;
