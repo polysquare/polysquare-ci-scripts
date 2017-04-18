@@ -99,6 +99,10 @@ def discover_pythons():
             if not python_is_pypy(version_string)
         })
 
+        for version, python in _KNOWN_PYTHON_INSTALLATIONS.items():
+            import sys
+            sys.stderr.write("Found python {} {}\n".format(python, version))
+
     return _KNOWN_PYTHON_INSTALLATIONS
 
 
