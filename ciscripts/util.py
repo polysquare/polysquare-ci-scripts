@@ -60,6 +60,11 @@ def language_version(language):
     return _PREFERRED_VERSIONS[language]
 
 
+def override_preferred_version(language, platform, version):
+    """Override the preferred language version for the given platform."""
+    _PREFERRED_VERSIONS[language][platform] = version
+
+
 PRINT_MESSAGES_TO = None
 
 
