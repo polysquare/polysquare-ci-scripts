@@ -6,3 +6,4 @@ setuptools-green<=0.1.0
 six==1.10.0
 testtools==1.7.1
 polysquare-setuptools-lint<=0.1.0
+git+git://github.com/smspillaz/prospector@support-pydocstyle-2.0.0-windows-support#egg=prospector
