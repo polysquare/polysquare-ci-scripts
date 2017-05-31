@@ -405,8 +405,7 @@ def output_on_fail(process, outputs):
 
 def long_running_suppressed_output(dot_timeout=10):
     """Print dots in a separate thread until our process is done."""
-    def strategy(process, outputs):
-        """Partially applied strategy to be passed to execute."""
+    def _strategy(process, outputs):
         status = _maybe_use_running_output(process, outputs)
         if status is not None:
             return status
@@ -434,7 +433,7 @@ def long_running_suppressed_output(dot_timeout=10):
 
         return status
 
-    return strategy
+    return _strategy
 
 
 @contextmanager
@@ -544,7 +543,7 @@ def force_remove_tree(directory):
 
 
 def execute(container, output_strategy, *args, **kwargs):
-    """A thin wrapper around subprocess.Popen.
+    """Execute a command, buffering its output in the configured manner.
 
     This class encapsulates a single command. The first argument to the
     constructor specifies how this command's output should be handled
@@ -604,7 +603,7 @@ def execute(container, output_strategy, *args, **kwargs):
 def which(executable):
     """Full path to executable."""
     def is_executable(path):
-        """True if path exists and is executable."""
+        """Return true if path exists and is executable."""
         return (os.path.exists(path) and
                 not os.path.isdir(path) and
                 os.access(path, os.F_OK | os.X_OK))

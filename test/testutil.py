@@ -390,7 +390,7 @@ def _copytree_ignore_notfound(src, dst):
 
 
 def copy_scripts_to_directory(target):
-    """Utility method to copy CI script to current directory.
+    """Copy CI script to current directory.
 
     They will be located at /ciscripts/.
     """
@@ -467,7 +467,7 @@ def acceptance_test_for(project_type, expected_programs):
 
         @classmethod
         def setup_script(cls):
-            """Setup script for this acceptance test fixture."""
+            """Fetch setup script for this acceptance test fixture."""
             return "setup/cmake/setup.py"
 
         @classmethod

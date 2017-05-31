@@ -13,7 +13,7 @@ import shutil
 
 
 def style_guide_exclusions(lint_exclude):
-    """A tuple of (suppressions, exclusions).
+    """Return a tuple of (suppressions, exclusions).
 
     suppressions refers to patterns in source code that shouldn't trigger
     any warnings from polysquare-generic-file-linter.

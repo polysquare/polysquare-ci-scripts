@@ -86,7 +86,7 @@ def write_bootstrap_script_into_container(directory_name):
 
 @contextmanager
 def removable_container_dir(directory_name):
-    """A contextmanager which deletes a container when the test is complete."""
+    """Delete a container when the test is complete."""
     current_cwd = os.getcwd()
     printer = bootstrap.escaped_printer_with_character("\\")
     shell = bootstrap.BashParentEnvironment(printer)

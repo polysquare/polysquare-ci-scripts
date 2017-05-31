@@ -677,7 +677,7 @@ class ContainerDir(ContainerBase):
                      script_path,
                      domain="raw.githubusercontent.com",
                      urlpath=_GITHUB_URLPATH):
-        """Wrapper for _fetch_script, returns a FetchedModule."""
+        """Return a FetchedModule after fetching a script."""
         info = self.script_path(script_path)
         _fetch_script(info, script_path, domain, urlpath)
         return info
