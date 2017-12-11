@@ -558,13 +558,19 @@ def _clear_stale(scripts_dir,
         _update_scripts_sha1_and_rmtree(scripts_dir, cache_dir, sha1)
 
 
+_GH_STALE_CHECK = (
+    # suppress(E501)
+    "https://api.github.com/repos/polysquare/polysquare-ci-scripts/commits/HEAD"
+)
+
+
 class ContainerDir(ContainerBase):
     """A container that all scripts and other data will be stored in."""
 
     def __init__(self,
                  shell,
                  directory=None,
-                 stale_check="public-travis-scripts-sha1.polysquare.org",
+                 stale_check=_GH_STALE_CHECK,
                  **kwargs):
         """Initialize this container in the directory specified."""
         super(ContainerDir, self).__init__(directory)
