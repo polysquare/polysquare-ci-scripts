@@ -664,9 +664,10 @@ class ContainerDir(ContainerBase):
     # suppress(unused-function)
     def loaded_module_name(self,
                            script_path,
-                           domain="public-travis-scripts.polysquare.org"):
+                           domain="raw.githubusercontent.com",
+                           urlpath=_GITHUB_URLPATH):
         """Get loaded module name for :script_path:."""
-        key = "{0}/{1}".format(domain, script_path)
+        key = "{0}/{1}/{2}".format(domain, urlpath, script_path)
         try:
             return self._module_cache[key].__name__
         except KeyError:
@@ -674,15 +675,17 @@ class ContainerDir(ContainerBase):
 
     def fetch_script(self,
                      script_path,
-                     domain="public-travis-scripts.polysquare.org"):
+                     domain="raw.githubusercontent.com",
+                     urlpath=_GITHUB_URLPATH):
         """Wrapper for _fetch_script, returns a FetchedModule."""
         info = self.script_path(script_path)
-        _fetch_script(info, script_path, domain)
+        _fetch_script(info, script_path, domain, urlpath)
         return info
 
     def fetch_and_import(self,
                          script_path,
-                         domain="public-travis-scripts.polysquare.org"):
+                         domain="raw.githubusercontent.com",
+                         urlpath=_GITHUB_URLPATH):
         """Download a script if its not available and import it.
 
         This downloads the script as part of the URL path as indicated by
@@ -695,8 +698,8 @@ class ContainerDir(ContainerBase):
 
         # First try to find the script locally in the
         # current working directory.
-        info = self.fetch_script(script_path, domain)
-        key = "{0}/{1}".format(domain, script_path)
+        info = self.fetch_script(script_path, domain, urlpath)
+        key = "{0}/{1}/{2}".format(domain, urlpath, script_path)
 
         try:
             return self._module_cache[key]
@@ -850,7 +853,7 @@ def _define_script_command(command_name,
 def _stale_check_url(args):
     """Return stale-check url when we are not keeping stale scripts."""
     if not args.keep_scripts:
-        return "public-travis-scripts-sha1.polysquare.org"
+        return _GH_STALE_CHECK
 
     return None
 
