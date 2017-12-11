@@ -484,13 +484,17 @@ class LanguageBase(ContainerBase):
 FetchedModule = namedtuple("FetchedModule", "in_scripts_dir fs_path")
 
 
+_GITHUB_URLPATH = "polysquare/polysquare-ci-scripts/master/ciscripts/"
+
+
 def _fetch_script(info,
                   script_path,
-                  domain="public-travis-scripts.polysquare.org"):
+                  domain="raw.githubusercontent.com",
+                  urlpath=_GITHUB_URLPATH):
     """Download a script if it doesn't exist."""
     if not os.path.exists(info.fs_path):
         with open_and_force_mkdir(info.fs_path, "w") as scr:
-            remote = "%s/%s" % (domain, script_path)
+            remote = "%s/%s/%s" % (domain, urlpath, script_path)
             retrycount = 100
             while retrycount != 0:
                 try:
