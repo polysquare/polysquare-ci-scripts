@@ -86,7 +86,8 @@ def lint_python(cont, util, shell, lint_exclude=None):
                 "TestSuite",
                 "D203",
                 "D213",
-                "I102"
+                "I102",
+                "I202"
             ]
             util.execute(cont,
                          util.long_running_suppressed_output(),
