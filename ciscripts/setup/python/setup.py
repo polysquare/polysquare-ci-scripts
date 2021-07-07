@@ -57,6 +57,11 @@ def run(cont, util, shell, argv=None):
                 py_util.pip_install(cont,
                                     util,
                                     "polysquare-setuptools-lint>=0.0.50")
+                py_util.pip_install(cont,
+                                    util,
+                                    "git+git://github.com/smspillaz/prospector"
+                                    "@support-pydocstyle-2.0.0-windows-support"
+                                    "#egg=prospector")
 
         with util.Task("""Installing python test runners"""):
             _install_test_dependencies(cont,

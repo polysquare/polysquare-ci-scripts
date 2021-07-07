@@ -184,7 +184,7 @@ def ruby_build_strategy(container,
 
 
 def is_running_ubuntu_wily():
-    """True if running on Ubuntu 15.04."""
+    """Return true if running on Ubuntu 15.04."""
     if os.path.exists("/etc/lsb-release"):
         with open("/etc/lsb-release") as release_file:
             release_keys = {l.split("=")[0]: l.split("=")[1].strip()

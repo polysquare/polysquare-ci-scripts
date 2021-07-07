@@ -27,7 +27,7 @@ def main(argv):
         import setuptools
 
         def setup_hook(*args, **kwargs):
-            """Hook the setup function and log its arguments."""
+            """Override the setup function and log its arguments."""
             del args
 
             setuptools_arguments.update(kwargs)
